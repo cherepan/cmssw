@@ -39,7 +39,7 @@ class TauSpinnerCMS : public edm::EDProducer
 {
   
  public:
-  
+  enum Type{ScalarTauTau,ScalarTauNu,VectorTauNu};
   //
   explicit TauSpinnerCMS( const edm::ParameterSet& ) ;
   virtual ~TauSpinnerCMS() {} // no need to delete ROOT stuff
@@ -67,5 +67,8 @@ class TauSpinnerCMS : public edm::EDProducer
   void GetRecoDaughters(const reco::GenParticle *Particle,std::vector<SimpleParticle> &daughters,int parentpdgid);
   bool isFirst(const reco::GenParticle *Particle);
   double roundOff_;
+  int overRidePDGID_;
+  int overRideType_;
+
 }; 
 #endif

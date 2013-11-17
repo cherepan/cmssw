@@ -84,7 +84,7 @@ inline bool isFirst(HepMC::GenParticle *x){
       Event will continue to be processed
       with next function call. 
 *******************************************************************************/
-int readParticlesFromHepMC(const HepMC::GenEvent *event, SimpleParticle &X, SimpleParticle &tau, SimpleParticle &tau2, std::vector<SimpleParticle> &tau_daughters, std::vector<SimpleParticle> &tau2_daughters)
+int readParticlesFromHepMC(const HepMC::GenEvent *event, SimpleParticle &X, SimpleParticle &tau, SimpleParticle &tau2, std::vector<SimpleParticle> &tau_daughters, std::vector<SimpleParticle> &tau2_daughters, int overridePDGid)
 {
   if(event==NULL) return 1;
 
@@ -99,7 +99,8 @@ int readParticlesFromHepMC(const HepMC::GenEvent *event, SimpleParticle &X, Simp
           abs(pdgid)==37 ||
               pdgid ==25 ||
           abs(pdgid)==24 ||
-              pdgid ==23          
+              pdgid ==23 ||
+	  abs(pdgid)==overridePDGid
         ) &&
         (*it)->end_vertex() &&
         (*it)->end_vertex()->particles_out_size()>=2

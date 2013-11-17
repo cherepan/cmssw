@@ -21,6 +21,8 @@ TauSpinnerCMS::TauSpinnerCMS( const ParameterSet& pset ) :
   ,nonSM2_(pset.getUntrackedParameter("nonSM2",(int)(0)))
   ,nonSMN_(pset.getUntrackedParameter("nonSMN",(int)(0)))
   ,roundOff_(pset.getUntrackedParameter("roundOff",(double)(0.01)))
+  ,overRidePDGID_(pset.getUntrackedParameter("overRidePDGID",(int)(-1)))
+  ,overRideType_(pset.getUntrackedParameter("overRideType",(int)(-999)))
 {
   produces<bool>("TauSpinnerWTisValid").setBranchAlias("TauSpinnerWTisValid");
   produces<double>("TauSpinnerWT").setBranchAlias("TauSpinnerWT");
@@ -62,10 +64,13 @@ void TauSpinnerCMS::produce( edm::Event& e, const edm::EventSetup& iSetup){
     Handle< HepMCProduct > EvtHandle ;
     e.getByLabel( "generator", EvtHandle ) ;
     const HepMC::GenEvent* Evt = EvtHandle->GetEvent() ;
-    stat=readParticlesFromHepMC(Evt,X,tau,tau2,tau_daughters,tau_daughters2);
+    stat=readParticlesFromHepMC(Evt,X,tau,tau2,tau_daughters,tau_daughters2,overRidePDGID_);
   }  
-  if(MotherPDGID_<0 || abs(X.pdgid())==MotherPDGID_){
+  if(MotherPDGID_<0 || abs(X.pdgid())==MotherPDGID_ || abs(X.pdgid())==overRidePDGID_){
     if(stat!=1){
+      if(overRideType_==ScalarTauTau) X.setPdgid(25);
+      if(overRideType_==ScalarTauNu) X.setPdgid(37);
+      if(overRideType_==VectorTauNu) X.setPdgid(24);
       // Determine the weight      
       if( abs(X.pdgid())==24 ||  abs(X.pdgid())==37 ){
         TLorentzVector tau_1r(0,0,0,0);
@@ -150,7 +155,7 @@ int TauSpinnerCMS::readParticlesfromReco(edm::Event& e,SimpleParticle &X,SimpleP
   e.getByLabel(gensrc_, genParticles);
   for(reco::GenParticleCollection::const_iterator itr = genParticles->begin(); itr!= genParticles->end(); ++itr){
     int pdgid=abs(itr->pdgId());
-    if(pdgid==24 || pdgid==37 || pdgid ==25 || pdgid==36 || pdgid==22 || pdgid==23 ){
+    if(pdgid==24 || pdgid==37 || pdgid ==25 || pdgid==36 || pdgid==22 || pdgid==23 || pdgid==overRidePDGID_){
       const reco::GenParticle *hx=&(*itr);
       if(!isFirst(hx)) continue;
       GetLastSelf(hx);

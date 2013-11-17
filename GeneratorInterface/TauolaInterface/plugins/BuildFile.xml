@@ -36,5 +36,7 @@
   <use name="tauolapp"/>
   <use name="lhapdf"/>
   <use name="root"/>
+  <use name="clhep"/>
   <flags   EDM_PLUGIN="1"/>
 </library>
+
