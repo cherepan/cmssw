@@ -112,6 +112,8 @@ void TauValidation::beginJob()
     TauSpinEffectsZ_muX   = dbe->book1D("TauSpinEffectsZmuX","mu energy in z rest frame", 50 ,0,1);     TauSpinEffectsZ_muX->setAxisTitle("X");
     TauSpinEffectsH_muX = dbe->book1D("TauSpinEffectsHmuX","mu energy in H rest frame", 50 ,0,1); TauSpinEffectsH_muX->setAxisTitle("X");
 
+    TauSpinEffectsH_phistar = dbe->book1D("TauSpinEffectsH_phistar","#phi^{*} (acoplanarity) for Higgs #rightarrow #rho-#rho", 50 ,0,2*TMath::Pi());     TauSpinEffectsH_phistar->setAxisTitle("#phi^{*}");
+
 
     TauFSRPhotonsN=dbe->book1D("TauFSRPhotonsN","FSR Photons radiating from/with tau (Gauge Boson)", 5 ,-0.5,4.5);
     TauFSRPhotonsN->setAxisTitle("N FSR Photons radiating from/with tau");
@@ -539,6 +541,8 @@ void TauValidation::spinEffectsZ(const HepMC::GenParticle* boson, double weight)
   TLorentzVector tautau(0,0,0,0);
   TLorentzVector pipi(0,0,0,0);
   TLorentzVector taum(0,0,0,0);
+  TLorentzVector rho_plus,rho_minus,pi_rhominus,pi0_rhominus,pi_rhoplus,pi0_rhoplus;
+  bool hasrho_minus(false),hasrho_plus(false);
   int nSinglePionDecays(0),nSingleMuonDecays(0),nSingleElectronDecays(0);
   double x1(0),x2(0); 
   TLorentzVector Zboson(boson->momentum().px(),boson->momentum().py(),boson->momentum().pz(),boson->momentum().e());
@@ -564,9 +568,43 @@ void TauValidation::spinEffectsZ(const HepMC::GenParticle* boson, double weight)
 	}
 	if(charge<0){x1=LVpi.P()/LVtau.E(); taum=LVtau;}
 	else{ x2=LVpi.P()/LVtau.E();}
-     }
+      }
+      if(abs(findMother(*des)) != 15 &&  abs(pid) == 15 && (tauDecayChannel(*des) == rho)){
+        if ( (*des)->end_vertex() ) {
+	  HepMC::GenVertex::particle_iterator tauprod;
+	  for(tauprod = (*des)->end_vertex()->particles_begin(HepMC::descendants); tauprod!= (*des)->end_vertex()->particles_end(HepMC::descendants);++tauprod ) {
+	    int pid_d = (*tauprod)->pdg_id();
+	    if(abs(pid_d)==213 || abs(pid_d)==211 || abs(pid_d)==111){
+	      TLorentzVector LV((*tauprod)->momentum().px(),(*tauprod)->momentum().py(),(*tauprod)->momentum().pz(),(*tauprod)->momentum().e());
+	      if(pid==15){
+		if(pid_d==-213) rho_minus=LV;
+		if(pid_d==-211) pi_rhominus=LV;
+		if(pid_d==111) pi0_rhominus=LV;
+	      }
+              if(pid==-15){
+                if(pid_d==213) rho_plus=LV;
+                if(pid_d==211) pi_rhoplus=LV;
+                if(pid_d==111) pi0_rhoplus=LV;
+              }
+	    }
+	  }
+	}
+      }
     }
   }
+  if(hasrho_minus && hasrho_plus){
+    TLorentzVector rhorho=rho_minus;rhorho+=rho_plus;
+    pi_rhoplus.Boost(-1*rhorho.BoostVector());
+    pi0_rhoplus.Boost(-1*rhorho.BoostVector());
+    pi_rhominus.Boost(-1*rhorho.BoostVector());
+    pi0_rhominus.Boost(-1*rhorho.BoostVector());
+    TVector3 n_plus=pi_rhoplus.Vect().Cross(pi0_rhoplus.Vect());
+    TVector3 n_minus=pi_rhominus.Vect().Cross(pi0_rhominus.Vect());
+    double phistar=acos(n_plus.Dot(n_minus)/(n_plus.Mag()*n_minus.Mag()));
+    if(pi_rhominus.Vect().Dot(n_plus)>0){phistar*=-1;phistar+=2*TMath::Pi();}
+    TauSpinEffectsH_phistar->Fill(phistar,weight);
+  }
+
   if(nSingleMuonDecays==2){
     if(abs(boson->pdg_id())==PdtPdgMini::Z0)     TauSpinEffectsZ_muX->Fill(x1,weight);
     if(abs(boson->pdg_id())==PdtPdgMini::Higgs0) TauSpinEffectsH_muX->Fill(x1,weight);

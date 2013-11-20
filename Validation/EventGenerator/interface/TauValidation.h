@@ -113,7 +113,7 @@ class TauValidation : public edm::EDAnalyzer
 	  *TauSpinEffectsZ_MVis, *TauSpinEffectsZ_Zs, *TauSpinEffectsZ_Xf, *TauSpinEffectsZ_Xb, 
 	  *TauSpinEffectsZ_eX, *TauSpinEffectsZ_muX, *TauSpinEffectsZ_X, *TauSpinEffectsH_X,
 	  *TauSpinEffectsH_MVis, *TauSpinEffectsH_Zs, *TauSpinEffectsH_Xf, *TauSpinEffectsH_Xb,
-	  *TauSpinEffectsH_eX, *TauSpinEffectsH_muX,
+	  *TauSpinEffectsH_eX, *TauSpinEffectsH_muX, *TauSpinEffectsH_phistar,
 	  *TauBremPhotonsN,*TauBremPhotonsPt,*TauBremPhotonsPtSum,*TauFSRPhotonsN,*TauFSRPhotonsPt,*TauFSRPhotonsPtSum;
 	unsigned int NJAKID;
 	MonitorElement *JAKID;
