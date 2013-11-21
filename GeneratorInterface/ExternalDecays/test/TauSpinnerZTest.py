@@ -1,12 +1,5 @@
 import FWCore.ParameterSet.Config as cms
 
-#
-# WARNING: This is NOT an example for users -
-#          it's my private (JY) "development" cfg, for testing
-#          newly implemented PhotosInterface - which is NOT yet
-#          released via ExternalDecayDeriver
-#
-
 process = cms.Process("TEST")
 process.load("FWCore.Framework.test.cmsExceptionsFatal_cff")
 process.load("SimGeneral.HepPDTESSource.pythiapdt_cfi")
