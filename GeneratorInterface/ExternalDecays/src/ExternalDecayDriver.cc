@@ -40,14 +40,17 @@ ExternalDecayDriver::ExternalDecayDriver( const ParameterSet& pset )
   for (unsigned int ip=0; ip<extGenNames.size(); ++ip ){
     std::string curSet = extGenNames[ip];
     if ( curSet == "EvtGen" || curSet == "EvtGenLHC91"){
+      std::cout << "Using EvtGenLHC91" << std::endl;
       fEvtGenInterface = (EvtGenInterfaceBase*)(EvtGenFactory::get()->create("EvtGenLHC91", pset.getUntrackedParameter< ParameterSet >(curSet)));
       fEvtGenInterface->SetPhotosDecayRandomEngine(decayRandomEngine);
     }
     if ( curSet == "Tauola" || curSet == "Tauola271215" ){
+      std::cout << "Using Tauola271215" << std::endl;
       fTauolaInterface = (TauolaInterfaceBase*)(TauolaFactory::get()->create("Tauola271215", pset.getUntrackedParameter< ParameterSet >(curSet)));
       fTauolaInterface->SetDecayRandomEngine(decayRandomEngine);
     }
     if(curSet =="Tauolapp111a"){
+      std::cout << "Using Tauolapp111a" << std::endl;
       fTauolaInterface = (TauolaInterfaceBase*)(TauolaFactory::get()->create("Tauolapp111a", pset.getUntrackedParameter< ParameterSet >(curSet)));
       fPhotosInterface = (PhotosInterfaceBase*)(PhotosFactory::get()->create("Photos2155", pset.getUntrackedParameter< ParameterSet >(curSet)));
       fPhotosInterface->SetDecayRandomEngine(decayRandomEngine);
@@ -57,12 +60,14 @@ ExternalDecayDriver::ExternalDecayDriver( const ParameterSet& pset )
     }
     if ( curSet == "Photos" || curSet == "Photos2155Legacy"){
       if ( !fPhotosInterface ){
+	std::cout << "Using Photos2155 Legacy" << std::endl;
 	fPhotosInterface = (PhotosInterfaceBase*)(PhotosFactory::get()->create("Photos2155Legacy", pset.getUntrackedParameter< ParameterSet >(curSet)));
 	fPhotosInterface->SetDecayRandomEngine(decayRandomEngine);
       }
     }
     if (curSet == "Photos2155"){
       if ( !fPhotosInterface ){
+	std::cout << "Using Photos2155" << std::endl;
 	fPhotosInterface = (PhotosInterfaceBase*)(PhotosFactory::get()->create("Photos2155", pset.getUntrackedParameter< ParameterSet>(curSet)));
 	fPhotosInterface->SetDecayRandomEngine(decayRandomEngine);
       }
@@ -86,6 +91,7 @@ HepMC::GenEvent* ExternalDecayDriver::decay( HepMC::GenEvent* evt ){
   }
   
   if ( fTauolaInterface ){
+    std::cout << "Running tauola" << std::endl;
     evt = fTauolaInterface->decay( evt ); 
     if ( !evt ) return 0;
   }

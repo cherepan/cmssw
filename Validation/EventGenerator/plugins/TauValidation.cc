@@ -73,6 +73,9 @@ void TauValidation::beginJob()
 	TauMothers->setBinLabel(1+A0,"A^{0}");
 	TauMothers->setBinLabel(1+Hpm,"H^{#pm}");
 
+	DecayLength = dbe->book1D("DecayLength","#tau Decay Length", 100 ,0,20);  DecayLength->setAxisTitle("L_{#tau} (mm)");
+	LifeTime =  dbe->book1D("LifeTime","#tau LifeTime ", 100 ,0,1000E-15);     LifeTime->setAxisTitle("#tau_{#tau}s)");
+
     TauRtauW          = dbe->book1D("TauRtauW","W->Tau p(leading track)/E(visible tau)", 50 ,0,1);     TauRtauW->setAxisTitle("rtau");
     TauRtauHpm        = dbe->book1D("TauRtauHpm","Hpm->Tau p(leading track)/E(visible tau)", 50 ,0,1); TauRtauHpm->setAxisTitle("rtau");
 
@@ -90,6 +93,11 @@ void TauValidation::beginJob()
 
     TauSpinEffectsW_UpsilonA1   = dbe->book1D("TauSpinEffectsWUpsilonA1","#Upsilon for a1", 50 ,-1,1);       TauSpinEffectsW_UpsilonA1->setAxisTitle("#Upsilon");
     TauSpinEffectsHpm_UpsilonA1 = dbe->book1D("TauSpinEffectsHpmUpsilonA1","#Upsilon for a1", 50 ,-1,1);     TauSpinEffectsHpm_UpsilonA1->setAxisTitle("#Upsilon");
+
+    TauSpinEffectsH_pipiAcoplanarity = dbe->book1D("TauSpinEffectsH_pipiAcoplanarity","H Acoplanarity for #pi^{-}#pi^{+}", 50 ,0,2*TMath::Pi()); TauSpinEffectsH_pipiAcoplanarity->setAxisTitle("Acoplanarity"); 
+
+    TauSpinEffectsH_pipiAcollinearity = dbe->book1D("TauSpinEffectsH_pipiAcollinearity","H Acollinearity for #pi^{-}#pi^{+}", 50 ,0,TMath::Pi()); TauSpinEffectsH_pipiAcollinearity->setAxisTitle("Acollinearity");
+    TauSpinEffectsH_pipiAcollinearityzoom = dbe->book1D("TauSpinEffectsH_pipiAcollinearityzoom","H Acollinearity for #pi^{-}#pi^{+}", 50 ,3,TMath::Pi()); TauSpinEffectsH_pipiAcollinearityzoom->setAxisTitle("Acollinearity");
 
     TauSpinEffectsZ_MVis   = dbe->book1D("TauSpinEffectsZMVis","Mass of pi+ pi-", 25 ,0,1.1);       TauSpinEffectsZ_MVis->setAxisTitle("M_{#pi^{+}#pi^{-}}");
     TauSpinEffectsH_MVis   = dbe->book1D("TauSpinEffectsHMVis","Mass of pi+ pi-", 25 ,0,1.1);       TauSpinEffectsZ_MVis->setAxisTitle("M_{#pi^{+}#pi^{-}}");
@@ -112,8 +120,8 @@ void TauValidation::beginJob()
      TauSpinEffectsZ_muX   = dbe->book1D("TauSpinEffectsZmuX","mu energy in z rest frame", 50 ,0,1);     TauSpinEffectsZ_muX->setAxisTitle("X");
      TauSpinEffectsH_muX = dbe->book1D("TauSpinEffectsHmuX","mu energy in H rest frame", 50 ,0,1); TauSpinEffectsH_muX->setAxisTitle("X");
 
-     TauSpinEffectsH_phistarminus = dbe->book1D("TauSpinEffectsH_phistarminus","#phi^{*} (acoplanarity) for Higgs #rightarrow #rho-#rho (y_{1}*y_{2}<0)", 32 ,0,2*TMath::Pi());     TauSpinEffectsH_phistarminus->setAxisTitle("#phi^{*}");
-     TauSpinEffectsH_phistarplus = dbe->book1D("TauSpinEffectsH_phistarplus","#phi^{*} (acoplanarity) for Higgs #rightarrow #rho-#rho (y_{1}*y_{2}>0)", 32 ,0,2*TMath::Pi());     TauSpinEffectsH_phistarplus->setAxisTitle("#phi^{*}");
+     TauSpinEffectsH_rhorhoAcoplanarityminus = dbe->book1D("TauSpinEffectsH_rhorhoAcoplanarityminus","#phi^{*-} (acoplanarity) for Higgs #rightarrow #rho-#rho (y_{1}*y_{2}<0)", 32 ,0,2*TMath::Pi());     TauSpinEffectsH_rhorhoAcoplanarityminus->setAxisTitle("#phi^{*-} (Acoplanarity)");
+     TauSpinEffectsH_rhorhoAcoplanarityplus = dbe->book1D("TauSpinEffectsH_rhorhoAcoplanarityplus","#phi^{*+} (acoplanarity) for Higgs #rightarrow #rho-#rho (y_{1}*y_{2}>0)", 32 ,0,2*TMath::Pi());     TauSpinEffectsH_rhorhoAcoplanarityplus->setAxisTitle("#phi^{*+} (Acoplanarity)");
 
      TauFSRPhotonsN=dbe->book1D("TauFSRPhotonsN","FSR Photons radiating from/with tau (Gauge Boson)", 5 ,-0.5,4.5);
      TauFSRPhotonsN->setAxisTitle("N FSR Photons radiating from/with tau");
@@ -215,7 +223,18 @@ void TauValidation::beginJob()
 	     TLorentzVector LVS13(0,0,0,0);
 	     TLorentzVector LVS23(0,0,0,0);
 	     bool haspart1=false;
+	     TVector3 PV,SV;
+	     bool hasDL(false);
 	     for(unsigned int i=0;i<part.size();i++){
+	       if(abs(part.at(i)->pdg_id())!=PdtPdgMini::nu_tau && TD.isTauFinalStateParticle(part.at(i)->pdg_id()) && !hasDL){
+		 PV=TVector3((*iter)->production_vertex()->point3d().x(),(*iter)->production_vertex()->point3d().y(),(*iter)->production_vertex()->point3d().z());
+		 SV=TVector3(part.at(i)->production_vertex()->point3d().x(),part.at(i)->production_vertex()->point3d().y(),part.at(i)->production_vertex()->point3d().z());
+		 TVector3 DL=SV-PV;
+		 DecayLength->Fill(DL.Mag(),weight);
+		 double c(2.99792458E8),Ltau(DL.Mag()/1000),beta((*iter)->momentum().rho()/(*iter)->momentum().m());
+		 LifeTime->Fill( Ltau/(c*beta),weight);
+	       }
+
 	       if(TD.isTauFinalStateParticle(part.at(i)->pdg_id()) &&
 		  abs(part.at(i)->pdg_id())!=PdtPdgMini::nu_e &&
 		  abs(part.at(i)->pdg_id())!=PdtPdgMini::nu_mu &&
@@ -624,7 +643,7 @@ void TauValidation::beginJob()
      rho_plus=pi_rhoplus;
      rho_plus+=pi0_rhoplus;
      TLorentzVector rhorho=rho_minus;rhorho+=rho_plus;
-     std::cout << "TauValidation " << pi_rhominus.E() << " " << pi0_rhominus.E() << " " << pi_rhoplus.E() << " " << pi0_rhoplus.E() << " " << std::endl;
+
      // boost to rhorho cm
      TLorentzVector pi_rhoplusb=pi_rhoplus;     pi_rhoplusb.Boost(-1*rhorho.BoostVector());
      TLorentzVector pi0_rhoplusb=pi0_rhoplus;   pi0_rhoplusb.Boost(-1*rhorho.BoostVector());
@@ -636,9 +655,8 @@ void TauValidation::beginJob()
      TVector3 n_minus=pi_rhominusb.Vect().Cross(pi0_rhominusb.Vect());
 
      // compute the acoplanarity
-     double phistar=acos(n_plus.Dot(n_minus)/(n_plus.Mag()*n_minus.Mag()));
-     if(pi_rhominus.Vect().Dot(n_plus)>0){phistar*=-1;phistar+=2*TMath::Pi();}
-     std::cout << "TauValidation " <<  pi_rhominus.Vect().Dot(n_plus) << " " << pi_rhoplus.Vect().Dot(n_minus) << std::endl; 
+     double Acoplanarity=acos(n_plus.Dot(n_minus)/(n_plus.Mag()*n_minus.Mag()));
+     if(pi_rhominus.Vect().Dot(n_plus)>0){Acoplanarity*=-1;Acoplanarity+=2*TMath::Pi();}
 
      // now boost to tau frame
      pi_rhoplus.Boost(-1*taup.BoostVector());
@@ -651,20 +669,43 @@ void TauValidation::beginJob()
      double y2=(pi_rhominus.E()-pi0_rhominus.E())/(pi_rhominus.E()+pi0_rhominus.E());
 
      // fill histograms
-     if(abs(boson->pdg_id())==PdtPdgMini::Higgs0 && y1*y2<0) TauSpinEffectsH_phistarminus->Fill(phistar,weight);
-     if(abs(boson->pdg_id())==PdtPdgMini::Higgs0 && y1*y2>0) TauSpinEffectsH_phistarplus->Fill(phistar,weight);
+     if(abs(boson->pdg_id())==PdtPdgMini::Higgs0 && y1*y2<0) TauSpinEffectsH_rhorhoAcoplanarityminus->Fill(Acoplanarity,weight);
+     if(abs(boson->pdg_id())==PdtPdgMini::Higgs0 && y1*y2>0) TauSpinEffectsH_rhorhoAcoplanarityplus->Fill(Acoplanarity,weight);
    }
-   /*   if(haspi_minus && haspi_plus){
-     // now boost to tau frame
-     pi_rhoplus.Boost(-1*taup.BoostVector());
-     pi_rhominus.Boost(-1*taum.BoostVector());
-     
-     // fill histograms
-     if(abs(boson->pdg_id())==PdtPdgMini::Higgs0) TauSpinEffectsH_phistarminus->Fill(phistar,weight);
-     if(abs(boson->pdg_id())==PdtPdgMini::Higgs0) TauSpinEffectsH_phistarplus->Fill(phistar,weight);
-     }*/
-   
+   if(haspi_minus && haspi_plus){
+     TLorentzVector tauporig=taup;
+     TLorentzVector taumorig=taum;
 
+     // now boost to Higgs frame
+     pi_plus.Boost(-1*Zboson.BoostVector());
+     pi_minus.Boost(-1*Zboson.BoostVector());
+     
+     taup.Boost(-1*Zboson.BoostVector());
+     taum.Boost(-1*Zboson.BoostVector());
+
+     if(abs(boson->pdg_id())==PdtPdgMini::Higgs0){
+       TauSpinEffectsH_pipiAcollinearity->Fill(acos(pi_plus.Vect().Dot(pi_minus.Vect())/(pi_plus.P()*pi_minus.P())));
+       TauSpinEffectsH_pipiAcollinearityzoom->Fill(acos(pi_plus.Vect().Dot(pi_minus.Vect())/(pi_plus.P()*pi_minus.P())));
+     }
+
+     double proj_m=taum.Vect().Dot(pi_minus.Vect())/(taum.P()*taup.P());
+     double proj_p=taup.Vect().Dot(pi_plus.Vect())/(taup.P()*taup.P());
+     TVector3 Tau_m=taum.Vect();
+     TVector3 Tau_p=taup.Vect();
+     Tau_m*=proj_m;
+     Tau_p*=proj_p;
+     TVector3 Pit_m=pi_minus.Vect()-Tau_m;
+     TVector3 Pit_p=pi_plus.Vect()-Tau_p;
+
+     double Acoplanarity=acos(Pit_m.Dot(Pit_p)/(Pit_p.Mag()*Pit_m.Mag()));
+     TVector3 n=Pit_p.Cross(Pit_m);
+     if(n.Dot(Tau_m)/Tau_m.Mag()>0){Acoplanarity*=-1; Acoplanarity+=2*TMath::Pi();}
+     // fill histograms
+     if(abs(boson->pdg_id())==PdtPdgMini::Higgs0) TauSpinEffectsH_pipiAcoplanarity->Fill(Acoplanarity,weight);
+     taup=tauporig;
+     taum=taumorig;
+
+   }
 
 
   if(nSingleMuonDecays==2){
