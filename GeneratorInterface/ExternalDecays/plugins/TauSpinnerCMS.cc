@@ -15,11 +15,11 @@
 using namespace edm;
 using namespace TauSpinner;
 
-CLHEP::HepRandomEngine* decayRandomEngine;
+CLHEP::HepRandomEngine* decayRandomEngineTauSpinnerCMS;
 extern "C" {
   void ranmar_( float *rvec, int *lenv ){
     for(int i = 0; i < *lenv; i++)
-      *rvec++ = decayRandomEngine->flat();
+      *rvec++ = decayRandomEngineTauSpinnerCMS->flat();
     return;
   }
   
@@ -59,7 +59,7 @@ TauSpinnerCMS::TauSpinnerCMS( const ParameterSet& pset ) :
           "which appears to be absent.  Please add that service to your configuration\n"
       "or remove the modules that require it." << std::endl;
   }
-  decayRandomEngine = &rng->getEngine();
+  decayRandomEngineTauSpinnerCMS = &rng->getEngine();
   
 }
 
