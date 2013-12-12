@@ -4,7 +4,6 @@
 
 #include "FWCore/Utilities/interface/Exception.h"
 
-#include "GeneratorInterface/ExternalDecays/interface/DecayRandomEngine.h"
 #include "FWCore/Utilities/interface/RandomNumberGenerator.h"
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
@@ -19,6 +18,9 @@
 
 #include "TauAnalysis/MCEmbeddingTools/interface/embeddingAuxFunctions.h"
 
+#include "GeneratorInterface/PhotosInterface/interface/PhotosInterfaceBase.h"
+#include "GeneratorInterface/PhotosInterface/interface/PhotosFactory.h"
+
 #include "HepMC/IO_HEPEVT.h"
 #include <HepMC/HEPEVT_Wrapper.h>
 #include "HepPID/ParticleIDTranslations.hh"
@@ -27,6 +29,7 @@
 
 const double protonMass = 0.938272;
 
+CLHEP::HepRandomEngine* GenMuonRadiationAlgorithm::decayRandomEngine;
 bool GenMuonRadiationAlgorithm::photos_isInitialized_ = false;
 bool GenMuonRadiationAlgorithm::pythia_isInitialized_ = false;
 
@@ -183,8 +186,10 @@ GenMuonRadiationAlgorithm::GenMuonRadiationAlgorithm(const edm::ParameterSet& cf
     << " Invalid Configuration Parameter 'mode' = " << mode_string << " !!\n";
 
   if ( mode_ == kPYTHIA ) pythia_ = new myPythia6ServiceWithCallback(cfg);
-  if ( mode_ == kPHOTOS ) photos_ = new gen::PhotosInterface(cfg.getParameter<edm::ParameterSet>("PhotosOptions"));
-
+  if ( mode_ == kPHOTOS ){ 
+    photos_ = (gen::PhotosInterfaceBase*)(PhotosFactory::get()->create("Photos2155", cfg.getParameter<edm::ParameterSet>("PhotosOptions")));
+    photos_->SetDecayRandomEngine(decayRandomEngine);
+  }
   verbosity_ = ( cfg.exists("verbosity") ) ? 
     cfg.getParameter<int>("verbosity") : 0;
 }

@@ -3,7 +3,6 @@
 #include "FWCore/Utilities/interface/Exception.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
-#include "GeneratorInterface/ExternalDecays/interface/DecayRandomEngine.h"
 #include "FWCore/Utilities/interface/RandomNumberGenerator.h"
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
@@ -20,6 +19,10 @@
 
 #include "TauAnalysis/MCEmbeddingTools/interface/embeddingAuxFunctions.h"
 #include "TauAnalysis/MCEmbeddingTools/plugins/MCParticleReplacer.h"
+
+#include "GeneratorInterface/TauolaInterface/interface/TauolaFactory.h"
+#include "GeneratorInterface/TauolaInterface/interface/TauolaInterfaceBase.h"
+
 
 #include <Math/VectorUtil.h>
 #include <TMath.h>
@@ -40,19 +43,19 @@ const double nomMassZ          = 91.1876;
 const double breitWignerWidthZ = 2.4952;
 
 bool ParticleReplacerZtautau::tauola_isInitialized_ = false;
-
+CLHEP::HepRandomEngine* ParticleReplacerZtautau::decayRandomEngine;
 typedef std::vector<reco::Particle> ParticleCollection;
 
 ParticleReplacerZtautau::ParticleReplacerZtautau(const edm::ParameterSet& cfg)
   : ParticleReplacerBase(cfg),
     generatorMode_(cfg.getParameter<std::string>("generatorMode")),
     beamEnergy_(cfg.getParameter<double>("beamEnergy")),
-    tauola_(gen::TauolaInterface::getInstance()),
     applyMuonRadiationCorrection_(false),
     muonRadiationAlgo_(0),
     pythia_(cfg)
 {
-  tauola_->setPSet(cfg.getParameter<edm::ParameterSet>("TauolaOptions"));
+  tauola_ = (gen::TauolaInterfaceBase*)(TauolaFactory::get()->create("Tauolapp111a", cfg.getParameter<edm::ParameterSet>("TauolaOptions")));
+  
   maxNumberOfAttempts_ = ( cfg.exists("maxNumberOfAttempts") ) ?
     cfg.getParameter<int>("maxNumberOfAttempts") : 10000;
 

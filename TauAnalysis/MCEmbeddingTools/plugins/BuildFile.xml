@@ -1,4 +1,6 @@
 <library   name="TauAnalysisMCEmbeddingToolsPlugins" file="*.cc">
+  <use   name="GeneratorInterface/TauolaInterface"/>
+  <use   name="GeneratorInterface/PhotosInterface"/>
   <use   name="FWCore/Framework"/>
   <use   name="FWCore/PluginManager"/>
   <use   name="FWCore/ParameterSet"/>

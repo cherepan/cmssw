@@ -27,7 +27,8 @@
 #include "DataFormats/Candidate/interface/Particle.h"
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "GeneratorInterface/Pythia6Interface/interface/Pythia6Service.h"
-#include "GeneratorInterface/ExternalDecays/interface/TauolaInterface.h"
+#include "GeneratorInterface/TauolaInterface/interface/TauolaInterfaceBase.h"
+#include "CLHEP/Random/RandomEngine.h"
 
 #include "TauAnalysis/MCEmbeddingTools/interface/GenMuonRadiationAlgorithm.h"
 
@@ -72,13 +73,14 @@ class ParticleReplacerZtautau : public ParticleReplacerBase
 
   int motherParticleID_;
   bool useExternalGenerators_;
+  static CLHEP::HepRandomEngine* decayRandomEngine;
   bool useTauola_;
   bool useTauolaPolarization_;
   double rfRotationAngle_; // angle of rotation around Z-direction of embedded leptons wrt. reconstructed muons
                            // (used to "place" simulated leptons in a detector region different from reconstructed muons,
                            //  while preserving Z/W-boson momentum and spin effects)
 
-  gen::TauolaInterface* tauola_;
+  gen::TauolaInterfaceBase* tauola_;
   // keep track if TAUOLA interface has already been initialized.
   // Needed to avoid multiple initializations of TAUOLA interface,
   // which makes TAUOLA crash.

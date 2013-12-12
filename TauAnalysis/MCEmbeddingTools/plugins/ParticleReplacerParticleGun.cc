@@ -5,6 +5,8 @@
 #include "TauAnalysis/MCEmbeddingTools/interface/extraPythia.h"
 
 #include "DataFormats/Candidate/interface/Candidate.h"
+#include "GeneratorInterface/TauolaInterface/interface/TauolaFactory.h"
+#include "GeneratorInterface/TauolaInterface/interface/TauolaInterfaceBase.h"
 
 #include "HepMC/PythiaWrapper.h"
 #include "HepMC/IO_HEPEVT.h"
@@ -13,7 +15,6 @@ const double tauMass = 1.77690;
 
 ParticleReplacerParticleGun::ParticleReplacerParticleGun(const edm::ParameterSet& iConfig)
   : ParticleReplacerBase(iConfig),
-    tauola_(gen::TauolaInterface::getInstance()),
     pythia_(iConfig),
     particleOrigin_(iConfig.getParameter<std::string>("particleOrigin")),
     forceTauPolarization_(iConfig.getParameter<std::string>("forceTauPolarization")),
@@ -23,7 +24,8 @@ ParticleReplacerParticleGun::ParticleReplacerParticleGun(const edm::ParameterSet
     forceTauPlusHelicity_(iConfig.getParameter<int>("forceTauPlusHelicity")),
     forceTauMinusHelicity_(iConfig.getParameter<int>("forceTauMinusHelicity"))
 {
-  tauola_->setPSet(iConfig.getParameter<edm::ParameterSet>("ExternalDecays").getParameter<edm::ParameterSet>("Tauola"));
+  tauola_ = (gen::TauolaInterfaceBase*)(TauolaFactory::get()->create("Tauolapp111a", iConfig.getParameter<edm::ParameterSet>("ExternalDecays").getParameter<edm::ParameterSet>("Tauola")));
+  
   srand(time(NULL)); // Should we use RandomNumberGenerator service?
 
   if(forceTauPlusHelicity_ != 0) 

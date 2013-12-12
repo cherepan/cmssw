@@ -25,7 +25,7 @@
 
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "GeneratorInterface/Pythia6Interface/interface/Pythia6Service.h"
-#include "GeneratorInterface/ExternalDecays/interface/PhotosInterface.h"
+#include "GeneratorInterface/PhotosInterface/interface/PhotosInterfaceBase.h"
 
 #include<string>
 
@@ -45,8 +45,9 @@ class GenMuonRadiationAlgorithm
   enum { kPYTHIA, kPHOTOS };
   int mode_;
 
-  gen::PhotosInterface* photos_;
+  gen::PhotosInterfaceBase* photos_;
   static bool photos_isInitialized_;
+  static CLHEP::HepRandomEngine* decayRandomEngine;
 
   myPythia6ServiceWithCallback* pythia_;
   static bool pythia_isInitialized_;
