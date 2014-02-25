@@ -74,8 +74,8 @@ void TauValidation::bookHistograms(DQMStore::IBooker &i, edm::Run const &, edm::
 	TauMothers->setBinLabel(1+A0,"A^{0}");
 	TauMothers->setBinLabel(1+Hpm,"H^{#pm}");
 
-	DecayLength = i.book1D("DecayLength","#tau Decay Length", 100 ,0,20);  DecayLength->setAxisTitle("L_{#tau} (mm)");
-	LifeTime =  i.book1D("LifeTime","#tau LifeTime ", 100 ,0,1000E-15);     LifeTime->setAxisTitle("#tau_{#tau}s)");
+	DecayLength = i.book1D("DecayLength","#tau Decay Length", 200 ,0,50);  DecayLength->setAxisTitle("L_{#tau} (mm)");
+	LifeTime =  i.book1D("LifeTime","#tau LifeTime ", 200 ,0,2000E-15);     LifeTime->setAxisTitle("#tau_{#tau}(s)");
 
     TauRtauW          = i.book1D("TauRtauW","W->Tau p(leading track)/E(visible tau)", 50 ,0,1);     TauRtauW->setAxisTitle("rtau");
     TauRtauHpm        = i.book1D("TauRtauHpm","Hpm->Tau p(leading track)/E(visible tau)", 50 ,0,1); TauRtauHpm->setAxisTitle("rtau");
