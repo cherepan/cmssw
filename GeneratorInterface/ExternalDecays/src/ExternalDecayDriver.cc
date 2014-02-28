@@ -141,7 +141,8 @@ void ExternalDecayDriver::init( const edm::EventSetup& es )
 void ExternalDecayDriver::statistics() const
 {
    if ( fTauolaInterface ) fTauolaInterface->statistics();
-   // similar for EvtGen and/or Photos, if needs be
+   if ( fPhotosInterface ) fPhotosInterface->statistics();
+   // similar for EvtGen if needed
    return;
 }
 
