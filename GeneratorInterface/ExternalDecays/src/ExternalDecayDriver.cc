@@ -47,9 +47,18 @@ ExternalDecayDriver::ExternalDecayDriver( const ParameterSet& pset )
       exSharedResources.emplace_back(edm::SharedResourceNames::kPhotos);
     }
     else if ( curSet == "Photos" || curSet == "Photos2155" ){
+      std::cout <<  "Photospp2155" << std::endl;
       if ( !fPhotosInterface ){
 	fPhotosInterface = (PhotosInterfaceBase*)(PhotosFactory::get()->create("Photos2155", pset.getUntrackedParameter< ParameterSet>(curSet)));
 	exSharedResources.emplace_back(edm::SharedResourceNames::kPhotos);
+      }
+    }
+    else if (curSet == "Photospp354" ){
+      std::cout <<  "Photospp354" << std::endl;
+      if ( !fPhotosInterface ){
+	std::cout <<  "Photospp354 adding" << std::endl;
+        fPhotosInterface = (PhotosInterfaceBase*)(PhotosFactory::get()->create("Photospp354", pset.getUntrackedParameter< ParameterSet>(curSet)));
+        exSharedResources.emplace_back(edm::SharedResourceNames::kPhotos);
       }
     }
   }
@@ -141,7 +150,8 @@ void ExternalDecayDriver::init( const edm::EventSetup& es )
 void ExternalDecayDriver::statistics() const
 {
    if ( fTauolaInterface ) fTauolaInterface->statistics();
-   // similar for EvtGen and/or Photos, if needs be
+   if ( fPhotosInterface ) fPhotosInterface->statistics();
+   // similar for EvtGen if needed
    return;
 }
 
