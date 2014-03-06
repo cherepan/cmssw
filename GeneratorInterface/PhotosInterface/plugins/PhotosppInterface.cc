@@ -169,9 +169,31 @@ void PhotosppInterface::init(){
 
 HepMC::GenEvent* PhotosppInterface::apply( HepMC::GenEvent* evt){
   Photospp::Photos::setRandomGenerator(PhotosppInterface::flat);
-  if ( !fIsInitialized ) return evt; // conv.read_next_event();
+  if(!fIsInitialized) return evt;
+  int NPartBefore = evt->particles_size();
+  evt->print();
   Photospp::PhotosHepMCEvent PhotosEvt(evt);
   PhotosEvt.process();
+  //Fix the vertices and barcodes based on Julia Yarba's solution from TauolaInterface
+  for (HepMC::GenEvent::vertex_const_iterator vtx=evt->vertices_begin(); vtx!=evt->vertices_end(); vtx++ ){
+    std::vector<int> BCodes;
+    BCodes.clear();
+    if(*vtx){
+      for(HepMC::GenVertex::particle_iterator pitr=(*vtx)->particles_begin(HepMC::children);pitr!=(*vtx)->particles_end(HepMC::children);++pitr){
+	if((*pitr)->barcode()>10000){
+	  BCodes.push_back((*pitr)->barcode());
+	}
+      }
+    }
+    if(BCodes.size() > 0){
+      for(size_t ibc=0; ibc<BCodes.size(); ibc++){
+	HepMC::GenParticle* p1 = evt->barcode_to_particle(BCodes[ibc]);
+	int nbc = p1->barcode() - 10000 + NPartBefore;
+	p1->suggest_barcode(nbc);
+      }
+    }
+  }
+  evt->print();
   return evt;
 }
 
