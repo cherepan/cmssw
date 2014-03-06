@@ -161,7 +161,6 @@ void PhotosppInterface::init(){
     Photospp::Photos::suppressBremForDecay(3, 15, 16, 13, -14);
     Photospp::Photos::suppressBremForDecay(3, -15, -16, -13, -14);
   }
-  std::cout << "PhotosppInterface::init done" << std::endl;
   Photospp::Photos::iniInfo();
   fIsInitialized = true; 
   return;
@@ -171,7 +170,6 @@ HepMC::GenEvent* PhotosppInterface::apply( HepMC::GenEvent* evt){
   Photospp::Photos::setRandomGenerator(PhotosppInterface::flat);
   if(!fIsInitialized) return evt;
   int NPartBefore = evt->particles_size();
-  evt->print();
   Photospp::PhotosHepMCEvent PhotosEvt(evt);
   PhotosEvt.process();
   //Fix the vertices and barcodes based on Julia Yarba's solution from TauolaInterface
@@ -193,7 +191,6 @@ HepMC::GenEvent* PhotosppInterface::apply( HepMC::GenEvent* evt){
       }
     }
   }
-  evt->print();
   return evt;
 }
 
