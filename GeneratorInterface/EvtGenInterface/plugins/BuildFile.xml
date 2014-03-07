@@ -1,4 +1,4 @@
-<library file="EvtGenLHC/*.cc,EvtGenLHC/*.cpp,EvtGenLHC/*.f" name="EvtGenLHCInterface">
+<library file="EvtGenLHC/*.cc,EvtGenLHC/*.cpp,EvtGenLHC/*.f,myEvtRandomEngine.cc" name="EvtGenLHCInterface">
   <use name="FWCore/Framework"/>
   <use name="FWCore/MessageLogger"/>
   <use name="FWCore/ParameterSet"/>
@@ -14,7 +14,7 @@
   <flags   EDM_PLUGIN="1"/>
 </library>
 
-<library file="EvtGen/*.cc" name="EvtGenInterface">
+<library file="EvtGen/*.cc,myEvtRandomEngine.cc" name="EvtGenInterface">
   <use name="FWCore/Framework"/>
   <use name="FWCore/MessageLogger"/>
   <use name="FWCore/ParameterSet"/>
