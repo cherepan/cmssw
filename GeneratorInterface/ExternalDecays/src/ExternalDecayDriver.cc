@@ -73,20 +73,17 @@ HepMC::GenEvent* ExternalDecayDriver::decay( HepMC::GenEvent* evt )
    
    if ( !fIsInitialized ) return evt;
    
-   if ( fEvtGenInterface )
-   {  
-      evt = fEvtGenInterface->decay( evt ); 
-      if ( !evt ) return 0;
+   if ( fEvtGenInterface ){  
+     evt = fEvtGenInterface->decay( evt ); 
+     if ( !evt ) return 0;
    }
 
-   if ( fTauolaInterface ) 
-   {
+   if ( fTauolaInterface ){
       evt = fTauolaInterface->decay( evt ); 
       if ( !evt ) return 0;
    }
    
-   if ( fPhotosInterface )
-   {
+   if ( fPhotosInterface ){
       evt = fPhotosInterface->apply( evt );
       if ( !evt ) return 0;
    }
@@ -99,45 +96,30 @@ void ExternalDecayDriver::init( const edm::EventSetup& es )
 
    if ( fIsInitialized ) return;
    
-   if ( fTauolaInterface ) 
-   {
+   if ( fTauolaInterface ){
       fTauolaInterface->init( es );
       for ( std::vector<int>::const_iterator i=fTauolaInterface->operatesOnParticles().begin();
             i!=fTauolaInterface->operatesOnParticles().end(); i++ ) 
                fPDGs.push_back( *i );
    }
    
-   if ( fEvtGenInterface ) 
-   {
-      fEvtGenInterface->init();
-      for ( std::vector<int>::const_iterator i=fEvtGenInterface->operatesOnParticles().begin();
-            i!=fEvtGenInterface->operatesOnParticles().end(); i++ )
-               fPDGs.push_back( *i );
+   if ( fEvtGenInterface ){
+     fEvtGenInterface->init();
+     for ( std::vector<int>::const_iterator i=fEvtGenInterface->operatesOnParticles().begin();
+	   i!=fEvtGenInterface->operatesOnParticles().end(); i++ )
+       fPDGs.push_back( *i );
    }
    
-
-   if ( fPhotosInterface )
-   {
-      fPhotosInterface->init();
-//   for tauola++ 
-      if ( fPhotosInterface )
-      {
-         for ( unsigned int iss=0; iss<fPhotosInterface->specialSettings().size(); iss++ )
-         {
-            fSpecialSettings.push_back( fPhotosInterface->specialSettings()[iss] );
-         }
-      }
-   }
    
-// this is specific to old tauola27 only, because it calls up photos automatically
-//
-//
-//   if ( fTauolaInterface )
-//   {
-//      // override !
-//      fSpecialSettings.clear();
-//      fSpecialSettings.push_back( "QED-brem-off:15" );
-//   }
+   if ( fPhotosInterface ){
+     fPhotosInterface->init();
+     //   for tauola++ 
+     if ( fPhotosInterface ){
+       for ( unsigned int iss=0; iss<fPhotosInterface->specialSettings().size(); iss++ ){
+	 fSpecialSettings.push_back( fPhotosInterface->specialSettings()[iss] );
+       }
+     }
+   }
    
    fIsInitialized = true;
    

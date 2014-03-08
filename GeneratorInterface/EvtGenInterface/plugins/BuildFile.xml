@@ -28,6 +28,7 @@
   <use name="pythia8"/>
   <use name="tauolapp"/>
   <use name="photospp"/>
+  <use name="root"/>
   <flags   EDM_PLUGIN="1"/>
 </library>
 
