@@ -273,7 +273,6 @@ EvtGenInterface::~EvtGenInterface(){
 void EvtGenInterface::init(){
   edm::FileInPath decay_table = fPSet->getParameter<edm::FileInPath>("decay_table");
   edm::FileInPath pdt = fPSet->getParameter<edm::FileInPath>("particle_property_file");
-  edm::FileInPath user_decay = fPSet->getParameter<edm::FileInPath>("user_decay_file");
 
   bool usePythia = fPSet->getUntrackedParameter<bool>("use_internal_pythia",true);
   bool useTauola = fPSet->getUntrackedParameter<bool>("use_internal_tauola",true);
@@ -304,19 +303,28 @@ void EvtGenInterface::init(){
   
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Create the EvtGen generator object, passing the external generators
-  m_EvtGen = new EvtGen(user_decay.fullPath().c_str(),pdt.fullPath().c_str(),the_engine,radCorrEngine,&myExtraModels);
+  m_EvtGen = new EvtGen(decay_table.fullPath().c_str(),pdt.fullPath().c_str(),the_engine,radCorrEngine,&myExtraModels);
   
   // Add additional user information
-  if (!fPSet->getUntrackedParameter<bool>("use_default_decay",true)) m_EvtGen->readUDecay(user_decay.fullPath().c_str());
+  if (fPSet->exists("user_decay_file")){
+    edm::FileInPath user_decay = fPSet->getParameter<edm::FileInPath>("user_decay_file");
+    if (!fPSet->getUntrackedParameter<bool>("use_default_decay",true)) m_EvtGen->readUDecay(user_decay.fullPath().c_str());
+  }
 
   // setup pdgid which the generator/hadronizer should not decay
   if (fPSet->exists("operates_on_particles")){
-    std::vector<int> tmpPIDs = fPSet->getUntrackedParameter< std::vector<int> >("operates_on_particles",std::vector<int>());
+    std::vector<int> tmpPIDs = fPSet->getParameter< std::vector<int> >("operates_on_particles");
     m_PDGs.clear();
-    if(tmpPIDs.size()>0) m_PDGs = tmpPIDs;
+    bool goodinput=false;
+    if(tmpPIDs.size()>0){ if(tmpPIDs.size()==1 && tmpPIDs[0]==0) goodinput=false;}
+    else{goodinput=false;}
+    if(goodinput) m_PDGs = tmpPIDs;
     else SetDefault_m_PDGs();
   }
   else SetDefault_m_PDGs();
+  for(unsigned int i=0;i<m_PDGs.size();i++){
+    std::cout << "EvtGenInterface::init() Particles to Operate on: " << m_PDGs[i] << std::endl;
+  }
 
   // Obtain information to set polarization of particles 
   polarize_ids = fPSet->getUntrackedParameter<std::vector<int> >("particles_to_polarize",std::vector<int>());
@@ -333,18 +341,21 @@ void EvtGenInterface::init(){
   }
 
   // Forced decays are particles that are aliased and forced to be decayed by EvtGen
-  std::vector<std::string> forced_names = fPSet->getUntrackedParameter< std::vector<std::string> >("list_forced_decays",std::vector<std::string>());
-
-  for(unsigned int i=0;i<forced_names.size();i++){
-    EvtId found = EvtPDL::getId(forced_names[i]);
-    if(found.getId() == -1) throw cms::Exception("Configuration") << "name in part list for ignored decays not found: " << forced_names[i];
-    if(found.getId() == found.getAlias()) throw cms::Exception("Configuration") << "name of ignored decays is not an alias: " << forced_names[i];
-    forced_id.push_back(found);
-    forced_pdgids.push_back(EvtPDL::getStdHep(found));   // force_pdgids is the list of stdhep codes
+  if (fPSet->exists("list_forced_decays")){
+    std::vector<std::string> forced_names = fPSet->getParameter< std::vector<std::string> >("list_forced_decays");
+    for(unsigned int i=0;i<forced_names.size();i++){
+      EvtId found = EvtPDL::getId(forced_names[i]);
+      if(found.getId() == -1) throw cms::Exception("Configuration") << "name in part list for ignored decays not found: " << forced_names[i];
+      if(found.getId() == found.getAlias()) throw cms::Exception("Configuration") << "name of ignored decays is not an alias: " << forced_names[i];
+      forced_id.push_back(found);
+      forced_pdgids.push_back(EvtPDL::getStdHep(found));   // force_pdgids is the list of stdhep codes
+    }
   }
-  
+
   // Ignore decays are particles that are not to be decayed by EvtGen
-  ignore_pdgids = fPSet->getUntrackedParameter< std::vector<int> >("list_ignored_pdgids");
+  if (fPSet->exists("list_ignored_pdgids")){
+    ignore_pdgids = fPSet->getUntrackedParameter< std::vector<int> >("list_ignored_pdgids");
+  }
 
   return;
 }
