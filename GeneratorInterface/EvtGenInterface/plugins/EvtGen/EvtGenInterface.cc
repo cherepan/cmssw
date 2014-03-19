@@ -392,7 +392,9 @@ HepMC::GenEvent* EvtGenInterface::decay( HepMC::GenEvent* evt ){
 // Add particle to MC
 void EvtGenInterface::addToHepMC(HepMC::GenParticle* partHep,const EvtId &idEvt, HepMC::GenEvent* theEvent){
   // Set up the parent particle from the HepMC GenEvent tree. 
-  EvtVector4R pInit(EvtPDL::getMass(idEvt),partHep->momentum().px(),partHep->momentum().py(),partHep->momentum().pz()); 
+  //EvtVector4R pInit(EvtPDL::getMass(idEvt),partHep->momentum().px(),partHep->momentum().py(),partHep->momentum().pz());
+  double energy=sqrt(pow(partHep->momentum().rho(),2.0)+pow(EvtPDL::getMass(idEvt),2.0));
+  EvtVector4R pInit(energy,partHep->momentum().px(),partHep->momentum().py(),partHep->momentum().pz()); 
   EvtParticle* parent = EvtParticleFactory::particleFactory(idEvt, pInit);
 
   // Reset polarization if requested....
