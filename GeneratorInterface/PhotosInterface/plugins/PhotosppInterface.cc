@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include "GeneratorInterface/PhotosInterface/interface/PhotosppInterface.h"
 #include "FWCore/PluginManager/interface/ModuleDef.h"
@@ -172,6 +173,11 @@ HepMC::GenEvent* PhotosppInterface::apply( HepMC::GenEvent* evt){
   int NPartBefore = evt->particles_size();
   Photospp::PhotosHepMCEvent PhotosEvt(evt);
   PhotosEvt.process();
+  if(Photospp::Photos::ignoreStatusCodeList){
+    for(unsigned int i=0; i<Photospp::Photos::ignoreStatusCodeList->size();i++){
+      std::cout << "i = " << i << " statusCode =  " <<  Photospp::Photos::ignoreStatusCodeList->size() << std::endl;
+    }
+  }
   //Fix the vertices and barcodes based on Julia Yarba's solution from TauolaInterface
   for (HepMC::GenEvent::vertex_const_iterator vtx=evt->vertices_begin(); vtx!=evt->vertices_end(); vtx++ ){
     std::vector<int> BCodes;
