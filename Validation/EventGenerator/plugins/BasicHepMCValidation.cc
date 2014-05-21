@@ -192,10 +192,15 @@ void BasicHepMCValidation::bookHistograms(DQMStore::IBooker &i, edm::Run const &
     status1ShortLived->setBinLabel(10,"W-/W+");
     status1ShortLived->setBinLabel(11,"PDG = 7,8,17,25-99");
 
-    DeltaEcms = i.book1D("DeltaEcms1","deviation from nominal Ecms", 200,-1., 1.);
-    DeltaPx = i.book1D("DeltaPx1","deviation from nominal Px", 200,-1., 1.);
-    DeltaPy = i.book1D("DeltaPy1","deviation from nominal Py", 200,-1., 1.);
-    DeltaPz = i.book1D("DeltaPz1","deviation from nominal Pz", 200,-1., 1.);
+    DeltaEcms = i.book1D("DeltaEcms1","log10 of absolute deviation from nominal Ecms (1Mev-10TeV)", 200,-3., 5.);
+    DeltaEcms->setAxisTitle("Log10(#DeltaE_{cms}) (Log10(GeV)");
+    DeltaPx = i.book1D("DeltaPx1","log10 of absolute deviation from nominal Px (1Mev-10TeV)", 200,-3., 5.);
+    DeltaPx->setAxisTitle("Log10(#DeltaP_{x}) (Log10(GeV))");
+    DeltaPy = i.book1D("DeltaPy1","log10 of absolute deviation from nominal Py (1Mev-10TeV)", 200,-3., 5.);
+    DeltaPy->setAxisTitle("Log10(#DeltaP_{y}) (Log10(GeV))");
+    DeltaPz = i.book1D("DeltaPz1","log10 of absolute deviation from nominal Pz (1Mev-10TeV)", 200,-3., 5.);
+    DeltaPz->setAxisTitle("Log10(#DeltaP_{z}) (Log10(GeV))");
+
 
   return;
 }
@@ -549,12 +554,15 @@ void BasicHepMCValidation::analyze(const edm::Event& iEvent,const edm::EventSetu
   if ( myGenEvent->valid_beam_particles() ) {
     ecms = myGenEvent->beam_particles().first->momentum().e()+myGenEvent->beam_particles().second->momentum().e();
   }
-  DeltaEcms->Fill(etotal-ecms,weight);
-  DeltaPx->Fill(pxtotal,weight);
-  DeltaPy->Fill(pytotal,weight);
-  DeltaPz->Fill(pztotal,weight);
 
+  DeltaEcms->Fill(log10(fabs(etotal-ecms)),weight);
+  DeltaPx->Fill(log10(fabs(pxtotal)),weight);
+  DeltaPy->Fill(log10(fabs(pytotal)),weight);
+  DeltaPz->Fill(log10(fabs(pztotal)),weight);
  
+  //std::cout << " " << log10(fabs(etotal-ecms)) 
+  //	    << " px: " << log10(fabs(pxtotal)) << " py: " << log10(fabs(pytotal)) << " pz: " << log10(fabs(pztotal)) << " " << std::endl;
+
   ///filling multiplicity ME's
   stablePtclNumber->Fill(log10(stablePtclNum+0.1),weight); 
   stableChaNumber->Fill(log10(stableChaNum+0.1),weight); 
