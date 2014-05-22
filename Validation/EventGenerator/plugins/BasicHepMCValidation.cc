@@ -192,14 +192,26 @@ void BasicHepMCValidation::bookHistograms(DQMStore::IBooker &i, edm::Run const &
     status1ShortLived->setBinLabel(10,"W-/W+");
     status1ShortLived->setBinLabel(11,"PDG = 7,8,17,25-99");
 
-    DeltaEcms = i.book1D("DeltaEcms1","log10 of absolute deviation from nominal Ecms (1Mev-10TeV)", 200,-3., 5.);
+    DeltaEcms = i.book1D("DeltaEcms1","log10 of absolute deviation from nominal Ecms (10Mev-10TeV)", 200,-1., 5.);
     DeltaEcms->setAxisTitle("Log10(#DeltaE_{cms}) (Log10(GeV)");
-    DeltaPx = i.book1D("DeltaPx1","log10 of absolute deviation from nominal Px (1Mev-10TeV)", 200,-3., 5.);
+    DeltaPx = i.book1D("DeltaPx1","log10 of absolute deviation from nominal Px (10Mev-10TeV)", 200,-2., 5.);
     DeltaPx->setAxisTitle("Log10(#DeltaP_{x}) (Log10(GeV))");
-    DeltaPy = i.book1D("DeltaPy1","log10 of absolute deviation from nominal Py (1Mev-10TeV)", 200,-3., 5.);
+    DeltaPy = i.book1D("DeltaPy1","log10 of absolute deviation from nominal Py (10Mev-10TeV)", 200,-2., 5.);
     DeltaPy->setAxisTitle("Log10(#DeltaP_{y}) (Log10(GeV))");
-    DeltaPz = i.book1D("DeltaPz1","log10 of absolute deviation from nominal Pz (1Mev-10TeV)", 200,-3., 5.);
+    DeltaPz = i.book1D("DeltaPz1","log10 of absolute deviation from nominal Pz (10Mev-10TeV)", 200,-2., 5.);
     DeltaPz->setAxisTitle("Log10(#DeltaP_{z}) (Log10(GeV))");
+
+    ENumberOfNans = i.book1D("NumberOfNansE","The number of NANs (or E<0)  for the energy ", 200,-2.5, 40.5);
+    ENumberOfNans->setAxisTitle("|PDGID| [-1 means other]");
+    PxNumberOfNans = i.book1D("NumberOfNansPx","The number of NANs for the  Px", 200,-2.5, 40.5);
+    PxNumberOfNans->setAxisTitle("|PDGID| [-1 means other]");
+    PyNumberOfNans = i.book1D("NumberOfNansPy","The number of NANs for the The number of NANs for the Py", 200,-2.5, 40.5);
+    PyNumberOfNans->setAxisTitle("|PDGID| [-1 means other]");
+    PzNumberOfNans = i.book1D("NumberOfNansPz","The number of NANs for the Pz", 200,-2.5, 40.5);
+    PzNumberOfNans->setAxisTitle("|PDGID| [-1 means other]");
+
+    EventWeight = i.book1D("EventWeight","The Event Weight [note: the last first and last bins include out of range]", 200,-10., 10);
+    EventWeight->setAxisTitle("weight");
 
 
   return;
@@ -289,6 +301,22 @@ void BasicHepMCValidation::analyze(const edm::Event& iEvent,const edm::EventSetu
       double charge = 999.;	// for the charge it's needed a HepPDT method
       int status = ptcl->status();
       const HepPDT::ParticleData* PData = fPDGTable->particle(HepPDT::ParticleID(Id));
+
+      int nanid=abs(Id); if(Id>40) nanid=-1;
+      // add additional Checks
+      double Emax=1e6;
+      if(ptcl->momentum().e()<0 || Emax<ptcl->momentum().e()) ENumberOfNans->Fill(nanid);
+      if(Emax<fabs(ptcl->momentum().px())) PxNumberOfNans->Fill(nanid);
+      if(Emax<fabs(ptcl->momentum().py())) PyNumberOfNans->Fill(nanid);
+      if(Emax<fabs(ptcl->momentum().pz())) PzNumberOfNans->Fill(nanid);
+      if(-10<weight && weight<10) EventWeight->Fill(weight); 
+      else if(weight>=10)EventWeight->Fill(9.99);
+      else if(weight<=-10)EventWeight->Fill(-9.99);
+
+
+
+
+
       if(PData==0) {
         //	    std::cout << "Unknown id = " << Id << '\n';
 	    ++unknownPDTNum;

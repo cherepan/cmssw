@@ -46,6 +46,7 @@ class BasicHepMCValidation : public DQMEDAnalyzer{
 	/// PDT table
 	edm::ESHandle<HepPDT::ParticleDataTable> fPDGTable ;
 	
+	double ECMS_;
 
     MonitorElement* nEvt;
   
@@ -111,6 +112,13 @@ class BasicHepMCValidation : public DQMEDAnalyzer{
     MonitorElement *DeltaPx;
     MonitorElement *DeltaPy;
     MonitorElement *DeltaPz;
+
+    MonitorElement *ENumberOfNans;
+    MonitorElement *PxNumberOfNans;
+    MonitorElement *PyNumberOfNans;
+    MonitorElement *PzNumberOfNans;
+
+    MonitorElement *EventWeight;
 
     edm::EDGetTokenT<edm::HepMCProduct> hepmcCollectionToken_;
 
