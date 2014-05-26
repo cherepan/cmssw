@@ -361,6 +361,8 @@ void EvtGenInterface::init(){
 }
 
 HepMC::GenEvent* EvtGenInterface::decay( HepMC::GenEvent* evt ){
+  std::cout << "EvtGenInterface::decay start" <<std::endl;
+
   if(the_engine->engine() == nullptr){
     throw edm::Exception(edm::errors::LogicError)
       << "The EvtGen code attempted to use a random number engine while\n"
@@ -386,19 +388,22 @@ HepMC::GenEvent* EvtGenInterface::decay( HepMC::GenEvent* evt ){
       addToHepMC(*p,idEvt,evt);                     // generate decay
     }
   }
+  std::cout << "EvtGenInterface::decay end" <<std::endl;
   return evt;
 }
 
 // Add particle to MC
 void EvtGenInterface::addToHepMC(HepMC::GenParticle* partHep,const EvtId &idEvt, HepMC::GenEvent* theEvent){
+  std::cout << "EvtGenInterface::addToHepMC start" <<std::endl;
   // Set up the parent particle from the HepMC GenEvent tree. 
   //EvtVector4R pInit(EvtPDL::getMass(idEvt),partHep->momentum().px(),partHep->momentum().py(),partHep->momentum().pz());
   double energy=sqrt(pow(partHep->momentum().rho(),2.0)+pow(EvtPDL::getMass(idEvt),2.0));
   EvtVector4R pInit(energy,partHep->momentum().px(),partHep->momentum().py(),partHep->momentum().pz()); 
   EvtParticle* parent = EvtParticleFactory::particleFactory(idEvt, pInit);
-
+  std::cout << "EvtGenInterface::addToHepMC A " << idEvt << " " << energy <<std::endl;
   // Reset polarization if requested....
   if(EvtPDL::getSpinType(idEvt) == EvtSpinType::DIRAC && polarizations.count(partHep->pdg_id())>0){
+    std::cout << "EvtGenInterface::addToHepMC B" <<std::endl;
     HepMC::FourVector momHep = partHep->momentum();
     EvtVector4R momEvt;
     momEvt.set(momHep.t(),momHep.x(),momHep.y(),momHep.z());
@@ -415,29 +420,43 @@ void EvtGenInterface::addToHepMC(HepMC::GenParticle* partHep,const EvtId &idEvt,
     theSpinDensity.set(0, 1, EvtComplex(polVec.x()/2., -polVec.y()/2.));
     theSpinDensity.set(1, 0, EvtComplex(polVec.x()/2., polVec.y()/2.));
     theSpinDensity.set(1, 1, EvtComplex(1./2. - polVec.z()/2., 0.));
-    
+    std::cout << theSpinDensity.get(0,0) << " " << theSpinDensity.get(0,1) << " " 
+	      << theSpinDensity.get(1,0) << " " << theSpinDensity.get(1,1) << std::endl;
     parent->setSpinDensityForwardHelicityBasis(theSpinDensity);
+    std::cout << "EvtGenInterface::addToHepMC C" <<std::endl;
   }
-  
+  std::cout << " erface::addToHepMC D" <<std::endl;
   if(parent){
+    std::cout << "EvtGenInterface::addToHepMC E:  getId() " << idEvt.getId() 
+	      << " isAlias " << idEvt.isAlias() << " getAlias " << idEvt.getAlias() 
+	      << " getName() " << idEvt.getName() <<  std::endl;
+
     // Generate the event
      m_EvtGen->generateDecay(parent);
+     std::cout << "EvtGenInterface::addToHepMC F" <<std::endl;
     
     // Write out the results
     EvtHepMCEvent evtHepMCEvent;
     evtHepMCEvent.constructEvent(parent);
     HepMC::GenEvent* evtGenHepMCTree = evtHepMCEvent.getEvent();
     
+    std::cout << "EvtGenInterface::addToHepMC G" <<std::endl;
+
     // update the event using a recursive function
     if(!evtGenHepMCTree->particles_empty()) update_particles(partHep,theEvent,(*evtGenHepMCTree->particles_begin()));
-    
+
+    std::cout << "EvtGenInterface::addToHepMC H" <<std::endl;
+
     //clean up
     parent->deleteTree();
+    std::cout << "EvtGenInterface::addToHepMC I" <<std::endl;
   }
+  std::cout << "EvtGenInterface::addToHepMC end" <<std::endl;
 }        
 
 //Recursivley add EvtGen decay to to Event Decy tree
 void EvtGenInterface::update_particles(HepMC::GenParticle* partHep,HepMC::GenEvent* theEvent,HepMC::GenParticle* p){
+  std::cout << "EvtGenInterface::update_particles start" <<std::endl;
   if(p->end_vertex()){
     if(!partHep->end_vertex()){
       HepMC::GenVertex* vtx = new HepMC::GenVertex(p->end_vertex()->position());
@@ -449,7 +468,7 @@ void EvtGenInterface::update_particles(HepMC::GenParticle* partHep,HepMC::GenEve
 
 	// Create daughter and add to event
 	HepMC::GenParticle *daughter = new HepMC::GenParticle((*d)->momentum(),(*d)->pdg_id(),(*d)->status());
-	daughter->suggest_barcode(theEvent->particles_size());
+	daughter->suggest_barcode(theEvent->particles_size()+1);
 	partHep->end_vertex()->add_particle_out(daughter);
 	
         // Ensure forced decays are done with the alias
@@ -469,10 +488,12 @@ void EvtGenInterface::update_particles(HepMC::GenParticle* partHep,HepMC::GenEve
 	}
 	
 	// Recursively add daughters
+	std::cout << "update_particles" << theEvent->particles_size()+1 << std::endl;
 	if((*d)->end_vertex() && !isignore) update_particles(daughter,theEvent,(*d));
       }
     }
   }
+  std::cout << "EvtGenInterface::update_particles end" <<std::endl;
 }
 
 void EvtGenInterface::setRandomEngine(CLHEP::HepRandomEngine* v) {
