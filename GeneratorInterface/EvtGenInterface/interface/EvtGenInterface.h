@@ -1,3 +1,13 @@
+// Class Based on EvtGenInterface(LHC).
+//
+// Created March 2014
+//
+// This class is a modification of the original EvtGenInterface which was developed for EvtGenLHC 9.1.
+// The modifications for EvtGen 1.3.0 are implemented by Ian M. Nugent
+// I would like to thank the EvtGen developers, in particular John Black, and Mikhail Kirsanov for their assistance.
+//
+
+
 #ifndef gen_EvtGenInterface_h
 #define gen_EvtGenInterface_h
 
