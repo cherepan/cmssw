@@ -37,6 +37,8 @@
 #include "EvtGenBase/EvtParticleFactory.hh"
 #include "EvtGenBase/EvtHepMCEvent.hh"
 
+#include "HepPID/ParticleIDTranslations.hh"
+
 #include "TString.h"
 #include <string>
 #include <stdlib.h> 
@@ -192,7 +194,7 @@ void EvtGenInterface::SetDefault_m_PDGs(){
   m_PDGs.push_back( 53122 );
   m_PDGs.push_back( 13126 );
   m_PDGs.push_back( 13212 );
-  m_PDGs.push_back( 13241 );
+  //m_PDGs.push_back( 13241 ); unknown particle -typo?
   
   m_PDGs.push_back( 3126 );
   m_PDGs.push_back( 3124 );
@@ -270,6 +272,12 @@ void EvtGenInterface::SetDefault_m_PDGs(){
   m_PDGs.push_back( 4434 );
   
   m_PDGs.push_back( 130 );
+
+
+  for(unsigned int i=0; i<m_PDGs.size();i++){
+    int pdt=HepPID::translatePythiatoPDT (m_PDGs.at(i));
+    if(pdt!=m_PDGs.at(i))m_PDGs.at(i)=pdt;
+  }
 }
 
 EvtGenInterface::~EvtGenInterface(){
@@ -284,7 +292,7 @@ void EvtGenInterface::init(){
   bool usePhotos = fPSet->getUntrackedParameter<bool>("use_internal_photos",true);
 
   //Setup evtGen following instructions on http://evtgen.warwick.ac.uk/docs/external/ 
-  bool convertPythiaCodes(true);                 // Specify if we want to use Pythia 6 physics codes for decays
+  bool convertPythiaCodes=fPSet->getUntrackedParameter<bool>("convertPythiaCodes",true); // Specify if we want to use Pythia 6 physics codes for decays
   std::string pythiaDir = getenv ("PYTHIA8DATA"); // Specify the pythia xml data directory to use the default PYTHIA8DATA location
   if(pythiaDir==NULL){ 
     std::cout << "EvtGenInterface::init() PYTHIA8DATA not defined. Terminating program " << std::endl; exit(0);
@@ -327,6 +335,9 @@ void EvtGenInterface::init(){
     else SetDefault_m_PDGs();
   }
   else SetDefault_m_PDGs();
+
+
+
   for(unsigned int i=0;i<m_PDGs.size();i++){
     std::cout << "EvtGenInterface::init() Particles to Operate on: " << m_PDGs[i] << std::endl;
   }
