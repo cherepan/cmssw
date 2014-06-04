@@ -284,8 +284,8 @@ EvtGenInterface::~EvtGenInterface(){
 }
 
 void EvtGenInterface::init(){
-  edm::FileInPath decay_table = fPSet->getParameter<edm::FileInPath>("decay_table");
-  edm::FileInPath pdt = fPSet->getParameter<edm::FileInPath>("particle_property_file");
+  edm::FileInPath decay_table(fPSet->getParameter<std::string>("decay_table"));
+  edm::FileInPath pdt(fPSet->getParameter<edm::FileInPath>("particle_property_file"));
 
   bool usePythia = fPSet->getUntrackedParameter<bool>("use_internal_pythia",true);
   bool useTauola = fPSet->getUntrackedParameter<bool>("use_internal_tauola",true);
@@ -320,8 +320,11 @@ void EvtGenInterface::init(){
   
   // Add additional user information
   if (fPSet->exists("user_decay_file")){
-    edm::FileInPath user_decay = fPSet->getParameter<edm::FileInPath>("user_decay_file");
-    if (!fPSet->getUntrackedParameter<bool>("use_default_decay",true)) m_EvtGen->readUDecay(user_decay.fullPath().c_str());
+    std::vector<std::string> user_decays = fPSet->getParameter<std::vector<std::string> >("user_decay_files");
+    for(unsigned int i=0;i<user_decays.size();i++){
+      edm::FileInPath user_decay(user_decays.at(i)); 
+      m_EvtGen->readUDecay(user_decay.fullPath().c_str());
+    }
   }
 
   // setup pdgid which the generator/hadronizer should not decay

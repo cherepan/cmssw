@@ -11,9 +11,6 @@
 using namespace gen;
 
 DataCardFileWriter::DataCardFileWriter(const edm::ParameterSet& pset){
-  //edm::FileInPath FileName = pset.getParameter<edm::FileInPath>("FileName");
-  //ofstream outputFile(FileName.fullPath().c_str());
-
   std::string FileName =  pset.getParameter<std::string>("FileName") ;
   std::string Base= getenv ("CMSSW_BASE");
   Base+="/src/";

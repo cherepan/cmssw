@@ -38,15 +38,10 @@ else {
     
     open(OutDAT, '>>', $outputfile) || die("Could not open file $inputfile!");
     print {OutDAT} "import FWCore.ParameterSet.Config as cms\n";
-    print {OutDAT} "import os\n";
-    print {OutDAT} "from subprocess import call\n";
-    print {OutDAT} "theFileName=\"$datacardname\"\n";
     print {OutDAT} "$fragmentname = cms.EDAnalyzer(\"DataCardFileWriter\",\n";
-    print {OutDAT} "\tFileName = cms.string(theFileName),\n";
+    print {OutDAT} "\tFileName = cms.string(\"$datacardname\"),\n";
     print {OutDAT} "\tFileContent = cms.vstring()\n";
     print {OutDAT} "\t)\n";
-    print {OutDAT} "file = os.path.relpath(os.environ.get('CMSSW_BASE'))+'/src/'+theFileName\n";
-    print {OutDAT} "call([\"touch\", file])\n";
     $i=0;
     $j=0;
     $nlines = @DataSets;
