@@ -1,6 +1,5 @@
 // Original Author:  Anne-Marie Magnan
 //         Created:  2010/01/11
-// $Id: SiStripSpyMonitorModule.cc,v 1.1 2012/10/15 09:02:48 threus Exp $
 //
 
 #include <sstream>
@@ -58,9 +57,9 @@ class SiStripSpyMonitorModule : public edm::EDAnalyzer
 
  private:
 
-  virtual void beginJob();
-  virtual void analyze(const edm::Event&, const edm::EventSetup&);
-  virtual void endJob();
+  virtual void beginJob() override;
+  virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+  virtual void endJob() override;
 
 
   //check if contains pedsubtr data = 0
@@ -239,7 +238,7 @@ SiStripSpyMonitorModule::analyze(const edm::Event& iEvent,
     lOutCabling.open("trackerDetId_FEDIdChNum_list.txt",std::ios::out);
     for (uint16_t lFedId = sistrip::FED_ID_MIN; lFedId <= sistrip::FED_ID_MAX; ++lFedId) {//loop on feds
       for (uint16_t lFedChannel = 0; lFedChannel < sistrip::FEDCH_PER_FED; lFedChannel++){//loop on channels
-	const FedChannelConnection & lConnection = lCabling->connection(lFedId,lFedChannel);
+	const FedChannelConnection & lConnection = lCabling->fedConnection(lFedId,lFedChannel);
 	if (!lConnection.isConnected()) continue;
 	uint32_t lDetId = lConnection.detId();
 	lOutCabling << "FED ID = " << lFedId 
@@ -359,7 +358,7 @@ SiStripSpyMonitorModule::analyze(const edm::Event& iEvent,
       
       uint32_t lFedIndex = sistrip::FEDCH_PER_FED*lFedId + lFedChannel;
       
-      const FedChannelConnection & lConnection = lCabling->connection(lFedId,lFedChannel);
+      const FedChannelConnection & lConnection = lCabling->fedConnection(lFedId,lFedChannel);
 
       if (!lConnection.isConnected()) continue;
 

@@ -3,8 +3,6 @@
 
 /** \file CosmicMuonLinksProducer
  *
- *  $Date: 2008/12/31 02:36:28 $
- *  $Revision: 1.1 $
  *  \author Chang Liu - Purdue University <chang.liu@cern.ch>
  */
 
@@ -31,7 +29,8 @@ private:
 
   MuonServiceProxy* theService;
 
-  std::vector<std::pair<edm::InputTag, edm::InputTag> > theTrackLinks;
+  std::vector<std::pair<edm::EDGetTokenT<reco::TrackCollection>, edm::EDGetTokenT<reco::TrackCollection> > > theTrackLinks;
+  std::vector<std::pair<std::string, std::string > > theTrackLinkNames;
 
   std::string category_;
 

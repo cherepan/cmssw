@@ -1,4 +1,3 @@
-// $Id: CorrMETData.h,v 1.5 2012/09/10 18:21:56 sakuma Exp $
 #include "DataFormats/METReco/interface/MET.h"
 #include "Math/Cartesian3D.h" 
 #include "Math/Polar3D.h" 
@@ -39,7 +38,7 @@
 #include "DataFormats/METReco/interface/BoundaryInformation.h"
 
 #include <vector>
-namespace {
+namespace DataFormats_METReco {
   struct dictionary {
     edm::Wrapper<reco::MET> dummy1;
     edm::Wrapper<reco::METCollection> dummy2;

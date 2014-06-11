@@ -7,8 +7,6 @@
  *  containing information about various sub-systems in global coordinates 
  *  with full geometry
  *
- *  $Date: 2008/03/13 21:15:52 $
- *  $Revision: 1.5 $
  *  \author M. Strang SUNY-Buffalo
  */
 
@@ -84,6 +82,7 @@ class GlobalDigisHistogrammer : public edm::EDAnalyzer
 
   edm::InputTag GlobalDigisSrc_;
   //edm::InputTag srcGlobalDigis;
+  edm::EDGetTokenT<PGlobalDigi> GlobalDigisSrc_Token_;
 
   // Electromagnetic info
   // ECal info

@@ -1,8 +1,6 @@
 /*
  * \file DTDigiTask.cc
- * 
- * $Date: 2008/03/01 00:39:54 $
- * $Revision: 1.4 $
+ *
  * \author M. Zanetti - INFN Padova
  *
 */
@@ -54,3 +52,8 @@ void DTGlobalRecoTask::analyze(const edm::Event& e, const edm::EventSetup& c){
 
 }
 
+
+// Local Variables:
+// show-trailing-whitespace: t
+// truncate-lines: t
+// End:

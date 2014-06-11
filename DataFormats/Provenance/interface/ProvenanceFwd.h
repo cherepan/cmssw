@@ -7,7 +7,7 @@ namespace edm {
   class Parentage;
   class BranchID;
   class BranchKey;
-  class ConstBranchDescription;
+  class BranchDescription;
   class ProductProvenance;
   class ProductProvenance;
   class EventAuxiliary;
@@ -24,7 +24,7 @@ namespace edm {
   class RunAuxiliary;
   class RunID;
   class Timestamp;
-  class BranchMapper;
+  class ProductProvenanceRetriever;
 }
 
 namespace cms {
@@ -38,5 +38,4 @@ namespace cms {
 #include "DataFormats/Provenance/interface/ReleaseVersion.h"
 #include "DataFormats/Provenance/interface/ProcessHistoryID.h"
 #include "DataFormats/Provenance/interface/ProcessConfigurationID.h"
-#include "DataFormats/Provenance/interface/ProcessConfigurationRegistry.h"
 #endif

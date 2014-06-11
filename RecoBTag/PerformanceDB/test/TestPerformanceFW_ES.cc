@@ -13,12 +13,12 @@
 //
 // Original Author:  Tommaso Boccali
 //         Created:  Tue Nov 25 15:50:50 CET 2008
-// $Id: TestPerformanceFW_ES.cc,v 1.5 2010/11/06 13:30:00 chadwick Exp $
 //
 //
 
 
 // system include files
+#include <iostream>
 #include <memory>
 #include <map>
 #include <vector>

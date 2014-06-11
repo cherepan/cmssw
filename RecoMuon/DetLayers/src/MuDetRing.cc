@@ -1,7 +1,5 @@
 /** \file
  *
- *  $Date: 2006/10/19 14:42:16 $
- *  $Revision: 1.8 $
  *  \author N. Amapane - CERN
  */
 
@@ -44,7 +42,7 @@ const vector<const GeometricSearchDet*>&
 MuDetRing::components() const {
   // FIXME dummy impl.
   cout << "temporary dummy implementation of MuDetRing::components()!!" << endl;
-  static vector<const GeometricSearchDet*> result;
+  static const vector<const GeometricSearchDet*> result;
   return result;
 }
 

@@ -7,6 +7,7 @@ OccurrenceTraits:
 
 ----------------------------------------------------------------------*/
 
+#include "DataFormats/Provenance/interface/LuminosityBlockID.h"
 #include "DataFormats/Provenance/interface/ModuleDescription.h"
 #include "FWCore/Framework/interface/BranchActionType.h"
 #include "FWCore/Framework/interface/EventPrincipal.h"
@@ -21,10 +22,14 @@ OccurrenceTraits:
 #include "FWCore/ServiceRegistry/interface/ParentContext.h"
 #include "FWCore/ServiceRegistry/interface/PathContext.h"
 #include "FWCore/ServiceRegistry/interface/StreamContext.h"
+#include "FWCore/Utilities/interface/LuminosityBlockIndex.h"
 
 #include<string>
 
 namespace edm {
+
+  class ProcessContext;
+
   template <typename T, BranchActionType B> class OccurrenceTraits;
 
   template <>
@@ -49,10 +54,10 @@ namespace edm {
     static void postScheduleSignal(ActivityRegistry *a, EventPrincipal* ep, EventSetup const* es, StreamContext const* streamContext) {
       edm::ModuleDescription modDesc("postScheduledSignal", "");
       ParentContext parentContext(streamContext);
-      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext);
+      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext, nullptr);
       Event ev(*ep, ModuleDescription(), &moduleCallingContext);
       a->postProcessEventSignal_(ev, *es);
-      a->postEventSignal_(*streamContext, ev, *es);
+      a->postEventSignal_(*streamContext);
     }
     static void prePathSignal(ActivityRegistry *a, std::string const& s, PathContext const* pathContext) {
       a->preProcessPathSignal_(s);
@@ -98,7 +103,7 @@ namespace edm {
       // Next 4 lines not needed when we go to threaded interface
       edm::ModuleDescription modDesc("postScheduledSignal", "");
       ParentContext parentContext(globalContext);
-      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext);
+      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext, nullptr);
       Run run(*ep, ModuleDescription(), &moduleCallingContext);
       a->postBeginRunSignal_(run, *es);
       a->postGlobalBeginRunSignal_(*globalContext);
@@ -177,9 +182,8 @@ namespace edm {
     static void postScheduleSignal(ActivityRegistry *a, RunPrincipal* ep, EventSetup const* es, StreamContext const* streamContext) {
       edm::ModuleDescription modDesc("postScheduledSignal", "");
       ParentContext parentContext(streamContext);
-      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext);
-      Run run(*ep, ModuleDescription(), &moduleCallingContext);
-      a->postStreamEndRunSignal_(*streamContext, run, *es);
+      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext, nullptr);
+      a->postStreamEndRunSignal_(*streamContext);
     }
     static void prePathSignal(ActivityRegistry *a, std::string const& s, PathContext const* pathContext) {
     }
@@ -218,10 +222,10 @@ namespace edm {
     static void postScheduleSignal(ActivityRegistry *a, RunPrincipal* ep, EventSetup const* es, GlobalContext const* globalContext) {
       edm::ModuleDescription modDesc("postScheduledSignal", "");
       ParentContext parentContext(globalContext);
-      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext);
+      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext, nullptr);
       Run run(*ep, ModuleDescription(), &moduleCallingContext);
       a->postEndRunSignal_(run, *es);
-      a->postGlobalEndRunSignal_(*globalContext, run, *es);
+      a->postGlobalEndRunSignal_(*globalContext);
     }
     static void prePathSignal(ActivityRegistry *a, std::string const& s, PathContext const* pathContext) {
       a->prePathEndRunSignal_(s);
@@ -265,7 +269,7 @@ namespace edm {
       // Next 4 lines not needed when we go to threaded interface
       edm::ModuleDescription modDesc("postScheduledSignal", "");
       ParentContext parentContext(globalContext);
-      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext);
+      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext, nullptr);
       LuminosityBlock lumi(*ep, ModuleDescription(), &moduleCallingContext);
       a->postBeginLumiSignal_(lumi, *es);
       a->postGlobalBeginLumiSignal_(*globalContext);
@@ -346,9 +350,9 @@ namespace edm {
     static void postScheduleSignal(ActivityRegistry *a, LuminosityBlockPrincipal* ep, EventSetup const* es, StreamContext const* streamContext) {
       edm::ModuleDescription modDesc("postScheduledSignal", "");
       ParentContext parentContext(streamContext);
-      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext);
+      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext, nullptr);
       LuminosityBlock lumi(*ep, ModuleDescription(), &moduleCallingContext);
-      a->postStreamEndLumiSignal_(*streamContext, lumi, *es);
+      a->postStreamEndLumiSignal_(*streamContext);
     }
     static void prePathSignal(ActivityRegistry *a, std::string const& s, PathContext const* pathContext) {
     }
@@ -387,10 +391,10 @@ namespace edm {
     static void postScheduleSignal(ActivityRegistry *a, LuminosityBlockPrincipal* ep, EventSetup const* es, GlobalContext const* globalContext) {
       edm::ModuleDescription modDesc("postScheduledSignal", "");
       ParentContext parentContext(globalContext);
-      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext);
+      ModuleCallingContext moduleCallingContext(&modDesc, ModuleCallingContext::State::kRunning, parentContext, nullptr);
       LuminosityBlock lumi(*ep, ModuleDescription(), &moduleCallingContext);
       a->postEndLumiSignal_(lumi, *es);
-      a->postGlobalEndLumiSignal_(*globalContext, lumi, *es); 
+      a->postGlobalEndLumiSignal_(*globalContext); 
     }
     static void prePathSignal(ActivityRegistry *a, std::string const& s, PathContext const* pathContext) {
       a->prePathEndLumiSignal_(s); 

@@ -1,6 +1,5 @@
 //emacs settings:-*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil -*-"
 /*
- * $Id: EcalSelectiveReadout.cc,v 1.17 2009/10/26 10:41:26 pgras Exp $
  */
 
 #include "SimCalorimetry/EcalSelectiveReadoutAlgos/src/EcalSelectiveReadout.h"
@@ -11,6 +10,7 @@
 #include <string>
 #include <iomanip>
 #include <cassert>
+#include <atomic>
 //#include <iostream> //for debugging
 
 using std::vector;
@@ -44,8 +44,7 @@ EcalSelectiveReadout::runSelectiveReadout0(const ttFlag_t ttFlags[nTriggerTowers
   //count number of TT in each interest class for debugging display
   int nTriggerTowerE[] = {0, 0, 0, 0, 0, 0, 0, 0};
   int nTriggerTowerB[] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-  static int ncall = 0;
+  static std::atomic<int> ncall{0};
   if(ncall < 10){
     ++ncall;
     for(size_t iPhi = 0; iPhi < nTriggerTowersInPhi; ++iPhi){

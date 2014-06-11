@@ -1,7 +1,7 @@
-// Last commit: $Id: SiStripDigiToRawModule.cc,v 1.10 2009/09/14 14:01:03 nc302 Exp $
 
-#include "EventFilter/SiStripRawToDigi/plugins/SiStripDigiToRawModule.h"
-#include "EventFilter/SiStripRawToDigi/interface/SiStripDigiToRaw.h"
+#include "SiStripDigiToRawModule.h"
+#include "SiStripDigiToRaw.h"
+
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/ESHandle.h"

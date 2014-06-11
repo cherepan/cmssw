@@ -4,9 +4,6 @@
 /** \class EcalTPSkimmer
  *   produce a subset of TP information
  *
- *  $Id: EcalTPSkimmer.cc,v 1.13 2010/09/29 15:31:27 ferriff Exp $
- *  $Date: 2010/09/29 15:31:27 $
- *  $Revision: 1.13 $
  *  \author Federico Ferri, CEA/Saclay Irfu/SPP
  *
  **/
@@ -45,7 +42,7 @@ class EcalTPSkimmer : public edm::EDProducer {
 
                 std::set<EcalTrigTowerDetId> insertedTP_;
 
-                edm::InputTag tpInputCollection_;
+                edm::EDGetTokenT<EcalTrigPrimDigiCollection> tpInputToken_;
 
                 std::string tpOutputCollection_;
 };

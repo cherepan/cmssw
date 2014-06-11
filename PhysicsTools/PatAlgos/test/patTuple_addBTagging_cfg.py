@@ -6,10 +6,6 @@ process.options.allowUnscheduled = cms.untracked.bool(True)
 ## to run in un-scheduled mode uncomment the following lines
 process.load("PhysicsTools.PatAlgos.producersLayer1.patCandidates_cff")
 process.load("PhysicsTools.PatAlgos.selectionLayer1.selectedPatCandidates_cff")
-from PhysicsTools.PatAlgos.tools.metTools import addMETCollection
-
-addMETCollection(process, labelName='patMETTC', metSource='tcMet')
-addMETCollection(process, labelName='patMETPF', metSource='pfType1CorrectedMet')
 
 ## uncomment the following line to add different jet collections
 ## to the event content

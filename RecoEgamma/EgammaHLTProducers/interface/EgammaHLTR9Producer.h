@@ -25,23 +25,31 @@
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
-//
-// class declaration
-//
+#include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
+#include "DataFormats/RecoCandidate/interface/RecoEcalCandidateFwd.h"
+
+#include "DataFormats/EcalRecHit/interface/EcalRecHit.h"
+#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
+
+namespace edm {
+  class ConfigurationDescriptions;
+}
 
 class EgammaHLTR9Producer : public edm::EDProducer {
-   public:
-      explicit EgammaHLTR9Producer(const edm::ParameterSet&);
-      ~EgammaHLTR9Producer();
-
-
-      virtual void produce(edm::Event&, const edm::EventSetup&);
-   private:
+public:
+  explicit EgammaHLTR9Producer(const edm::ParameterSet&);
+  ~EgammaHLTR9Producer();
+  
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  virtual void produce(edm::Event&, const edm::EventSetup&);
+private:
       // ----------member data ---------------------------
 
-  edm::InputTag recoEcalCandidateProducer_;
+  edm::EDGetTokenT<reco::RecoEcalCandidateCollection> recoEcalCandidateProducer_;
   edm::InputTag ecalRechitEBTag_;
   edm::InputTag ecalRechitEETag_;
+  edm::EDGetTokenT<EcalRecHitCollection> ecalRechitEBToken_;
+  edm::EDGetTokenT<EcalRecHitCollection> ecalRechitEEToken_;
   bool useSwissCross_;
   
   edm::ParameterSet conf_;

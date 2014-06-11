@@ -4,14 +4,13 @@
 
 #include "FWCore/Framework/src/Worker.h"
 #include "FWCore/Framework/src/EarlyDeleteHelper.h"
-#include "FWCore/Framework/src/OutputModuleCommunicator.h"
 #include "FWCore/ServiceRegistry/interface/StreamContext.h"
 
 namespace edm {
   namespace {
     class ModuleBeginJobSignalSentry {
 public:
-      ModuleBeginJobSignalSentry(ActivityRegistry* a, ModuleDescription& md):a_(a), md_(&md) {
+      ModuleBeginJobSignalSentry(ActivityRegistry* a, ModuleDescription const& md):a_(a), md_(&md) {
         if(a_) a_->preModuleBeginJobSignal_(*md_);
       }
       ~ModuleBeginJobSignalSentry() {
@@ -19,12 +18,12 @@ public:
       }
 private:
       ActivityRegistry* a_;
-      ModuleDescription* md_;
+      ModuleDescription const* md_;
     };
 
     class ModuleEndJobSignalSentry {
 public:
-      ModuleEndJobSignalSentry(ActivityRegistry* a, ModuleDescription& md):a_(a), md_(&md) {
+      ModuleEndJobSignalSentry(ActivityRegistry* a, ModuleDescription const& md):a_(a), md_(&md) {
         if(a_) a_->preModuleEndJobSignal_(*md_);
       }
       ~ModuleEndJobSignalSentry() {
@@ -32,39 +31,39 @@ public:
       }
 private:
       ActivityRegistry* a_;
-      ModuleDescription* md_;
+      ModuleDescription const* md_;
     };
 
     class ModuleBeginStreamSignalSentry {
     public:
       ModuleBeginStreamSignalSentry(ActivityRegistry* a,
                                     StreamContext const& sc,
-                                    ModuleDescription const& md) : a_(a), sc_(sc), md_(md) {
-        if(a_) a_->preModuleBeginStreamSignal_(sc_, md_);
+                                    ModuleCallingContext const& mcc) : a_(a), sc_(sc), mcc_(mcc) {
+        if(a_) a_->preModuleBeginStreamSignal_(sc_, mcc_);
       }
       ~ModuleBeginStreamSignalSentry() {
-        if(a_) a_->postModuleBeginStreamSignal_(sc_, md_);
+        if(a_) a_->postModuleBeginStreamSignal_(sc_, mcc_);
       }
     private:
       ActivityRegistry* a_;
       StreamContext const& sc_;
-      ModuleDescription const& md_;
+      ModuleCallingContext const& mcc_;
     };
 
     class ModuleEndStreamSignalSentry {
     public:
       ModuleEndStreamSignalSentry(ActivityRegistry* a,
                                   StreamContext const& sc,
-                                  ModuleDescription const& md) : a_(a), sc_(sc), md_(md) {
-        if(a_) a_->preModuleEndStreamSignal_(sc_, md_);
+                                  ModuleCallingContext const& mcc) : a_(a), sc_(sc), mcc_(mcc) {
+        if(a_) a_->preModuleEndStreamSignal_(sc_, mcc_);
       }
       ~ModuleEndStreamSignalSentry() {
-        if(a_) a_->postModuleEndStreamSignal_(sc_, md_);
+        if(a_) a_->postModuleEndStreamSignal_(sc_, mcc_);
       }
     private:
       ActivityRegistry* a_;
       StreamContext const& sc_;
-      ModuleDescription const& md_;
+      ModuleCallingContext const& mcc_;
     };
 
     cms::Exception& exceptionContext(ModuleDescription const& iMD,
@@ -76,7 +75,7 @@ private:
   }
 
   Worker::Worker(ModuleDescription const& iMD, 
-		 WorkerParams const& iWP) :
+		 ExceptionToActionTable const* iActions) :
     stopwatch_(),
     timesRun_(),
     timesVisited_(),
@@ -84,9 +83,8 @@ private:
     timesFailed_(),
     timesExcept_(),
     state_(Ready),
-    md_(iMD),
-    moduleCallingContext_(&md_),
-    actions_(iWP.actions_),
+    moduleCallingContext_(&iMD),
+    actions_(iActions),
     cached_exception_(),
     actReg_(),
     earlyDeleteHelper_(nullptr)
@@ -94,11 +92,6 @@ private:
   }
 
   Worker::~Worker() {
-  }
-
-  std::unique_ptr<OutputModuleCommunicator>
-  Worker::createOutputModuleCommunicator() {
-    return std::move(std::unique_ptr<OutputModuleCommunicator>{});
   }
 
   void Worker::setActivityRegistry(boost::shared_ptr<ActivityRegistry> areg) {
@@ -109,10 +102,16 @@ private:
     earlyDeleteHelper_=iHelper;
   }
   
+  void Worker::resetModuleDescription(ModuleDescription const* iDesc) {
+    ModuleCallingContext temp(iDesc,moduleCallingContext_.state(),moduleCallingContext_.parent(),
+                              moduleCallingContext_.previousModuleOnThread());
+    moduleCallingContext_ = temp;
+  }
+
   void Worker::beginJob() {
     try {
       try {
-        ModuleBeginJobSignalSentry cpp(actReg_.get(), md_);
+        ModuleBeginJobSignalSentry cpp(actReg_.get(), description());
         implBeginJob();
       }
       catch (cms::Exception& e) { throw; }
@@ -125,7 +124,7 @@ private:
     catch(cms::Exception& ex) {
       state_ = Exception;
       std::ostringstream ost;
-      ost << "Calling beginJob for module " << md_.moduleName() << "/'" << md_.moduleLabel() << "'";
+      ost << "Calling beginJob for module " << description().moduleName() << "/'" << description().moduleLabel() << "'";
       ex.addContext(ost.str());
       throw;
     }
@@ -134,7 +133,7 @@ private:
   void Worker::endJob() {
     try {
       try {
-        ModuleEndJobSignalSentry cpp(actReg_.get(), md_);
+        ModuleEndJobSignalSentry cpp(actReg_.get(), description());
         implEndJob();
       }
       catch (cms::Exception& e) { throw; }
@@ -147,7 +146,7 @@ private:
     catch(cms::Exception& ex) {
       state_ = Exception;
       std::ostringstream ost;
-      ost << "Calling endJob for module " << md_.moduleName() << "/'" << md_.moduleLabel() << "'";
+      ost << "Calling endJob for module " << description().moduleName() << "/'" << description().moduleLabel() << "'";
       ex.addContext(ost.str());
       throw;
     }
@@ -161,7 +160,10 @@ private:
         streamContext.setRunIndex(RunIndex::invalidRunIndex());
         streamContext.setLuminosityBlockIndex(LuminosityBlockIndex::invalidLuminosityBlockIndex());
         streamContext.setTimestamp(Timestamp());
-        ModuleBeginStreamSignalSentry beginSentry(actReg_.get(), streamContext, md_);
+        ParentContext parentContext(&streamContext);
+        ModuleContextSentry moduleContextSentry(&moduleCallingContext_, parentContext);
+        moduleCallingContext_.setState(ModuleCallingContext::State::kRunning);
+        ModuleBeginStreamSignalSentry beginSentry(actReg_.get(), streamContext, moduleCallingContext_);
         implBeginStream(id);
       }
       catch (cms::Exception& e) { throw; }
@@ -174,7 +176,7 @@ private:
     catch(cms::Exception& ex) {
       state_ = Exception;
       std::ostringstream ost;
-      ost << "Calling beginStream for module " << md_.moduleName() << "/'" << md_.moduleLabel() << "'";
+      ost << "Calling beginStream for module " << description().moduleName() << "/'" << description().moduleLabel() << "'";
       ex.addContext(ost.str());
       throw;
     }
@@ -188,7 +190,10 @@ private:
         streamContext.setRunIndex(RunIndex::invalidRunIndex());
         streamContext.setLuminosityBlockIndex(LuminosityBlockIndex::invalidLuminosityBlockIndex());
         streamContext.setTimestamp(Timestamp());
-        ModuleEndStreamSignalSentry endSentry(actReg_.get(), streamContext, md_);
+        ParentContext parentContext(&streamContext);
+        ModuleContextSentry moduleContextSentry(&moduleCallingContext_, parentContext);
+        moduleCallingContext_.setState(ModuleCallingContext::State::kRunning);
+        ModuleEndStreamSignalSentry endSentry(actReg_.get(), streamContext, moduleCallingContext_);
         implEndStream(id);
       }
       catch (cms::Exception& e) { throw; }
@@ -201,7 +206,7 @@ private:
     catch(cms::Exception& ex) {
       state_ = Exception;
       std::ostringstream ost;
-      ost << "Calling endStream for module " << md_.moduleName() << "/'" << md_.moduleLabel() << "'";
+      ost << "Calling endStream for module " << description().moduleName() << "/'" << description().moduleLabel() << "'";
       ex.addContext(ost.str());
       throw;
     }

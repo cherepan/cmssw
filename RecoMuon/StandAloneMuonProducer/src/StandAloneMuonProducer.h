@@ -9,14 +9,13 @@
  *   starting from internal seeds (L2 muon track segments).
  *
  *
- *   $Date: 2007/03/20 15:57:44 $
- *   $Revision: 1.8 $
  *
  *   \author  R.Bellan - INFN TO
  */
 
 #include "FWCore/Framework/interface/EDProducer.h"
 #include "FWCore/Utilities/interface/InputTag.h"
+#include "DataFormats/TrajectorySeed/interface/TrajectorySeedCollection.h"
 
 namespace edm {class ParameterSet; class Event; class EventSetup;}
 
@@ -46,6 +45,9 @@ class StandAloneMuonProducer : public edm::EDProducer {
 
   /// the event setup proxy, it takes care the services update
   MuonServiceProxy *theService;
+
+
+  edm::EDGetTokenT<edm::View<TrajectorySeed> > seedToken; 
 
   std::string theAlias;
 

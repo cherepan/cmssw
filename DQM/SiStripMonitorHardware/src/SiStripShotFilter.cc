@@ -7,7 +7,6 @@
 */
 //
 //         Created:  2009/12/07
-// $Id: SiStripShotFilter.cc,v 1.1 2012/10/15 09:02:47 threus Exp $
 //
 
 #include <sstream>
@@ -59,9 +58,9 @@ class SiStripShotFilter : public edm::EDFilter
   ~SiStripShotFilter();
  private:
 
-  virtual void beginJob();
-  virtual bool filter(edm::Event&, const edm::EventSetup&);
-  virtual void endJob();
+  virtual void beginJob() override;
+  virtual bool filter(edm::Event&, const edm::EventSetup&) override;
+  virtual void endJob() override;
 
   //update the cabling if necessary
   void updateCabling(const edm::EventSetup& eventSetup);
@@ -138,7 +137,7 @@ SiStripShotFilter::filter(edm::Event& iEvent,
 	 iCh < sistrip::FEDCH_PER_FED; 
 	 iCh++) {//loop on channels
 	  
-      const FedChannelConnection & lConnection = cabling_->connection(fedId,iCh);
+      const FedChannelConnection & lConnection = cabling_->fedConnection(fedId,iCh);
 
       uint32_t lDetId = lConnection.detId();
       short lAPVPair = lConnection.apvPairNumber();

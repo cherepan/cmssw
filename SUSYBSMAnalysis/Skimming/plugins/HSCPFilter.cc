@@ -13,7 +13,6 @@
 //
 // Original Author:  Jie Chen
 //         Created:  Thu Apr 29 16:32:10 CDT 2010
-// $Id: HSCPFilter.cc,v 1.4 2011/05/10 22:07:21 jiechen Exp $
 //
 //
 
@@ -55,9 +54,9 @@ class HSCPFilter : public edm::EDFilter {
       ~HSCPFilter();
 
    private:
-      virtual void beginJob() ;
+      virtual void beginJob() override ;
       virtual bool filter(edm::Event&, const edm::EventSetup&) override;
-      virtual void endJob() ;
+      virtual void endJob() override ;
       bool filterFlag;
       edm::InputTag input_muon_collection, input_track_collection,input_dedx_collection;
       int ndedxHits;

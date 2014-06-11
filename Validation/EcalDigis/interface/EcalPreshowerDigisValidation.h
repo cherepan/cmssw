@@ -4,8 +4,6 @@
 /*
  * \file EcalPreshowerDigisValidation.h
  *
- * $Date: 2008/02/29 20:48:25 $
- * $Revision: 1.7 $
  * \author F. Cossutti
  *
 */
@@ -55,7 +53,7 @@ private:
  
  std::string outputFile_;
 
- edm::InputTag ESdigiCollection_;
+ edm::EDGetTokenT<ESDigiCollection> ESdigiCollectionToken_;
 
  MonitorElement* meESDigiMultiplicity_;
  

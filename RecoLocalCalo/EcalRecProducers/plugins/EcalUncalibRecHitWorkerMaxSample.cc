@@ -1,9 +1,6 @@
 /** \class EcalMaxSampleUncalibRecHitProducer
  *   produce ECAL uncalibrated rechits from dataframes 
  *
- *  $Id: EcalMaxSampleUncalibRecHitProducer.cc,v 1.2 2007/12/21 15:35:40 ferriff Exp $
- *  $Date: 2007/12/21 15:35:40 $
- *  $Revision: 1.2 $
  *  \author G. Franzoni, E. Di Marco
  *
  */
@@ -24,8 +21,8 @@
 #include <iostream>
 #include <vector>
 
-EcalUncalibRecHitWorkerMaxSample::EcalUncalibRecHitWorkerMaxSample(const edm::ParameterSet& ps) :
-        EcalUncalibRecHitWorkerBaseClass( ps )
+EcalUncalibRecHitWorkerMaxSample::EcalUncalibRecHitWorkerMaxSample(const edm::ParameterSet& ps, edm::ConsumesCollector& c) :
+  EcalUncalibRecHitWorkerBaseClass( ps ,c)
 {
 }
 

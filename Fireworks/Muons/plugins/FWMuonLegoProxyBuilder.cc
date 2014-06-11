@@ -3,7 +3,6 @@
 // Package:     Muons
 // Class  :     FWMuonLegoProxyBuilder
 //
-// $Id: FWMuonLegoProxyBuilder.cc,v 1.1 2010/07/30 08:36:01 yana Exp $
 //
 
 #include "TEvePointSet.h"
@@ -26,7 +25,7 @@ private:
    // Disable default assignment operator
    const FWMuonLegoProxyBuilder& operator=( const FWMuonLegoProxyBuilder& );
 
-   virtual void build( const reco::Muon& iData, unsigned int iIndex, TEveElement& oItemHolder, const FWViewContext* );
+   virtual void build( const reco::Muon& iData, unsigned int iIndex, TEveElement& oItemHolder, const FWViewContext* ) override;
 };
 
 void

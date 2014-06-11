@@ -79,7 +79,6 @@ namespace edm
     ES.get<HcalDbRecord>().get(conditions);                                         
 
 
-
     // fill in maps of hits
 
     LogInfo("DataMixingHcalDigiWorker")<<"===============> adding MC signals for "<<e.id();
@@ -311,6 +310,7 @@ namespace edm
 #endif
        }
     }
+    else {std::cout << "NO HBHE Digis!!!!" << std::endl;}
     // HO Next
 
     boost::shared_ptr<Wrapper<HODigiCollection>  const> HODigisPTR = 
@@ -518,7 +518,7 @@ namespace edm
 
 	  unsigned int sizeold = HB_old.size();
 	  for(unsigned int isamp = 0; isamp<sizeold; isamp++) {
-	    coder.fC2adc(HB_old,(HBHEdigis->back()), 0 );   // as per simulation, capid=0???
+	    coder.fC2adc(HB_old,(HBHEdigis->back()), 1 );   // as per simulation, capid=1
 	  }
 	}
 	//save pointers for next iteration                                                                 
@@ -542,7 +542,7 @@ namespace edm
 
         unsigned int sizenew = (iHB->second).size();
 	for(unsigned int isamp = 0; isamp<sizenew; isamp++) {
-	  coder.fC2adc(HB_old,(HBHEdigis->back()), 0 );  // as per simulation, capid=0???
+	  coder.fC2adc(HB_old,(HBHEdigis->back()), 1 );  // as per simulation, capid=1
   	}
       }
     }
@@ -613,7 +613,7 @@ namespace edm
 
 	  unsigned int sizeold = HO_old.size();
 	  for(unsigned int isamp = 0; isamp<sizeold; isamp++) {
-	    coder.fC2adc(HO_old,(HOdigis->back()), 0 );   // as per simulation, capid=0???
+	    coder.fC2adc(HO_old,(HOdigis->back()), 1 );   // as per simulation, capid=1
 	  }
 	}
 	//save pointers for next iteration                                                                 
@@ -635,7 +635,7 @@ namespace edm
 
 	  unsigned int sizeold = (iHO->second).size();
 	  for(unsigned int isamp = 0; isamp<sizeold; isamp++) {
-	    coder.fC2adc(HO_old,(HOdigis->back()), 0 );   // as per simulation, capid=0???
+	    coder.fC2adc(HO_old,(HOdigis->back()), 1 );   // as per simulation, capid=1
 	  }
 
       }
@@ -706,7 +706,7 @@ namespace edm
 
 	  unsigned int sizeold = HF_old.size();
 	  for(unsigned int isamp = 0; isamp<sizeold; isamp++) {
-	    coder.fC2adc(HF_old,(HFdigis->back()), 0 );   // as per simulation, capid=0???
+	    coder.fC2adc(HF_old,(HFdigis->back()), 1 );   // as per simulation, capid=1
 	  }
 	}
 	//save pointers for next iteration                                                                 
@@ -728,7 +728,7 @@ namespace edm
 
 	  unsigned int sizeold = (iHF->second).size();
 	  for(unsigned int isamp = 0; isamp<sizeold; isamp++) {
-	    coder.fC2adc(HF_old,(HFdigis->back()), 0 );   // as per simulation, capid=0???
+	    coder.fC2adc(HF_old,(HFdigis->back()), 1 );   // as per simulation, capid=1
 	  }
 
       }
@@ -800,7 +800,7 @@ namespace edm
 
 	  unsigned int sizeold = ZDC_old.size();
 	  for(unsigned int isamp = 0; isamp<sizeold; isamp++) {
-	    coder.fC2adc(ZDC_old,(ZDCdigis->back()), 0 );   // as per simulation, capid=0???
+	    coder.fC2adc(ZDC_old,(ZDCdigis->back()), 1 );   // as per simulation, capid=1
 	  }
 	}
 	//save pointers for next iteration                                                                 
@@ -822,7 +822,7 @@ namespace edm
 
 	  unsigned int sizeold = (iZDC->second).size();
 	  for(unsigned int isamp = 0; isamp<sizeold; isamp++) {
-	    coder.fC2adc(ZDC_old,(ZDCdigis->back()), 0 );   // as per simulation, capid=0???
+	    coder.fC2adc(ZDC_old,(ZDCdigis->back()), 1 );   // as per simulation, capid=1
 	  }
 
       }
@@ -838,10 +838,18 @@ namespace edm
     LogInfo("DataMixingHcalDigiWorker") << "total # HF Merged digis: " << HFdigis->size() ;
     LogInfo("DataMixingHcalDigiWorker") << "total # ZDC Merged digis: " << ZDCdigis->size() ;
 
+
+    // make empty collections for now:
+    std::auto_ptr<HBHEUpgradeDigiCollection> hbheupgradeResult(new HBHEUpgradeDigiCollection());
+    std::auto_ptr<HFUpgradeDigiCollection> hfupgradeResult(new HFUpgradeDigiCollection());
+
+
     e.put( HBHEdigis, HBHEDigiCollectionDM_ );
     e.put( HOdigis, HODigiCollectionDM_ );
     e.put( HFdigis, HFDigiCollectionDM_ );
     e.put( ZDCdigis, ZDCDigiCollectionDM_ );
+    e.put( hbheupgradeResult, "HBHEUpgradeDigiCollection" );
+    e.put( hfupgradeResult, "HFUpgradeDigiCollection" );
 
     // clear local storage after this event
     HBHEDigiStorage_.clear();

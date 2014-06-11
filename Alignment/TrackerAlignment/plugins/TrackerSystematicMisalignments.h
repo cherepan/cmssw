@@ -40,7 +40,7 @@ private:
 	
 	void applySystematicMisalignment( Alignable* ); 
 	//align::GlobalVector findSystematicMis( align::PositionType );
-	align::GlobalVector findSystematicMis( align::PositionType, const bool blindToZ, const bool blindToR );
+	align::GlobalVector findSystematicMis( const align::PositionType&, const bool blindToZ, const bool blindToR );
 	
 	AlignableTracker* theAlignableTracker;
 	
@@ -57,7 +57,12 @@ private:
 	double m_twistEpsilon;
 	double m_ellipticalEpsilon;
 	double m_skewEpsilon;
-	double m_saggitaEpsilon;
+	double m_sagittaEpsilon;
+
+        //misalignment phases
+        double m_ellipticalDelta;
+        double m_skewDelta;
+        double m_sagittaDelta;
 
 	// flag to steer suppression of blind movements
 	bool suppressBlindMvmts;

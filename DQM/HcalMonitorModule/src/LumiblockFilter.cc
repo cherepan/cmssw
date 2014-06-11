@@ -13,12 +13,12 @@
 //
 // Original Author:  Jeff Temple
 //         Created:  Mon May 12 15:38:09 CEST 2008
-// $Id: LumiblockFilter.cc,v 1.2 2009/12/18 20:44:47 wmtan Exp $
 //
 //
 
 
 // system include files
+#include <iostream>
 #include <memory>
 
 // user include files
@@ -43,9 +43,9 @@ class LumiblockFilter : public edm::EDFilter {
       ~LumiblockFilter();
 
    private:
-      virtual void beginJob() ;
-      virtual bool filter(edm::Event&, const edm::EventSetup&);
-      virtual void endJob() ;
+      virtual void beginJob() override ;
+      virtual bool filter(edm::Event&, const edm::EventSetup&) override;
+      virtual void endJob() override ;
       
       // ----------member data ---------------------------
   

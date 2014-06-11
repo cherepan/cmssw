@@ -49,9 +49,9 @@ class PickEvents : public edm::EDFilter {
       ~PickEvents();
 
    private:
-      virtual void beginJob() ;
+      virtual void beginJob() override ;
       virtual bool filter(edm::Event&, const edm::EventSetup&) override;
-      virtual void endJob() ;
+      virtual void endJob() override ;
 
   std::string listrunevents_; 
   std::string listruneventsinpath_; 
@@ -130,7 +130,7 @@ PickEvents::beginJob()
   nEventsSelected = 0;
 
   // open file listevent file
-  ifstream listfile;
+  std::ifstream listfile;
   listfile.open(listrunevents_.c_str());
   if (listfile.is_open())
     {

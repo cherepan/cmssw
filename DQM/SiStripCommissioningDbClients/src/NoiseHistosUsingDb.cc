@@ -1,4 +1,3 @@
-// Last commit: $Id: NoiseHistosUsingDb.cc,v 1.5 2009/11/10 14:49:02 lowette Exp $
 
 #include "DQM/SiStripCommissioningDbClients/interface/NoiseHistosUsingDb.h"
 #include "CondFormats/SiStripObjects/interface/NoiseAnalysis.h"
@@ -82,7 +81,7 @@ void NoiseHistosUsingDb::update( SiStripConfigDb::FedDescriptionsRange feds ) {
     for ( uint16_t ichan = 0; ichan < sistrip::FEDCH_PER_FED; ichan++ ) {
 
       // Build FED and FEC keys
-      const FedChannelConnection& conn = cabling()->connection( (*ifed)->getFedId(), ichan );
+      const FedChannelConnection& conn = cabling()->fedConnection( (*ifed)->getFedId(), ichan );
       if ( conn.fecCrate() == sistrip::invalid_ ||
 	   conn.fecSlot() == sistrip::invalid_ ||
 	   conn.fecRing() == sistrip::invalid_ ||

@@ -17,7 +17,6 @@
 //
 // Author:      Domenico Giordano
 // Created:     Wed Sep 26 17:42:12 CEST 2007
-// $Id: SiStripQuality.h,v 1.14 2009/07/28 08:39:55 demattia Exp $
 //
 
 
@@ -27,10 +26,12 @@
 #include "CondFormats/RunInfo/interface/RunInfo.h"
 #include <vector>
 
+#include "FWCore/Utilities/interface/GCC11Compatibility.h"
+
 class SiStripDetCabling;
 class SiStripDetInfoFileReader;
 
-class SiStripQuality: public SiStripBadStrip {
+class SiStripQuality GCC11_FINAL : public SiStripBadStrip {
 
  public:
 
@@ -121,6 +122,10 @@ class SiStripQuality: public SiStripBadStrip {
 
   inline void setPrintDebugOutput(const bool printDebug) { printDebug_ = printDebug; }
   inline void setUseEmptyRunInfo(const bool useEmptyRunInfo) { useEmptyRunInfo_ = useEmptyRunInfo; }
+
+
+  SiStripDetCabling const * cabling() const { return SiStripDetCabling_;}
+
 
  private:
 

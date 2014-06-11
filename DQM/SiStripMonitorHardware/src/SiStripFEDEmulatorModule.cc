@@ -1,6 +1,5 @@
 // Original Author:  Anne-Marie Magnan
 //         Created:  2010/01/21
-// $Id: SiStripFEDEmulatorModule.cc,v 1.2 2013/03/04 07:53:45 davidlt Exp $
 //
 
 #include <sstream>
@@ -219,7 +218,7 @@ namespace sistrip {
 	uint16_t lFedChannel = 0;
 	sistrip::SpyUtilities::fedIndex(lDetId, lFedId, lFedChannel);
     		
-	const FedChannelConnection & lConnection = lCabling->connection(lFedId,lFedChannel);
+	const FedChannelConnection & lConnection = lCabling->fedConnection(lFedId,lFedChannel);
 	lDetId = lConnection.detId();
 	lNPairs = lConnection.nApvPairs();
 	lPair = lConnection.apvPairNumber();

@@ -53,7 +53,9 @@
 // Created:     Mon Aug  9 12:42:17 EDT 2010
 //
 
+#include "DataFormats/Provenance/interface/ModuleDescription.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/ServiceRegistry/interface/ModuleCallingContext.h"
 
 #include <set>
 #include <memory>
@@ -63,7 +65,7 @@ namespace edm {
     class EventSetupRecordKey;
     class EventSetupProvider;
   }
-  class ActionTable;
+  class ExceptionToActionTable;
   class ProcessContext;
   class ScheduleInfo;
   class StreamContext;
@@ -99,7 +101,7 @@ namespace edm {
       ///Override this method if you need to monitor the state of the processing
       virtual void attachTo(ActivityRegistry&);
 
-      void setActionTable(ActionTable const* actionTable) { act_table_ = actionTable; }
+      void setActionTable(ExceptionToActionTable const* actionTable) { act_table_ = actionTable; }
 
       virtual std::set<eventsetup::EventSetupRecordKey> modifyingRecords() const;
 
@@ -143,10 +145,13 @@ namespace edm {
 
 
       unsigned int iCounter_;
-      ActionTable const* act_table_;
+      ExceptionToActionTable const* act_table_;
 
       std::auto_ptr<ScheduleInfo> scheduleInfo_;
       ModuleChanger const* moduleChanger_;
+
+      ModuleDescription moduleDescription_;
+      ModuleCallingContext moduleCallingContext_;
   };
 }
 

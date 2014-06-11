@@ -13,7 +13,6 @@
 //
 // Original Author:  Yetkin Yilmaz
 //         Created:  Tue Aug 11 12:42:25 EDT 2009
-// $Id: HiCentralityBiasFilter.cc,v 1.1 2009/10/15 12:23:06 yilmaz Exp $
 //
 //
 
@@ -54,9 +53,9 @@ class HiCentralityBiasFilter : public edm::EDFilter {
       ~HiCentralityBiasFilter();
 
    private:
-      virtual void beginJob() ;
-      virtual bool filter(edm::Event&, const edm::EventSetup&);
-      virtual void endJob() ;
+      virtual void beginJob() override ;
+      virtual bool filter(edm::Event&, const edm::EventSetup&) override;
+      virtual void endJob() override ;
       
   edm::InputTag hepmcSrc_;
 

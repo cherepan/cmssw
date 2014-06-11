@@ -15,8 +15,8 @@
 <use   name="DQMServices/Core"/>
 <use   name="SimDataFormats/Track"/>
 <use   name="SimDataFormats/GeneratorProducts"/>
-<use   name="SimDataFormats/TrackerDigiSimLink"/>
 <use   name="SimDataFormats/PileupSummaryInfo"/>
+<use   name="SimDataFormats/TrackerDigiSimLink"/>
 <use   name="DataFormats/SiStripDetId"/>
 <use   name="RecoTracker/TkSeedGenerator"/>
 <use   name="TrackingTools/TrackFitters"/>

@@ -5,8 +5,6 @@
  *  For now: Analyzer of StandAlone muon tracks
  *  Later: Add other detectors and more Reco
  * 
- *  $Date: 2008/03/01 00:40:13 $
- *  $Revision: 1.4 $
  *  \author M. Mulders - CERN <martijn.mulders@cern.ch>
  *  Based on STAMuonAnalyzer by R. Bellan - INFN Torino <riccardo.bellan@cern.ch>
  */
@@ -17,7 +15,8 @@
 #include "DQMServices/Core/interface/DQMStore.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "DQMServices/Core/interface/MonitorElement.h"
-
+//#include "DataFormats/TrackReco/interface/Track.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 
 namespace edm {
   class ParameterSet;
@@ -80,7 +79,9 @@ private:
   int numberOfRecTracks;
 
   std::string theDataType;
-  
+
+  //define Token(-s)
+  edm::EDGetTokenT<reco::TrackCollection> theSTAMuonToken_;
 };
 #endif
 

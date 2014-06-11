@@ -17,15 +17,17 @@
 
 #include "IOPool/Common/interface/RootServiceChecker.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/OutputModule.h"
+#include "FWCore/Framework/interface/one/OutputModule.h"
 
 class TTree;
 namespace edm {
+
+  class ModuleCallingContext;
   class ParameterSet;
   class RootOutputFile;
   class ConfigurationDescriptions;
 
-  class PoolOutputModule : public OutputModule {
+  class PoolOutputModule : public one::OutputModule<WatchInputFiles> {
   public:
     enum DropMetaData { DropNone, DropDroppedPrior, DropPrior, DropAll };
     explicit PoolOutputModule(ParameterSet const& ps);
@@ -117,7 +119,6 @@ namespace edm {
     void writeFileFormatVersion();
     void writeFileIdentifier();
     void writeIndexIntoFile();
-    void writeProcessConfigurationRegistry();
     void writeProcessHistoryRegistry();
     void writeParameterSetRegistry();
     void writeProductDescriptionRegistry();

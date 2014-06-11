@@ -9,8 +9,6 @@
 
 /** \class HcalCoarsePedestalMonitor
   *  
-  * $Date: 2010/11/10 20:00:32 $
-  * $Revision: 1.4 $
   * \author J. Temple - Univ. of Maryland
   */
 
@@ -62,6 +60,12 @@ private:  ///Methods, variables accessible only within class code
   edm::InputTag digiLabel_;
   int minEvents_;
   bool excludeHORing2_;
+
+  edm::EDGetTokenT<HBHEDigiCollection> tok_hbhe_;
+  edm::EDGetTokenT<HODigiCollection> tok_ho_;
+  edm::EDGetTokenT<HFDigiCollection> tok_hf_;
+  edm::EDGetTokenT<HcalUnpackerReport> tok_report_;
+
 
 };
 

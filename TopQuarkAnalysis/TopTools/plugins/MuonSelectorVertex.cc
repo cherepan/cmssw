@@ -1,5 +1,4 @@
 //
-// $Id: MuonSelectorVertex.cc,v 1.1 2012/05/25 09:52:27 vadler Exp $
 //
 
 
@@ -14,7 +13,7 @@ class MuonSelectorVertex : public edm::EDProducer {
 
     explicit MuonSelectorVertex( const edm::ParameterSet & iConfig );
     ~ MuonSelectorVertex() {};
-    virtual void produce( edm::Event & iEvent, const edm::EventSetup & iSetup );
+    virtual void produce( edm::Event & iEvent, const edm::EventSetup & iSetup ) override;
 
   private:
 

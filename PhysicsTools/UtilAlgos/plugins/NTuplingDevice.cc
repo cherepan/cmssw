@@ -13,7 +13,6 @@
 //
 // Original Author:  Jean-Roch Vlimant
 //         Created:  Sun May 11 21:12:46 CEST 2008
-// $Id: NTuplingDevice.cc,v 1.3 2009/05/11 14:29:49 llista Exp $
 //
 //
 
@@ -42,9 +41,9 @@ class NTuplingDevice : public edm::EDProducer {
       ~NTuplingDevice();
 
    private:
-      virtual void beginJob() ;
-      virtual void produce(edm::Event&, const edm::EventSetup&);
-      virtual void endJob() ;
+      virtual void beginJob() override ;
+      virtual void produce(edm::Event&, const edm::EventSetup&) override;
+      virtual void endJob() override ;
       
       // ----------member data ---------------------------
   NTupler * ntupler_;

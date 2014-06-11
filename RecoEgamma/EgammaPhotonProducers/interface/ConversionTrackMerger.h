@@ -10,9 +10,6 @@
 // Original Author: Steve Wagner, stevew@pizero.colorado.edu
 // Created:         Sat Jan 14 22:00:00 UTC 2006
 //
-// $Author: bendavid $
-// $Date: 2010/09/17 19:46:18 $
-// $Revision: 1.1 $
 //
 
 #include "FWCore/Framework/interface/EDProducer.h"
@@ -42,6 +39,9 @@
 
   private:
     edm::ParameterSet conf_;
+
+    edm::EDGetTokenT<reco::ConversionTrackCollection> trackProducer1;
+    edm::EDGetTokenT<reco::ConversionTrackCollection> trackProducer2;
 
     std::auto_ptr<reco::ConversionTrackCollection> outputTrks;
   };

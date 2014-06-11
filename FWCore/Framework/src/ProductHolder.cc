@@ -42,7 +42,7 @@ namespace edm {
       throwProductDeletedException();
     }
     if(!productUnavailable()) {
-      principal_->resolveProduct(*this, false, mcc);
+      principal_->readFromSource(*this, mcc);
       // If the product is a dummy filler, product holder will now be marked unavailable.
       if(product() && !productUnavailable()) {
         // Found the match
@@ -239,14 +239,14 @@ namespace edm {
     productData().wrapper_ = prod.product();
   }
 
-  void InputProductHolder::setProvenance_(boost::shared_ptr<BranchMapper> mapper, ProcessHistoryID const& phid, ProductID const& pid) {
+  void InputProductHolder::setProvenance_(boost::shared_ptr<ProductProvenanceRetriever> provRetriever, ProcessHistory const& ph, ProductID const& pid) {
     productData().prov_.setProductID(pid);
-    productData().prov_.setStore(mapper);
-    productData().prov_.setProcessHistoryID(phid);
+    productData().prov_.setStore(provRetriever);
+    productData().prov_.setProcessHistory(ph);
   }
 
-  void InputProductHolder::setProcessHistoryID_(ProcessHistoryID const& phid) {
-    productData().prov_.setProcessHistoryID(phid);
+  void InputProductHolder::setProcessHistory_(ProcessHistory const& ph) {
+    productData().prov_.setProcessHistory(ph);
   }
 
   ProductProvenance* InputProductHolder::productProvenancePtr_() const {
@@ -313,14 +313,14 @@ namespace edm {
     status() = ProductDeleted;
   }
 
-  void ProducedProductHolder::setProvenance_(boost::shared_ptr<BranchMapper> mapper, ProcessHistoryID const& phid, ProductID const& pid) {
+  void ProducedProductHolder::setProvenance_(boost::shared_ptr<ProductProvenanceRetriever> provRetriever, ProcessHistory const& ph, ProductID const& pid) {
     productData().prov_.setProductID(pid);
-    productData().prov_.setStore(mapper);
-    productData().prov_.setProcessHistoryID(phid);
+    productData().prov_.setStore(provRetriever);
+    productData().prov_.setProcessHistory(ph);
   }
 
-  void ProducedProductHolder::setProcessHistoryID_(ProcessHistoryID const& phid) {
-    productData().prov_.setProcessHistoryID(phid);
+  void ProducedProductHolder::setProcessHistory_(ProcessHistory const& ph) {
+    productData().prov_.setProcessHistory(ph);
   }
   
   ProductProvenance* ProducedProductHolder::productProvenancePtr_() const {
@@ -419,7 +419,7 @@ namespace edm {
         return nullptr;
       }
       if (matchingHolders_[k] != ProductHolderIndexInvalid) {
-        ProductHolderBase const* productHolder = principal_->getProductByIndex(matchingHolders_[k], false, false, mcc);
+        ProductHolderBase const* productHolder = principal_->getProductHolderByIndex(matchingHolders_[k]);
         ProductData const* pd =  productHolder->resolveProduct(resolveStatus, skipCurrentProcess, mcc);
         if(pd != nullptr) return pd;
       }
@@ -428,14 +428,14 @@ namespace edm {
     return nullptr;
   }
 
-  void AliasProductHolder::setProvenance_(boost::shared_ptr<BranchMapper> mapper, ProcessHistoryID const& phid, ProductID const& pid) {
+  void AliasProductHolder::setProvenance_(boost::shared_ptr<ProductProvenanceRetriever> provRetriever, ProcessHistory const& ph, ProductID const& pid) {
     productData().prov_.setProductID(pid);
-    productData().prov_.setStore(mapper);
-    productData().prov_.setProcessHistoryID(phid);
+    productData().prov_.setStore(provRetriever);
+    productData().prov_.setProcessHistory(ph);
   }
 
-  void AliasProductHolder::setProcessHistoryID_(ProcessHistoryID const& phid) {
-    productData().prov_.setProcessHistoryID(phid);
+  void AliasProductHolder::setProcessHistory_(ProcessHistory const& ph) {
+    productData().prov_.setProcessHistory(ph);
   }
 
   ProductProvenance* AliasProductHolder::productProvenancePtr_() const {
@@ -464,10 +464,10 @@ namespace edm {
   void NoProcessProductHolder::resetStatus_() {
   }
 
-  void NoProcessProductHolder::setProvenance_(boost::shared_ptr<BranchMapper> mapper, ProcessHistoryID const& phid, ProductID const& pid) {
+  void NoProcessProductHolder::setProvenance_(boost::shared_ptr<ProductProvenanceRetriever> provRetriever, ProcessHistory const& ph, ProductID const& pid) {
   }
 
-  void NoProcessProductHolder::setProcessHistoryID_(ProcessHistoryID const& phid) {
+  void NoProcessProductHolder::setProcessHistory_(ProcessHistory const& ph) {
   }
 
   ProductProvenance* NoProcessProductHolder::productProvenancePtr_() const {
@@ -547,13 +547,13 @@ namespace edm {
       << "Contact a Framework developer\n";
   }
 
-  ConstBranchDescription const& NoProcessProductHolder::branchDescription_() const {
+  BranchDescription const& NoProcessProductHolder::branchDescription_() const {
     throw Exception(errors::LogicError)
       << "NoProcessProductHolder::branchDescription_() not implemented and should never be called.\n"
       << "Contact a Framework developer\n";
   }
 
-  void NoProcessProductHolder::resetBranchDescription_(boost::shared_ptr<ConstBranchDescription> bd) {
+  void NoProcessProductHolder::resetBranchDescription_(boost::shared_ptr<BranchDescription const> bd) {
     throw Exception(errors::LogicError)
       << "NoProcessProductHolder::resetBranchDescription_() not implemented and should never be called.\n"
       << "Contact a Framework developer\n";

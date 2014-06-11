@@ -48,7 +48,8 @@
 // Needed for the FED raw data processing
 #include "EventFilter/SiStripRawToDigi/interface/SiStripFEDBuffer.h"
 #include "EventFilter/SiStripRawToDigi/interface/SiStripFEDBufferGenerator.h"
-#include "EventFilter/SiStripRawToDigi/interface/SiStripDigiToRaw.h"
+
+// #include "EventFilter/SiStripRawToDigi/interface/SiStripDigiToRaw.h"
 
 //for cabling
 #include "DQM/SiStripMonitorHardware/interface/SiStripSpyUtilities.h"
@@ -97,10 +98,10 @@ class SiStripSpyDisplayModule : public edm::EDAnalyzer {
     ~SiStripSpyDisplayModule();
 
   private:
-    virtual void beginRun(const edm::Run&, const edm::EventSetup&);
-    virtual void beginJob() ;
-    virtual void analyze(const edm::Event&, const edm::EventSetup&);
-    virtual void endJob() ;
+    virtual void beginRun(const edm::Run&, const edm::EventSetup&) override;
+    virtual void beginJob() override ;
+    virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+    virtual void endJob() override ;
 
   Bool_t MakeRawDigiHist_(const edm::Handle< edm::DetSetVector<SiStripRawDigi> > & digi_handle,
                             uint32_t specifier,

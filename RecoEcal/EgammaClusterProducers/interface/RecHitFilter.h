@@ -3,9 +3,6 @@
 /** \class RecHitFilter
  **   simple filter of EcalRecHits
  **
- **  $Id: RecHitFilter.h,v 1.2 2013/04/09 14:31:08 chanon Exp $
- **  $Date: 2013/04/09 14:31:08 $
- **  $Revision: 1.2 $
  **  \author Shahram Rahatlou, University of Rome & INFN, May 2006
  **
  ***/
@@ -35,7 +32,7 @@ class RecHitFilter : public edm::EDProducer {
       double        noiseEnergyThreshold_;
       double        noiseChi2Threshold_;
       std::string   reducedHitCollection_;
-      edm::InputTag hitCollection_;
+      edm::EDGetTokenT<EcalRecHitCollection> hitCollection_;
 
 
 };

@@ -13,7 +13,6 @@
 */
 //
 // Original Author:  Dmytro Kovalskyi
-// $Id: MuonRefProducer.h,v 1.2 2007/07/26 00:27:03 dmytro Exp $
 //
 
 
@@ -32,6 +31,7 @@ class MuonRefProducer : public edm::EDProducer {
 
  private:
    edm::InputTag theReferenceCollection_;
+   edm::EDGetTokenT<reco::MuonCollection> muonToken_;
 
    muon::AlgorithmType type_;
    int    minNumberOfMatches_;
@@ -42,6 +42,5 @@ class MuonRefProducer : public edm::EDProducer {
    double maxChamberDist_;
    double maxChamberDistPull_;
    reco::Muon::ArbitrationType arbitrationType_;
-
 };
 #endif

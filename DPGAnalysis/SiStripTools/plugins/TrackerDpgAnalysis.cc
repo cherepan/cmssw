@@ -130,7 +130,7 @@ class TrackerDpgAnalysis : public edm::EDAnalyzer {
    private:
       virtual void beginRun(const edm::Run&, const edm::EventSetup&) override;
       virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
-      virtual void endJob() ;
+      virtual void endJob() override ;
 
       // ----------member data ---------------------------
       static const int nMaxPVs_ = 50;
@@ -965,10 +965,10 @@ TrackerDpgAnalysis::beginRun(const edm::Run& iRun, const edm::EventSetup& iSetup
 
    // cabling I (readout)
    iSetup.get<SiStripFedCablingRcd>().get( cabling_ );
-   const std::vector< uint16_t > & feds = cabling_->feds() ;
-   for(std::vector< uint16_t >::const_iterator fedid = feds.begin();fedid<feds.end();++fedid) {
-     const std::vector< FedChannelConnection > & connections = cabling_->connections(*fedid);
-     for(std::vector< FedChannelConnection >::const_iterator conn=connections.begin();conn<connections.end();++conn) {
+   auto feds = cabling_->fedIds() ;
+   for(auto fedid = feds.begin();fedid<feds.end();++fedid) {
+     auto connections = cabling_->fedConnections(*fedid);
+     for(auto conn=connections.begin();conn<connections.end();++conn) {
        // Fill the "old" map to be used for lookup during analysis
        if(conn->isConnected())
          connections_.insert(std::make_pair(conn->detId(),new FedChannelConnection(*conn)));
@@ -1001,7 +1001,7 @@ TrackerDpgAnalysis::beginRun(const edm::Run& iRun, const edm::EventSetup& iSetup
    if(delayMap.size()) tmap.save(true, 0, 0, "delaymap.png");
 
    // cabling II (DCU map)
-   ifstream cablingFile(cablingFileName_.c_str());
+   std::ifstream cablingFile(cablingFileName_.c_str());
    if(cablingFile.is_open()) {
      char buffer[1024];
      cablingFile.getline(buffer,1024);

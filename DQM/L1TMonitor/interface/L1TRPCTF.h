@@ -4,8 +4,6 @@
 /*
  * \file L1TRPCTF.h
  *
- * $Date: 2009/11/19 14:34:30 $
- * $Revision: 1.21 $
  * \author J. Berryhill
  *
 */
@@ -94,7 +92,7 @@ private:
   
 
 
-  edm::InputTag rpctfSource_ ;
+  edm::EDGetTokenT<L1MuGMTReadoutCollection> rpctfSource_ ;
 
   int nev_; // Number of events processed
   int nevRPC_; // Number of events processed where muon was found by rpc trigger

@@ -4,8 +4,6 @@
 /*
  * \file EcalSelectiveReadoutValidation.h
  *
- * $Date: 2010/05/05 10:54:53 $
- * $Revision: 1.13 $
  *
  */
 
@@ -889,7 +887,7 @@ private:
    * the hardware representation.
    * @param weightsForZsFIR weights from configuration file
    */
-  void configFirWeights(std::vector<double> weightsForZsFIR);
+  void configFirWeights(const std::vector<double>& weightsForZsFIR);
 
   /** Switch to log in an ascii file inconsistencies found
    * between SRFs read from data and SRFs obtained by rerunning

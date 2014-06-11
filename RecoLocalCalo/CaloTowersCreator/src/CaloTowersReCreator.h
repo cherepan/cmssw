@@ -14,8 +14,6 @@
 
 /** \class CaloTowersReCreator
   *  
-  * $Date: 2007/03/31 18:38:51 $
-  * $Revision: 1.1 $
   */
 class CaloTowersReCreator : public edm::EDProducer {
 public:
@@ -26,7 +24,7 @@ public:
   double HEDEScale, HOEScale, HF1EScale, HF2EScale;
 private:
   CaloTowersCreationAlgo algo_;
-  edm::InputTag caloLabel_;
+  edm::EDGetTokenT<CaloTowerCollection> tok_calo_;
   bool allowMissingInputs_;
 };
 

@@ -13,7 +13,6 @@
 //
 // Original Author:  "Nathaniel Odell"
 //         Created:  Thu Aug 12 09:24:46 CDT 2010
-// $Id: FourJetMC.cc,v 1.1 2011/03/10 17:02:32 rofierzy Exp $
 // then moved to more general N-jets purpose in GeneratorInterface/GenFilters
 //
 
@@ -55,9 +54,9 @@ public:
   ~NJetsMC();
   
 private:
-  virtual void beginJob() ;
-  virtual bool filter(edm::Event&, const edm::EventSetup&);
-  virtual void endJob() ;
+  virtual void beginJob() override ;
+  virtual bool filter(edm::Event&, const edm::EventSetup&) override;
+  virtual void endJob() override ;
   
   // ----------member data ---------------------------
   

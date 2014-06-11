@@ -2,8 +2,6 @@
  *  
  *  See header file for description of class
  *
- *  $Date: 2008/03/13 21:17:08 $
- *  $Revision: 1.7 $
  *  \author M. Strang SUNY-Buffalo
  */
 
@@ -32,6 +30,8 @@ GlobalHitsHistogrammer::GlobalHitsHistogrammer(const edm::ParameterSet& iPSet)
 
   //get Labels to use to extract information
   GlobalHitSrc_ = iPSet.getParameter<edm::InputTag>("GlobalHitSrc");
+  // fix for consumes
+  GlobalHitSrc_Token_ = consumes<PGlobalSimHit>(iPSet.getParameter<edm::InputTag>("GlobalHitSrc"));
 
   // use value of first digit to determine default output level (inclusive)
   // 0 is none, 1 is basic, 2 is fill output, 3 is gather output
@@ -587,7 +587,7 @@ void GlobalHitsHistogrammer::analyze(const edm::Event& iEvent,
 
   // fill histograms
   edm::Handle<PGlobalSimHit> srcGlobalHits;
-  iEvent.getByLabel(GlobalHitSrc_,srcGlobalHits);
+  iEvent.getByToken(GlobalHitSrc_Token_,srcGlobalHits);
   if (!srcGlobalHits.isValid()) {
     edm::LogWarning(MsgLoggerCat)
       << "Unable to find PGlobalSimHit in event!";

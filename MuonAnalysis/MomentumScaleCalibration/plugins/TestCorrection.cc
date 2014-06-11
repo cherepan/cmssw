@@ -16,7 +16,6 @@
 //
 // Original Author:  Marco De Mattia
 //         Created:  Thu Sep 11 12:16:00 CEST 2008
-// $Id: TestCorrection.cc,v 1.13 2012/05/07 10:03:31 emiglior Exp $
 //
 //
 
@@ -66,8 +65,8 @@ public:
 
 private:
   virtual void initialize(const edm::EventSetup&);
-  virtual void analyze(const edm::Event&, const edm::EventSetup&);
-  virtual void endJob() {};
+  virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+  virtual void endJob() override {};
   template<typename T>
   std::vector<reco::LeafCandidate> fillMuonCollection (const std::vector<T>& tracks) {
     std::vector<reco::LeafCandidate> muons;

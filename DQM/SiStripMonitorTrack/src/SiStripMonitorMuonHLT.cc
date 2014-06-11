@@ -13,7 +13,6 @@
 //
 // Original Author:  Eric Chabert
 //         Created:  Wed Sep 23 17:26:42 CEST 2009
-// $Id: SiStripMonitorMuonHLT.cc,v 1.16 2013/01/03 19:04:38 wmtan Exp $
 //
 
 #include "DQM/SiStripMonitorTrack/interface/SiStripMonitorMuonHLT.h"
@@ -634,7 +633,7 @@ SiStripMonitorMuonHLT::createMEs (const edm::EventSetup & es)
 
 
 void
-SiStripMonitorMuonHLT::GeometryFromTrackGeom (std::vector<DetId> Dets,const TrackerGeometry & theTracker, const edm::EventSetup& es,
+SiStripMonitorMuonHLT::GeometryFromTrackGeom (const std::vector<DetId>& Dets,const TrackerGeometry & theTracker, const edm::EventSetup& es,
                                               std::map< std::string,std::vector<float> > & m_PhiStripMod_Eta,std::map< std::string,std::vector<float> > & m_PhiStripMod_Nb){
 
   //Retrieve tracker topology from geometry
@@ -646,7 +645,7 @@ SiStripMonitorMuonHLT::GeometryFromTrackGeom (std::vector<DetId> Dets,const Trac
 
   //Loop over DetIds
   //-----------------------------------------
-  for(std::vector<DetId>::iterator detid_iterator =  Dets.begin(); detid_iterator!=Dets.end(); ++detid_iterator){
+  for(std::vector<DetId>::const_iterator detid_iterator =  Dets.begin(); detid_iterator!=Dets.end(); ++detid_iterator){
     uint32_t detid = (*detid_iterator)();
 
     if ( (*detid_iterator).null() == true) break;
@@ -824,14 +823,14 @@ SiStripMonitorMuonHLT::GeometryFromTrackGeom (std::vector<DetId> Dets,const Trac
 
 
 void
-SiStripMonitorMuonHLT::Normalizer (std::vector<DetId> Dets,const TrackerGeometry & theTracker){
+SiStripMonitorMuonHLT::Normalizer (const std::vector<DetId>& Dets,const TrackerGeometry & theTracker){
   
   
   std::vector<std::string> v_LabelHisto;
 
   //Loop over DetIds
   //-----------------------------------------
-  for(std::vector<DetId>::iterator detid_iterator =  Dets.begin(); detid_iterator!=Dets.end(); detid_iterator++){
+  for(std::vector<DetId>::const_iterator detid_iterator =  Dets.begin(); detid_iterator!=Dets.end(); detid_iterator++){
     uint32_t detid = (*detid_iterator)();
     
     if ( (*detid_iterator).null() == true) break;
@@ -1235,7 +1234,7 @@ SiStripMonitorMuonHLT::Normalizer (std::vector<DetId> Dets,const TrackerGeometry
 
 
 void
-SiStripMonitorMuonHLT::PrintNormalization (std::vector<std::string> v_LabelHisto)
+SiStripMonitorMuonHLT::PrintNormalization (const std::vector<std::string>& v_LabelHisto)
 {
   std::vector <TH1F *> h_ModNorm_Eta;
   std::vector <TH1F *> h_ModNorm_Phi;

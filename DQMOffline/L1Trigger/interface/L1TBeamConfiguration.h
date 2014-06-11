@@ -1,7 +1,7 @@
 #ifndef DQMOffline_L1Trigger_L1TBeamConfiguration_h
 #define DQMOffline_L1Trigger_L1TBeamConfiguration_h
 
-/*
+/**
  * \class L1TBeamConfiguration
  *
  *
@@ -19,8 +19,6 @@
  *  -
  *  -
  *
- * $Date: 2012/11/27 14:56:18 $
- * $Revision: 1.1 $
  *
  */
 

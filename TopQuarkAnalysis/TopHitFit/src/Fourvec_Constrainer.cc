@@ -1,5 +1,4 @@
 //
-// $Id: Fourvec_Constrainer.cc,v 1.1 2011/05/26 09:47:00 mseidel Exp $
 //
 // File: src/Fourvec_Constrainer.cc
 // Purpose: Do a kinematic fit for a set of 4-vectors, given a set
@@ -1398,7 +1397,7 @@ public:
                      const Column_Vector& y,
                      Row_Vector& F,
                      Matrix& Bx,
-                     Matrix& By);
+                     Matrix& By) override;
 
 
   // Calculate the constraint functions and gradients.

@@ -1,4 +1,3 @@
-// Last commit: $Id: SiStripPartition.cc,v 1.19 2009/09/03 17:04:49 lowette Exp $
 
 #include "OnlineDB/SiStripConfigDb/interface/SiStripPartition.h"
 #include "DataFormats/SiStripCommon/interface/SiStripEnumsAndStrings.h"
@@ -860,7 +859,8 @@ std::ostream& operator<< ( std::ostream& os, const SiStripPartition& params ) {
 
 // -----------------------------------------------------------------------------
 // 
-SiStripPartition::Versions SiStripPartition::versions( std::vector<uint32_t> input ) {
+SiStripPartition::Versions SiStripPartition::versions( const std::vector<uint32_t>& _input ) {
+  std::vector<uint32_t> input =  _input;
   if ( input.size() != 2 ) { 
     edm::LogWarning(mlConfigDb_)
       << "[SiStripPartition::" << __func__ << "]"

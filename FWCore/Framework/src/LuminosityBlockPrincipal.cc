@@ -23,20 +23,21 @@ namespace edm {
 
   void
   LuminosityBlockPrincipal::fillLuminosityBlockPrincipal(
+      ProcessHistoryRegistry const& processHistoryRegistry,
       DelayedReader* reader) {
 
     complete_ = false;
 
-    fillPrincipal(aux_->processHistoryID(), reader);
+    fillPrincipal(aux_->processHistoryID(), processHistoryRegistry, reader);
 
-    for(const_iterator i = this->begin(), iEnd = this->end(); i != iEnd; ++i) {
-      (*i)->setProcessHistoryID(processHistoryID());
+    for(auto const& prod : *this) {
+      prod->setProcessHistory(processHistory());
     }
   }
 
   void
   LuminosityBlockPrincipal::put(
-        ConstBranchDescription const& bd,
+        BranchDescription const& bd,
         WrapperOwningHolder const& edp) {
 
     assert(bd.produced());
@@ -53,8 +54,8 @@ namespace edm {
 
   void
   LuminosityBlockPrincipal::readImmediate() const {
-    for(Principal::const_iterator i = begin(), iEnd = end(); i != iEnd; ++i) {
-      ProductHolderBase const& phb = **i;
+    for(auto const& prod : *this) {
+      ProductHolderBase const& phb = *prod;
       if(phb.singleProduct() && !phb.branchDescription().produced()) {
         if(!phb.productUnavailable()) {
           resolveProductImmediate(phb);
@@ -77,4 +78,10 @@ namespace edm {
       putOrMerge(edp, &phb);
     }
   }
+
+  unsigned int
+  LuminosityBlockPrincipal::transitionIndex_() const {
+    return index().value();
+  }
+
 }

@@ -10,8 +10,6 @@
  *
  *   Implementation of muon b-tagging using a softmax multilayer perceptron neural network
  *
- *   $Date: 2008/10/01 12:35:34 $
- *   $Revision: 1.5 $
  *
  *   \author Andrea 'fwyzard' Bocci, Universita' di Firenze
  */
@@ -21,7 +19,6 @@ public:
 
   /// explicit ctor
   explicit MuonTaggerNoIP(const edm::ParameterSet & configuration) : 
-    theNet(),
     m_selector(configuration)
   { 
     uses("slTagInfos"); 
@@ -34,8 +31,6 @@ public:
   virtual float discriminator(const TagInfoHelper & tagInfo) const;
 
 private:
-
-  mutable MuonTaggerNoIPMLP theNet;
 
   btag::LeptonSelector m_selector;
 

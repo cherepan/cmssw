@@ -1,5 +1,4 @@
 
-// $Id: BetaBoostEvtVtxGenerator.cc,v 1.2 2012/09/06 20:41:40 lixu Exp $
 /*
   ________________________________________________________________________
 
@@ -55,7 +54,7 @@ public:
   /// return a new event vertex
   //virtual CLHEP::Hep3Vector * newVertex();
   virtual HepMC::FourVector* newVertex() ;
-  virtual void produce( edm::Event&, const edm::EventSetup& );
+  virtual void produce( edm::Event&, const edm::EventSetup& ) override;
   virtual TMatrixD* GetInvLorentzBoost();
 
 

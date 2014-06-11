@@ -1,4 +1,3 @@
-// Last commit: $Id: CommissioningHistosUsingDb.cc,v 1.24 2010/04/21 14:26:26 dstrom Exp $
 
 #include "DQM/SiStripCommissioningDbClients/interface/CommissioningHistosUsingDb.h"
 #include "CalibFormats/SiStripObjects/interface/NumberOfDevices.h"
@@ -208,8 +207,8 @@ void CommissioningHistosUsingDb::addDcuDetIds() {
     SiStripFedKey fed_key = anal->fedKey();
     SiStripFecKey fec_key = anal->fecKey();
     
-    FedChannelConnection conn = cabling_->connection( fed_key.fedId(),
-						      fed_key.fedChannel() );
+    FedChannelConnection conn = cabling_->fedConnection( fed_key.fedId(),
+                                                         fed_key.fedChannel() );
   
     SiStripFedKey fed( conn.fedId(),
 		       SiStripFedKey::feUnit( conn.fedCh() ),

@@ -8,8 +8,6 @@
  *    - use or ignore the L1 trigger mask
  *    - only look at a subset of the L1 bits
  * 
- *  $Date: 2012/01/22 23:31:49 $
- *  $Revision: 1.14 $
  *
  *  \author Andrea Bocci
  *
@@ -43,7 +41,7 @@ public:
   explicit HLTLevel1Activity(const edm::ParameterSet&);
   ~HLTLevel1Activity();
   static void fillDescriptions(edm::ConfigurationDescriptions & descriptions);
-  virtual bool filter(edm::Event&, const edm::EventSetup&);
+  virtual bool filter(edm::Event&, const edm::EventSetup&) override;
 
 private:
   edm::InputTag                                  m_gtReadoutRecordTag;

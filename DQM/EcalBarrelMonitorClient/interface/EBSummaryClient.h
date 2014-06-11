@@ -4,8 +4,6 @@
 /*
  * \file EBSummaryClient.h
  *
- * $Date: 2012/04/27 13:45:58 $
- * $Revision: 1.61 $
  * \author G. Della Ricca
  *
 */
@@ -69,7 +67,7 @@ inline int getEvtPerJob() { return ievt_; }
 inline int getEvtPerRun() { return jevt_; }
 
 /// Set Clients
-inline void setFriends(std::vector<EBClient*> clients) { clients_ = clients; }
+inline void setFriends(const std::vector<EBClient*>& clients) { clients_ = clients; }
 
 private:
 

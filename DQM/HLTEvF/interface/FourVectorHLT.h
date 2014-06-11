@@ -16,7 +16,6 @@
 //
 // Original Author:  Peter Wittich
 //         Created:  May 2008
-// $Id: FourVectorHLT.h,v 1.5 2008/05/24 13:23:14 wittich Exp $
 //
 //
 
@@ -84,6 +83,9 @@ class FourVectorHLT : public edm::EDAnalyzer {
       int theHLTOutputType;
       edm::InputTag triggerSummaryLabel_;
       edm::InputTag triggerResultLabel_;
+
+      //define Token(-s)
+      edm::EDGetTokenT<trigger::TriggerEvent> triggerSummaryToken_;
 
       // helper class to store the data
       class PathInfo {

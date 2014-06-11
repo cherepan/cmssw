@@ -12,7 +12,6 @@
 //
 // Author:      Christophe Saout
 // Created:     Sat Apr 24 15:18 CEST 2007
-// $Id: ProcMLP.cc,v 1.3 2007/07/15 22:31:46 saout Exp $
 //
 
 #include <stdlib.h>
@@ -40,10 +39,10 @@ class ProcMLP : public VarProcessor {
 	         const MVAComputer *computer);
 	virtual ~ProcMLP() {}
 
-	virtual void configure(ConfIterator iter, unsigned int n);
-	virtual void eval(ValueIterator iter, unsigned int n) const;
+	virtual void configure(ConfIterator iter, unsigned int n) override;
+	virtual void eval(ValueIterator iter, unsigned int n) const override;
 	virtual std::vector<double> deriv(
-				ValueIterator iter, unsigned int n) const;
+				ValueIterator iter, unsigned int n) const override;
 
     private:
 	struct Layer {

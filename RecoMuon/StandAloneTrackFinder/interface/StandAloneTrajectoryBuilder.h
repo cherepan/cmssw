@@ -4,14 +4,13 @@
 /** \class StandAloneTrajectoryBuilder
  *  Concrete class for the STA Muon reco 
  *
- *  $Date: 2008/04/23 16:56:34 $
- *  $Revision: 1.23 $
  *  \author R. Bellan - INFN Torino <riccardo.bellan@cern.ch>
  */
 
 #include "RecoMuon/TrackingTools/interface/MuonTrajectoryBuilder.h"
 
 #include "RecoMuon/TrackingTools/interface/RecoMuonEnumerators.h"
+#include "FWCore/Framework/interface/ConsumesCollector.h"
 
 
 class TrajectorySeed;
@@ -30,7 +29,7 @@ class StandAloneMuonTrajectoryBuilder : public MuonTrajectoryBuilder{
   
  public:
   /// Constructor with Parameter set and MuonServiceProxy
-  StandAloneMuonTrajectoryBuilder(const edm::ParameterSet&, const MuonServiceProxy*);
+  StandAloneMuonTrajectoryBuilder(const edm::ParameterSet&, const MuonServiceProxy*,edm::ConsumesCollector& iC);
 
   /// Destructor
   virtual ~StandAloneMuonTrajectoryBuilder();

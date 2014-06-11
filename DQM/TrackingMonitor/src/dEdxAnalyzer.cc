@@ -1,8 +1,6 @@
 /*
  *  See header file for a description of this class.
  *
- *  $Date: 2012/10/16 10:07:42 $
- *  $Revision: 1.3 $
  *  \author Loic Quertenmont 
  */
 #include "DQM/TrackingMonitor/interface/dEdxAnalyzer.h"
@@ -27,7 +25,7 @@ dEdxAnalyzer::dEdxAnalyzer(const edm::ParameterSet& iConfig)
   , conf_    (fullconf_.getParameter<edm::ParameterSet>("dEdxParameters") )
   , doAllPlots_  ( conf_.getParameter<bool>("doAllPlots") )
   , doDeDxPlots_ ( conf_.getParameter<bool>("doDeDxPlots") )    
-  , genTriggerEventFlag_( new GenericTriggerEventFlag(conf_) )
+  , genTriggerEventFlag_( new GenericTriggerEventFlag(conf_,consumesCollector()) )
 {
 
   trackInputTag_ = edm::InputTag(conf_.getParameter<std::string>("TracksForDeDx") );

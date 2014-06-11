@@ -16,7 +16,6 @@
 //
 // Original Author:  Vincenzo Chiochia
 //         Created:  
-// $Id: SiPixelDigiSource.h,v 1.25 2012/01/18 12:50:15 merkelp Exp $
 //
 
 #include <memory>
@@ -197,6 +196,9 @@
        int numberOfDigis[192];
        int nDigisA;
        int nDigisB;
+
+       //define Token(-s)
+       edm::EDGetTokenT<edm::DetSetVector<PixelDigi> > srcToken_;
  };
 
 #endif

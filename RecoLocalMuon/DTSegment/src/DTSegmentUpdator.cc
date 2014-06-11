@@ -1,7 +1,5 @@
 /** \file
  *
- * $Date: 2013/05/28 05:57:47 $
- * $Revision: 1.53 $
  * \author Stefano Lacaprara - INFN Legnaro <stefano.lacaprara@pd.infn.it>
  * \author Riccardo Bellan - INFN TO <riccardo.bellan@cern.ch>
  * \       A.Meneguzzo - Padova University  <anna.meneguzzo@pd.infn.it>
@@ -440,6 +438,9 @@ void DTSegmentUpdator::rejectBadHits(DTChamberRecSegment2D* phiSeg) const {
   float Sxy = 0.;
 
   size_t N =  x.size();
+
+  if (N == 0)
+    return;
 	
   for(size_t i = 0; i < N;++i){
     Sx += x.at(i);

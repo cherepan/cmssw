@@ -42,7 +42,8 @@ namespace edm {
                                                                    *productRegistry_,
                                                                    boost::shared_ptr<BranchIDListHelper>(new BranchIDListHelper),
                                                                    boost::shared_ptr<ActivityRegistry>(new ActivityRegistry),
-                                                                   -1, -1
+                                                                   -1, -1,
+                                                                   PreallocationConfiguration()
                                                                    )).release()),
     processConfiguration_(new ProcessConfiguration(std::string("@MIXING"), getReleaseVersion(), getPassID())),
     eventPrincipal_(),
@@ -57,13 +58,11 @@ namespace edm {
     seed_(0) {
 
     // Use the empty parameter set for the parameter set ID of our "@MIXING" process.
-    ParameterSet emptyPSet;
-    emptyPSet.registerIt();
-    processConfiguration_->setParameterSetID(emptyPSet.id());
+    processConfiguration_->setParameterSetID(ParameterSet::emptyParameterSetID());
 
     if(pset.existsAs<std::vector<ParameterSet> >("producers", true)) {
       std::vector<ParameterSet> producers = pset.getParameter<std::vector<ParameterSet> >("producers");
-      provider_.reset(new SecondaryEventProvider(producers, *productRegistry_, ActionTable(), processConfiguration_));
+      provider_.reset(new SecondaryEventProvider(producers, *productRegistry_, processConfiguration_));
     }
 
     productRegistry_->setFrozen();

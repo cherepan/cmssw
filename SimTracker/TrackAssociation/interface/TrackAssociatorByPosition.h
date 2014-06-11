@@ -4,8 +4,6 @@
 /** \class TrackAssociatorByPosition
  *  Class that performs the association of reco::Tracks and TrackingParticles based on position in muon detector
  *
- *  $Date: 2010/05/18 15:40:39 $
- *  $Revision: 1.10 $
  *  \author vlimant
  */
 
@@ -62,16 +60,18 @@ class TrackAssociatorByPosition : public TrackAssociatorBase {
 
 
   /// compare reco to sim the handle of reco::Track and TrackingParticle collections
+  virtual
   reco::RecoToSimCollection associateRecoToSim(const edm::RefToBaseVector<reco::Track>&,
 					       const edm::RefVector<TrackingParticleCollection>&,
 					       const edm::Event * event = 0,
-                                               const edm::EventSetup * setup = 0 ) const ;
+                                               const edm::EventSetup * setup = 0 ) const override;
 
   /// compare reco to sim the handle of reco::Track and TrackingParticle collections
+  virtual
   reco::SimToRecoCollection associateSimToReco(const edm::RefToBaseVector<reco::Track>&,
 					       const edm::RefVector<TrackingParticleCollection>&,
 					       const edm::Event * event = 0,
-                                               const edm::EventSetup * setup = 0 ) const ;
+                                               const edm::EventSetup * setup = 0 ) const override;
 
   double quality(const TrajectoryStateOnSurface&, const TrajectoryStateOnSurface &)const;
 
@@ -87,8 +87,7 @@ class TrackAssociatorByPosition : public TrackAssociatorBase {
   bool theConsiderAllSimHits;
   
   FreeTrajectoryState getState(const reco::Track &) const;
-  TrajectoryStateOnSurface getState(const TrackingParticleRef)const;
-  mutable edm::Handle<SimHitTPAssociationProducer::SimHitTPAssociationList> simHitsTPAssoc;
+  TrajectoryStateOnSurface getState(const TrackingParticleRef&, const SimHitTPAssociationProducer::SimHitTPAssociationList& simHitsTPAssoc)const;
   edm::InputTag _simHitTpMapTag;
 };
 

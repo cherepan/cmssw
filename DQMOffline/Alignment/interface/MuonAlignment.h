@@ -6,8 +6,6 @@
  *
  *  DQM muon alignment analysis monitoring
  *
- *  $Date: 2010/02/11 00:11:11 $
- *  $Revision: 1.3 $
  *  \author J. Fernandez - Univ. Oviedo <Javier.Fernandez@cern.ch>
  */
 
@@ -124,10 +122,12 @@ private:
     RecHitVector doMatching(const reco::Track &, edm::Handle<DTRecSegment4DCollection> &, edm::Handle<CSCSegmentCollection> &, intDVector *, intDVector *, edm::ESHandle<GlobalTrackingGeometry> &); 
 
     // Muon Track Label
-    edm::InputTag theMuonCollectionLabel;
+    edm::EDGetTokenT<reco::TrackCollection> theMuonCollectionLabel;
 
-    edm::InputTag theRecHits4DTagDT;
-    edm::InputTag theRecHits4DTagCSC;
+    edm::EDGetTokenT<DTRecSegment4DCollection> theRecHits4DTagDT;
+
+    edm::EDGetTokenT<CSCSegmentCollection> theRecHits4DTagCSC;
+
     std::string trackRefitterType;
  
     // residual histos residual range

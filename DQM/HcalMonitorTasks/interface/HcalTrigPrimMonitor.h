@@ -6,8 +6,6 @@
 
 /** \class HcalTrigPrimMonitor
   *  
-  * $Date: 2011/08/03 16:18:36 $
-  * $Revision: 1.25 $
   * \author W. Fisher - FNAL
   */
 
@@ -31,6 +29,10 @@ class HcalTrigPrimMonitor: public HcalBaseDQMonitor {
    private:
       edm::InputTag dataLabel_;
       edm::InputTag emulLabel_;
+
+      edm::EDGetTokenT<HcalTrigPrimDigiCollection> tok_data_;
+      edm::EDGetTokenT<HcalTrigPrimDigiCollection> tok_emu_;
+
       std::vector<int> ZSBadTPThreshold_;
       std::vector<int> ZSAlarmThreshold_;
 

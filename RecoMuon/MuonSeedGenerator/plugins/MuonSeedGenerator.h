@@ -4,8 +4,6 @@
 /** \class MuonSeedGenerator
  *  No description available.
  *
- *  $Date: 2008/10/17 22:14:56 $
- *  $Revision: 1.1 $
  *  \author R. Bellan - INFN Torino
  */
 
@@ -13,6 +11,7 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "DataFormats/TrajectorySeed/interface/TrajectorySeedCollection.h"
 #include <vector>
+#include "DataFormats/BeamSpot/interface/BeamSpot.h"
 
 class MuonSeedVFinder;
 class MuonSeedVPatternRecognition;
@@ -39,7 +38,7 @@ class MuonSeedGenerator: public edm::EDProducer {
   MuonSeedVCleaner * theSeedCleaner;
 
   edm::InputTag theBeamSpotTag;
-
+  edm::EDGetTokenT<reco::BeamSpot> beamspotToken;
 };
 #endif
 

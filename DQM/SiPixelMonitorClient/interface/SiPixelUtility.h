@@ -5,8 +5,6 @@
  * *
  *  Class that handles the SiPixel Quality Tests
  * 
- *  $Date: 2007/10/18 19:49:58 $
- *  $Revision: 1.4 $
  *  \author Petra Merkel
   */
 
@@ -37,7 +35,7 @@ class SiPixelUtility
  static int computeHistoBin(std::string& module_path);
  static int computeErrorCode(DQMStore * bei, std::string& module_path);
  static int computeErrorCode(int status);
- static void fillPaveText(TPaveText* pave, std::map<std::string,std::pair<int,double> > messages); 
+ static void fillPaveText(TPaveText* pave, const std::map<std::string,std::pair<int,double> >& messages); 
  static void createStatusLegendMessages(std::map<std::string,std::pair<int,double> >& messages);
  static std::map<std::string,std::string> sourceCodeMap();
  static void setDrawingOption(TH1* hist,float xlow=-1.,float xhigh=-1.);

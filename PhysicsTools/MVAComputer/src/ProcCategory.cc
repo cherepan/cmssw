@@ -10,7 +10,6 @@
 //
 // Author:      Christophe Saout
 // Created:     Sun Sep 16 04:05 CEST 2007
-// $Id: ProcCategory.cc,v 1.2 2007/10/07 02:48:39 saout Exp $
 //
 
 #include <algorithm>
@@ -33,8 +32,8 @@ class ProcCategory : public VarProcessor {
 	             const MVAComputer *computer);
 	virtual ~ProcCategory() {}
 
-	virtual void configure(ConfIterator iter, unsigned int n);
-	virtual void eval(ValueIterator iter, unsigned int n) const;
+	virtual void configure(ConfIterator iter, unsigned int n) override;
+	virtual void eval(ValueIterator iter, unsigned int n) const override;
 
     private:
 	typedef Calibration::ProcCategory::BinLimits BinLimits;

@@ -6,8 +6,6 @@
  *  is specified with the parameter "recAlgo" and must be configured with the
  *  "recAlgoConfig" parameter set.
  *
- *  $Date: 2008/01/29 13:18:06 $
- *  $Revision: 1.2 $
  *  \author G. Cerminara
  */
 
@@ -35,7 +33,7 @@ public:
 
 private:
   // Switch on verbosity
-  static bool debug;
+  const bool debug;
   // The label to be used to retrieve DT digis from the event
   edm::InputTag theDTDigiLabel;
   // The reconstruction algorithm

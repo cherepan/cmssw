@@ -8,7 +8,6 @@
 //
 // Original Author:  Werner Sun
 //         Created:  Mon Oct  2 22:45:32 EDT 2006
-// $Id: L1ExtraParticlesProd.cc,v 1.31 2009/08/03 19:52:52 wsun Exp $
 //
 //
 
@@ -60,7 +59,7 @@
 // static data member definitions
 //
 
-double L1ExtraParticlesProd::muonMassGeV_ = 0.105658369 ; // PDG06
+double const L1ExtraParticlesProd::muonMassGeV_ = 0.105658369 ; // PDG06
 
 //
 // constructors and destructor

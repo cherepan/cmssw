@@ -1,9 +1,7 @@
-/*
+/**
  * \file L1TEfficiencyJets_Offline.cc
  *
- * $Date: 2012/11/20 17:02:27 $
- * $Revision: 1.3 $
- * \author J. Pela, P. Musella
+ * \author J. Pela
  *
  */
 

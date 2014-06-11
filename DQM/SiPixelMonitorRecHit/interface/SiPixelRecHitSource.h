@@ -16,7 +16,6 @@
 //
 // Original Author:  Vincenzo Chiochia
 //         Created:  
-// $Id: SiPixelRecHitSource.h,v 1.9 2010/01/11 16:20:50 merkelp Exp $
 //
 // Updated by: Keith Rose
 // for use in SiPixelMonitorRecHits
@@ -68,7 +67,8 @@
 
     private:
        edm::ParameterSet conf_;
-       edm::InputTag src_;
+       edm::EDGetTokenT<SiPixelRecHitCollection> src_;
+
        bool saveFile;
        bool isPIB;
        bool slowDown;

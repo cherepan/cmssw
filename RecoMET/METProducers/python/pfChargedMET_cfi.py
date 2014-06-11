@@ -1,5 +1,4 @@
 import FWCore.ParameterSet.Config as cms
-# $Id: $
 
 ##____________________________________________________________________________||
 particleFlowForChargedMET = cms.EDProducer(
@@ -12,7 +11,7 @@ particleFlowForChargedMET = cms.EDProducer(
 
 ##____________________________________________________________________________||
 pfChargedMET = cms.EDProducer(
-    "METProducer",
+    "PFMETProducer",
     src = cms.InputTag("particleFlowForChargedMET"),
     METType = cms.string('PFMET'),
     alias = cms.string('PFMET'),

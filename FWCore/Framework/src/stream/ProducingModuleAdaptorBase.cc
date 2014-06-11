@@ -14,12 +14,11 @@
 
 // user include files
 #include "FWCore/Framework/interface/stream/ProducingModuleAdaptorBase.h"
-#include "FWCore/Framework/src/CPCSentry.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/LuminosityBlockPrincipal.h"
 #include "FWCore/Framework/interface/RunPrincipal.h"
-
+#include "FWCore/Framework/src/PreallocationConfiguration.h"
 
 //
 // constants, enums and typedefs
@@ -37,7 +36,6 @@ namespace edm {
     template< typename T>
     ProducingModuleAdaptorBase<T>::ProducingModuleAdaptorBase()
     {
-      m_streamModules.resize(1);
     }
     
     template< typename T>
@@ -51,6 +49,15 @@ namespace edm {
     //
     // member functions
     //
+    
+    template< typename T>
+    void
+    ProducingModuleAdaptorBase<T>::doPreallocate(PreallocationConfiguration const& iPrealloc) {
+      m_streamModules.resize(iPrealloc.numberOfStreams(),
+                             static_cast<T*>(nullptr));
+      setupStreamModules();
+    }
+
     template< typename T>
     void
     ProducingModuleAdaptorBase<T>::registerProductsAndCallbacks(ProducingModuleAdaptorBase const*, ProductRegistry* reg) {
@@ -77,16 +84,23 @@ namespace edm {
     
     template< typename T>
     void
-    ProducingModuleAdaptorBase<T>::itemsToGet(BranchType iType, std::vector<ProductHolderIndex>& iIndices) const {
+    ProducingModuleAdaptorBase<T>::itemsToGet(BranchType iType, std::vector<ProductHolderIndexAndSkipBit>& iIndices) const {
       assert(not m_streamModules.empty());
       m_streamModules[0]->itemsToGet(iType,iIndices);
     }
     
     template< typename T>
     void
-    ProducingModuleAdaptorBase<T>::itemsMayGet(BranchType iType, std::vector<ProductHolderIndex>& iIndices) const {
+    ProducingModuleAdaptorBase<T>::itemsMayGet(BranchType iType, std::vector<ProductHolderIndexAndSkipBit>& iIndices) const {
       assert(not m_streamModules.empty());
-      m_streamModules[0]->itemsToGet(iType,iIndices);
+      m_streamModules[0]->itemsMayGet(iType,iIndices);
+    }
+
+    template<typename T>
+    std::vector<edm::ProductHolderIndexAndSkipBit> const&
+    ProducingModuleAdaptorBase<T>::itemsToGetFromEvent() const {
+      assert(not m_streamModules.empty());
+      return m_streamModules[0]->itemsToGetFromEvent();
     }
 
     template< typename T>
@@ -107,7 +121,7 @@ namespace edm {
     template< typename T>
     void
     ProducingModuleAdaptorBase<T>::doBeginStream(StreamID id) {
-      m_streamModules[id]->beginStream();
+      m_streamModules[id]->beginStream(id);
     }
     template< typename T>
     void
@@ -120,11 +134,9 @@ namespace edm {
     ProducingModuleAdaptorBase<T>::doStreamBeginRun(StreamID id,
                                                     RunPrincipal& rp,
                                                     EventSetup const& c,
-                                                    CurrentProcessingContext const* cpcp,
                                                     ModuleCallingContext const* mcc)
     {
       auto mod = m_streamModules[id];
-      detail::CPCSentry sentry(mod->current_context_, cpcp);
       setupRun(mod, rp.index());
       
       Run r(rp, moduleDescription_, mcc);
@@ -137,11 +149,9 @@ namespace edm {
     ProducingModuleAdaptorBase<T>::doStreamEndRun(StreamID id,
                                                   RunPrincipal& rp,
                                                   EventSetup const& c,
-                                                  CurrentProcessingContext const* cpcp,
                                                   ModuleCallingContext const* mcc)
     {
       auto mod = m_streamModules[id];
-      detail::CPCSentry sentry(mod->current_context_, cpcp);
       Run r(rp, moduleDescription_, mcc);
       r.setConsumer(mod);
       mod->endRun(r, c);
@@ -153,10 +163,8 @@ namespace edm {
     ProducingModuleAdaptorBase<T>::doStreamBeginLuminosityBlock(StreamID id,
                                                                 LuminosityBlockPrincipal& lbp,
                                                                 EventSetup const& c,
-                                                                CurrentProcessingContext const* cpcp,
                                                                 ModuleCallingContext const* mcc) {
       auto mod = m_streamModules[id];
-      detail::CPCSentry sentry(mod->current_context_, cpcp);
       setupLuminosityBlock(mod,lbp.index());
       
       LuminosityBlock lb(lbp, moduleDescription_, mcc);
@@ -169,11 +177,9 @@ namespace edm {
     ProducingModuleAdaptorBase<T>::doStreamEndLuminosityBlock(StreamID id,
                                                               LuminosityBlockPrincipal& lbp,
                                                               EventSetup const& c,
-                                                              CurrentProcessingContext const* cpcp,
                                                               ModuleCallingContext const* mcc)
     {
       auto mod = m_streamModules[id];
-      detail::CPCSentry sentry(mod->current_context_, cpcp);
       LuminosityBlock lb(lbp, moduleDescription_, mcc);
       lb.setConsumer(mod);
       mod->endLuminosityBlock(lb, c);

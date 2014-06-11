@@ -13,7 +13,6 @@
 //
 // Original Author:  
 //         Created:  Tue Oct 17 00:13:51 EDT 2006
-// $Id: L1ExtraParticlesProd.h,v 1.10 2009/12/14 22:23:12 wmtan Exp $
 //
 
 // system include files
@@ -72,7 +71,7 @@ class L1ExtraParticlesProd : public edm::EDProducer {
       edm::InputTag hfRingEtSumsSource_ ;
       edm::InputTag hfRingBitCountsSource_ ;
 
-      static double muonMassGeV_ ;
+      static const double muonMassGeV_ ;
 
       bool centralBxOnly_ ;
 

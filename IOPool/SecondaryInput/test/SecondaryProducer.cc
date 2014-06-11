@@ -51,9 +51,7 @@ namespace edm {
         firstEvent_(true),
         firstLoop_(true),
         expectedEventNumber_(1) {
-    ParameterSet emptyPSet;
-    emptyPSet.registerIt();
-    processConfiguration_->setParameterSetID(emptyPSet.id());
+    processConfiguration_->setParameterSetID(ParameterSet::emptyParameterSetID());
     processConfiguration_->setProcessConfigurationID();
  
     productRegistry_->setFrozen();
@@ -65,9 +63,9 @@ namespace edm {
 
   void SecondaryProducer::beginJob() {
     eventPrincipal_.reset(new EventPrincipal(secInput_->productRegistry(),
-                                            secInput_->branchIDListHelper(),
-                                            *processConfiguration_,
-                                             nullptr, StreamID::invalidStreamID()));
+                                             secInput_->branchIDListHelper(),
+                                             *processConfiguration_,
+                                             nullptr));
 
   }
 
@@ -111,7 +109,7 @@ namespace edm {
                                                     nullptr);
     assert(bhandle.isValid());
     Handle<edmtest::IntProduct> handle;
-    convert_handle<edmtest::IntProduct>(bhandle, handle);
+    convert_handle<edmtest::IntProduct>(std::move(bhandle), handle);
     assert(static_cast<EventNumber_t>(handle->value) == en);
 
     // Check that primary source products are retrieved from the same event as the EventAuxiliary
@@ -153,11 +151,12 @@ namespace edm {
 
   boost::shared_ptr<VectorInputSource> SecondaryProducer::makeSecInput(ParameterSet const& ps) {
     ParameterSet const& sec_input = ps.getParameterSet("input");
+    PreallocationConfiguration dummy;
     InputSourceDescription desc(ModuleDescription(),
                                 *productRegistry_,
 				boost::shared_ptr<BranchIDListHelper>(new BranchIDListHelper),
 				boost::shared_ptr<ActivityRegistry>(new ActivityRegistry),
-				-1, -1);
+				-1, -1, dummy);
     boost::shared_ptr<VectorInputSource> input_(static_cast<VectorInputSource *>
       (VectorInputSourceFactory::get()->makeVectorInputSource(sec_input,
       desc).release()));

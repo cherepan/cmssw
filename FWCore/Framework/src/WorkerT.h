@@ -15,6 +15,10 @@ WorkerT: Code common to all workers.
 #include <memory>
 
 namespace edm {
+
+  class ModuleCallingContext;
+  class ProductHolderIndexAndSkipBit;
+
   UnscheduledHandler* getUnscheduledHandler(EventPrincipal const& ep);
 
   template<typename T>
@@ -22,23 +26,15 @@ namespace edm {
   public:
     typedef T ModuleType;
     typedef WorkerT<T> WorkerType;
-    WorkerT(std::unique_ptr<T>&&,
+    WorkerT(T*,
             ModuleDescription const&,
-            WorkerParams const&);
+            ExceptionToActionTable const* actions);
 
     virtual ~WorkerT();
 
-  template<typename ModType>
-  static std::unique_ptr<T> makeModule(ModuleDescription const&,
-                                     ParameterSet const& pset) {
-    std::unique_ptr<ModType> module = std::unique_ptr<ModType>(new ModType(pset));
-    return std::unique_ptr<T>(module.release());
-  }
-
-  void setModule( std::unique_ptr<T>&& iModule) {
-    module_ = std::move(iModule);
-     module_->setModuleDescription(description());
-     
+  void setModule( T* iModule) {
+    module_ = iModule;
+    resetModuleDescription(&(module_->moduleDescription()));
   }
     
     virtual Types moduleType() const override;
@@ -54,22 +50,18 @@ namespace edm {
     template<typename D>
     void callWorkerStreamBegin(D, StreamID id, RunPrincipal& rp,
                                EventSetup const& c,
-                               CurrentProcessingContext const* cpc,
                                ModuleCallingContext const* mcc);
     template<typename D>
     void callWorkerStreamEnd(D, StreamID id, RunPrincipal& rp,
                              EventSetup const& c,
-                             CurrentProcessingContext const* cpc,
                              ModuleCallingContext const* mcc);
     template<typename D>
     void callWorkerStreamBegin(D, StreamID id, LuminosityBlockPrincipal& rp,
                                EventSetup const& c,
-                               CurrentProcessingContext const* cpc,
                                ModuleCallingContext const* mcc);
     template<typename D>
     void callWorkerStreamEnd(D, StreamID id, LuminosityBlockPrincipal& rp,
                              EventSetup const& c,
-                             CurrentProcessingContext const* cpc,
                              ModuleCallingContext const* mcc);
     
   protected:
@@ -78,31 +70,22 @@ namespace edm {
 
   private:
     virtual bool implDo(EventPrincipal& ep, EventSetup const& c,
-                        CurrentProcessingContext const* cpc,
                         ModuleCallingContext const* mcc) override;
     virtual bool implDoBegin(RunPrincipal& rp, EventSetup const& c,
-                             CurrentProcessingContext const* cpc,
                              ModuleCallingContext const* mcc) override;
     virtual bool implDoStreamBegin(StreamID id, RunPrincipal& rp, EventSetup const& c,
-                                   CurrentProcessingContext const* cpc,
                                    ModuleCallingContext const* mcc) override;
     virtual bool implDoStreamEnd(StreamID id, RunPrincipal& rp, EventSetup const& c,
-                                 CurrentProcessingContext const* cpc,
                                  ModuleCallingContext const* mcc) override;
     virtual bool implDoEnd(RunPrincipal& rp, EventSetup const& c,
-                           CurrentProcessingContext const* cpc,
                            ModuleCallingContext const* mcc) override;
     virtual bool implDoBegin(LuminosityBlockPrincipal& lbp, EventSetup const& c,
-                             CurrentProcessingContext const* cpc,
                              ModuleCallingContext const* mcc) override;
     virtual bool implDoStreamBegin(StreamID id, LuminosityBlockPrincipal& lbp, EventSetup const& c,
-                                   CurrentProcessingContext const* cpc,
                                    ModuleCallingContext const* mcc) override;
     virtual bool implDoStreamEnd(StreamID id, LuminosityBlockPrincipal& lbp, EventSetup const& c,
-                                 CurrentProcessingContext const* cpc,
                                  ModuleCallingContext const* mcc) override;
     virtual bool implDoEnd(LuminosityBlockPrincipal& lbp, EventSetup const& c,
-                           CurrentProcessingContext const* cpc,
                            ModuleCallingContext const* mcc) override;
     virtual void implBeginJob() override;
     virtual void implEndJob() override;
@@ -113,9 +96,19 @@ namespace edm {
     virtual void implPreForkReleaseResources() override;
     virtual void implPostForkReacquireResources(unsigned int iChildIndex, 
                                                unsigned int iNumberOfChildren) override;
-     virtual std::string workerType() const override;
+    virtual std::string workerType() const override;
 
-    std::unique_ptr<T> module_;
+    virtual void itemsToGet(BranchType branchType, std::vector<ProductHolderIndexAndSkipBit>& indexes) const {
+      module_->itemsToGet(branchType, indexes);
+    }
+
+    virtual void itemsMayGet(BranchType branchType, std::vector<ProductHolderIndexAndSkipBit>& indexes) const {
+      module_->itemsMayGet(branchType, indexes);
+    }
+
+    virtual std::vector<ProductHolderIndexAndSkipBit> const& itemsToGetFromEvent() const override { return module_->itemsToGetFromEvent(); }
+
+    T* module_;
   };
 
 }

@@ -4,8 +4,6 @@
 /*
  * \file EEPedestalOnlineTask.h
  *
- * $Date: 2012/03/29 13:49:35 $
- * $Revision: 1.12.20.1 $
  * \author G. Della Ricca
  *
 */
@@ -13,6 +11,8 @@
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+
+#include "DataFormats/EcalDigi/interface/EcalDigiCollections.h"
 
 class MonitorElement;
 class DQMStore;
@@ -67,7 +67,7 @@ bool enableCleanup_;
 
 bool mergeRuns_;
 
-edm::InputTag EEDigiCollection_;
+edm::EDGetTokenT<EEDigiCollection> EEDigiCollection_;
 
 MonitorElement* mePedMapG12_[18];
 

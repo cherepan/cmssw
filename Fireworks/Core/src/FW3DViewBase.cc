@@ -8,7 +8,6 @@
 //
 // Original Author:  Chris Jones
 //         Created:  Thu Feb 21 11:22:41 EST 2008
-// $Id: FW3DViewBase.cc,v 1.32 2013/04/25 18:45:32 amraktad Exp $
 //
 #include <boost/bind.hpp>
 
@@ -37,7 +36,7 @@ namespace {
 class TGLClipsiLogical : public TGLLogicalShape
 {
 protected:
-   virtual void DirectDraw(TGLRnrCtx & rnrCtx) const{}
+   virtual void DirectDraw(TGLRnrCtx & rnrCtx) const override{}
 
 public:
    TGLClipsiLogical() : TGLLogicalShape() {}
@@ -57,8 +56,8 @@ private:
 public:
    Clipsi(TGLRnrCtx* ctx):TGLClip(* new TGLClipsiLogical, TGLMatrix(), fgColor), m_rnrCtx(ctx){}
    virtual ~Clipsi() {}
-   virtual void Setup(const TGLBoundingBox & bbox) {}
-   virtual void PlaneSet(TGLPlaneSet_t & planeSet) const
+   virtual void Setup(const TGLBoundingBox & bbox) override {}
+   virtual void PlaneSet(TGLPlaneSet_t & planeSet) const override
    {
       TGLCamera& cam = m_rnrCtx->RefCamera();
 

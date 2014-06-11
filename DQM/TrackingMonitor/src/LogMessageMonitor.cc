@@ -49,7 +49,6 @@
 //
 // Original Author:  Mia Tosi,40 3-B32,+41227671609,
 //         Created:  Thu Mar  8 14:34:13 CET 2012
-// $Id: LogMessageMonitor.cc,v 1.4 2012/10/27 20:40:08 tosi Exp $
 //
 //
 
@@ -92,7 +91,7 @@ LogMessageMonitor::LogMessageMonitor(const edm::ParameterSet& iConfig)
   edm::ConsumesCollector c{ consumesCollector() };
    //now do what ever initialization is needed
   lumiDetails_         = new GetLumi( iConfig.getParameter<edm::ParameterSet>("BXlumiSetup"), c );
-  genTriggerEventFlag_ = new GenericTriggerEventFlag(iConfig);
+  genTriggerEventFlag_ = new GenericTriggerEventFlag(iConfig, consumesCollector());
 }
 
 

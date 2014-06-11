@@ -2,12 +2,25 @@ import FWCore.ParameterSet.Config as cms
 
 #
 # sequence to make photons from clusters in ECAL
-# $Id: photonSequence_cff.py,v 1.3 2009/03/25 11:15:47 nancy Exp $
 #
 # photon producer
 from RecoEgamma.EgammaPhotonProducers.gedPhotonCore_cfi import *
 from RecoEgamma.EgammaPhotonProducers.gedPhotons_cfi import *
 
+import RecoEgamma.EgammaPhotonProducers.gedPhotons_cfi 
 
-gedPhotonSequence = cms.Sequence(gedPhotonCore+gedPhotons)
+gedPhotonsTmp = RecoEgamma.EgammaPhotonProducers.gedPhotons_cfi.gedPhotons.clone()
+gedPhotonsTmp.photonProducer = cms.InputTag("gedPhotonCore")
+gedPhotonsTmp.outputPhotonCollection = cms.string("")
+gedPhotonsTmp.reconstructionStep = cms.string("tmp")
+gedPhotonSequenceTmp = cms.Sequence(gedPhotonCore+gedPhotonsTmp)
+
+
+gedPhotons = RecoEgamma.EgammaPhotonProducers.gedPhotons_cfi.gedPhotons.clone()
+gedPhotons.photonProducer = cms.InputTag("gedPhotonsTmp")
+gedPhotons.outputPhotonCollection = cms.string("")
+gedPhotons.reconstructionStep = cms.string("final")
+gedPhotonSequence    = cms.Sequence(gedPhotons)
+
+
 

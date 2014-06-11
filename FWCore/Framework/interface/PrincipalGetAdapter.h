@@ -112,7 +112,7 @@ namespace edm {
 
   namespace principal_get_adapter_detail {
     struct deleter {
-      void operator()(std::pair<WrapperOwningHolder, ConstBranchDescription const*> const p) const;
+      void operator()(std::pair<WrapperOwningHolder, BranchDescription const*> const p) const;
     };
     void
     throwOnPutOfNullProduct(char const* principalType, TypeID const& productType, std::string const& productInstanceName);
@@ -157,7 +157,7 @@ namespace edm {
     Principal& principal() {return principal_;}
     Principal const& principal() const {return principal_;}
 
-    ConstBranchDescription const&
+    BranchDescription const&
     getBranchDescription(TypeID const& type, std::string const& productInstanceName) const;
 
     typedef std::vector<BasicHandle>  BasicHandleVec;
@@ -334,12 +334,12 @@ namespace edm {
     // for this function, since it is *not* to be used by EDProducers?
     std::vector<Handle<PROD> > products;
 
-    typename BasicHandleVec::const_iterator it = bhv.begin();
-    typename BasicHandleVec::const_iterator end = bhv.end();
+    typename BasicHandleVec::iterator it = bhv.begin();
+    typename BasicHandleVec::iterator end = bhv.end();
 
     while (it != end) {
       Handle<PROD> result;
-      convert_handle(*it, result);  // throws on conversion error
+      convert_handle(std::move(*it), result);  // throws on conversion error
       products.push_back(result);
       ++it;
     }

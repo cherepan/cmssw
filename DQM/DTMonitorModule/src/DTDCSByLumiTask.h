@@ -4,8 +4,6 @@
 /*
  * \file DTDCSByLumiTask.h
  *
- * $Date: 2010/02/11 00:10:54 $
- * $Revision: 1.0 $
  * \author C. Battilana - CIEMAT
  * \author P. Bellan - INFN PD
  * \author A. Branca = INFN PD
@@ -35,7 +33,7 @@ public:
 
   /// Constructor
   DTDCSByLumiTask(const edm::ParameterSet& ps);
-  
+
   /// Destructor
   virtual ~DTDCSByLumiTask();
 
@@ -63,7 +61,7 @@ protected:
   void endJob();
 
 private:
-  
+
   std::string topFolder() const;
 
   int theEvents;
@@ -81,3 +79,8 @@ private:
 };
 
 #endif
+
+/* Local Variables: */
+/* show-trailing-whitespace: t */
+/* truncate-lines: t */
+/* End: */

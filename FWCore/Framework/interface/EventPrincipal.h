@@ -15,10 +15,11 @@ is the DataBlock.
 #include "DataFormats/Common/interface/WrapperHolder.h"
 #include "DataFormats/Common/interface/WrapperOwningHolder.h"
 #include "DataFormats/Provenance/interface/BranchListIndex.h"
-#include "DataFormats/Provenance/interface/BranchMapper.h"
+#include "DataFormats/Provenance/interface/ProductProvenanceRetriever.h"
 #include "DataFormats/Provenance/interface/EventAuxiliary.h"
 #include "DataFormats/Provenance/interface/EventSelectionID.h"
 #include "FWCore/Utilities/interface/StreamID.h"
+#include "FWCore/Utilities/interface/Signal.h"
 #include "FWCore/Framework/interface/Principal.h"
 
 #include "boost/shared_ptr.hpp"
@@ -30,12 +31,14 @@ is the DataBlock.
 
 namespace edm {
   class BranchIDListHelper;
-  class BranchMapper;
+  class ProductProvenanceRetriever;
   class DelayedReader;
   class EventID;
   class HistoryAppender;
   class LuminosityBlockPrincipal;
   class ModuleCallingContext;
+  class StreamContext;
+  class ProcessHistoryRegistry;
   class RunPrincipal;
   class UnscheduledHandler;
 
@@ -44,7 +47,7 @@ namespace edm {
     typedef EventAuxiliary Auxiliary;
     typedef Principal Base;
 
-    typedef Base::ConstProductPtr ConstProductPtr;
+    typedef Base::ConstProductHolderPtr ConstProductHolderPtr;
     static int const invalidBunchXing = EventAuxiliary::invalidBunchXing;
     static int const invalidStoreNumber = EventAuxiliary::invalidStoreNumber;
     EventPrincipal(
@@ -52,15 +55,25 @@ namespace edm {
         boost::shared_ptr<BranchIDListHelper const> branchIDListHelper,
         ProcessConfiguration const& pc,
         HistoryAppender* historyAppender,
-        StreamID const& streamID = StreamID::invalidStreamID());
+        unsigned int streamIndex = 0);
     ~EventPrincipal() {}
 
     void fillEventPrincipal(EventAuxiliary const& aux,
-        boost::shared_ptr<EventSelectionIDVector> eventSelectionIDs = boost::shared_ptr<EventSelectionIDVector>(),
-        boost::shared_ptr<BranchListIndexes> branchListIndexes = boost::shared_ptr<BranchListIndexes>(),
-        boost::shared_ptr<BranchMapper> mapper = boost::shared_ptr<BranchMapper>(new BranchMapper),
-        DelayedReader* reader = 0);
+        ProcessHistoryRegistry const& processHistoryRegistry,
+                            DelayedReader* reader = nullptr);
+    void fillEventPrincipal(EventAuxiliary const& aux,
+                            ProcessHistoryRegistry const& processHistoryRegistry,
+                            EventSelectionIDVector&& eventSelectionIDs,
+                            BranchListIndexes&& branchListIndexes);
+    //provRetriever is changed via a call to ProductProvenanceRetriever::deepSwap
+    void fillEventPrincipal(EventAuxiliary const& aux,
+                            ProcessHistoryRegistry const& processHistoryRegistry,
+                            EventSelectionIDVector&& eventSelectionIDs,
+                            BranchListIndexes&& branchListIndexes,
+                            ProductProvenanceRetriever& provRetriever,
+                            DelayedReader* reader = nullptr);
 
+    
     void clearEventPrincipal();
 
     LuminosityBlockPrincipal const& luminosityBlockPrincipal() const {
@@ -108,10 +121,7 @@ namespace edm {
     }
 
     StreamID streamID() const { return streamID_;}
-    void setStreamID(StreamID const& iID) {
-      streamID_ = iID;
-    }
-    
+
     LuminosityBlockNumber_t luminosityBlock() const {
       return id().luminosityBlock();
     }
@@ -122,7 +132,7 @@ namespace edm {
 
     RunPrincipal const& runPrincipal() const;
 
-    boost::shared_ptr<BranchMapper> branchMapperPtr() const {return branchMapperPtr_;}
+    boost::shared_ptr<ProductProvenanceRetriever> productProvenanceRetrieverPtr() const {return provRetrieverPtr_;}
 
     void setUnscheduledHandler(boost::shared_ptr<UnscheduledHandler> iHandler);
     boost::shared_ptr<UnscheduledHandler> unscheduledHandler() const;
@@ -138,12 +148,12 @@ namespace edm {
     getByProductID(ProductID const& oid) const;
 
     void put(
-        ConstBranchDescription const& bd,
+        BranchDescription const& bd,
         WrapperOwningHolder const& edp,
         ProductProvenance const& productProvenance);
 
     void putOnRead(
-        ConstBranchDescription const& bd,
+        BranchDescription const& bd,
         void const* product,
         ProductProvenance const& productProvenance);
 
@@ -151,12 +161,16 @@ namespace edm {
 
     ProductID branchIDToProductID(BranchID const& bid) const;
 
-    void mergeMappers(EventPrincipal const& other) {
-      branchMapperPtr_->mergeMappers(other.branchMapperPtr());
+    void mergeProvenanceRetrievers(EventPrincipal const& other) {
+      provRetrieverPtr_->mergeProvenanceRetrievers(other.productProvenanceRetrieverPtr());
     }
 
     using Base::getProvenance;
+    
+    signalslot::Signal<void(StreamContext const&, ModuleCallingContext const&)> preModuleDelayedGetSignal_;
+    signalslot::Signal<void(StreamContext const&, ModuleCallingContext const&)> postModuleDelayedGetSignal_;
 
+    
   private:
 
     BranchID pidToBid(ProductID const& pid) const;
@@ -164,29 +178,42 @@ namespace edm {
     virtual bool unscheduledFill(std::string const& moduleLabel,
                                  ModuleCallingContext const* mcc) const override;
 
-    virtual void resolveProduct_(ProductHolderBase const& phb,
-                                 bool fillOnDemand,
-                                 ModuleCallingContext const* mcc) const override;
+    virtual void readFromSource_(ProductHolderBase const& phb, ModuleCallingContext const* mcc) const override;
 
+    virtual unsigned int transitionIndex_() const override;
+    
   private:
+
+    class UnscheduledSentry {
+    public:
+      UnscheduledSentry(std::vector<std::string>* moduleLabelsRunning, std::string const& moduleLabel) :
+        moduleLabelsRunning_(moduleLabelsRunning) {
+        moduleLabelsRunning_->push_back(moduleLabel);
+      }
+      ~UnscheduledSentry() {
+        moduleLabelsRunning_->pop_back();
+      }
+    private:
+      std::vector<std::string>* moduleLabelsRunning_;
+    };
 
     EventAuxiliary aux_;
 
     boost::shared_ptr<LuminosityBlockPrincipal> luminosityBlockPrincipal_;
 
-    // Pointer to the 'mapper' that will get provenance information from the persistent store.
-    boost::shared_ptr<BranchMapper> branchMapperPtr_;
+    // Pointer to the 'retriever' that will get provenance information from the persistent store.
+    boost::shared_ptr<ProductProvenanceRetriever> provRetrieverPtr_;
 
     // Handler for unscheduled modules
     boost::shared_ptr<UnscheduledHandler> unscheduledHandler_;
 
     mutable std::vector<std::string> moduleLabelsRunning_;
 
-    boost::shared_ptr<EventSelectionIDVector> eventSelectionIDs_;
+    EventSelectionIDVector eventSelectionIDs_;
 
     boost::shared_ptr<BranchIDListHelper const> branchIDListHelper_;
 
-    boost::shared_ptr<BranchListIndexes> branchListIndexes_;
+    BranchListIndexes branchListIndexes_;
 
     std::map<BranchListIndex, ProcessIndex> branchListIndexToProcessIndex_;
     

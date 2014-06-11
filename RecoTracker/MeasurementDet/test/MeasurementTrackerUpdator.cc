@@ -13,7 +13,6 @@
 //
 // Original Author:  Jean-Roch Vlimant
 //         Created:  Fri Mar 16 13:19:20 CDT 2007
-// $Id: MeasurementTrackerUpdator.cc,v 1.2 2009/03/04 13:34:26 vlimant Exp $
 //
 //
 
@@ -71,7 +70,7 @@ void MeasurementTrackerUpdator::analyze(const edm::Event& iEvent, const edm::Eve
   iSetup.get<CkfComponentsRecord>().get(theMeasurementTrackerName, measurementTracker);
 
   //update it to trigger the possible unpacking so that it is decoupled from the hosting module
-  measurementTracker->update(iEvent);
+  //measurementTracker->update(iEvent);
 
 }
 

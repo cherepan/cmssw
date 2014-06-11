@@ -13,7 +13,6 @@
 //
 // Original Author:  Christophe DELAERE
 //         Created:  Fri Nov 17 10:52:42 CET 2006
-// $Id: SiStripFineDelayHit.cc,v 1.18 2013/02/27 15:07:58 davidlt Exp $
 //
 //
 
@@ -570,9 +569,9 @@ SiStripFineDelayHit::beginRun(const edm::Run & run, const edm::EventSetup & iSet
    // Retrieve FED cabling object
    edm::ESHandle<SiStripFedCabling> cabling;
    iSetup.get<SiStripFedCablingRcd>().get( cabling );
-   const std::vector< uint16_t > & feds = cabling->feds() ;
-   for(std::vector< uint16_t >::const_iterator fedid = feds.begin();fedid<feds.end();++fedid) {
-     const std::vector< FedChannelConnection > & connections = cabling->connections(*fedid);
+   auto feds = cabling->fedIds() ;
+   for( auto fedid = feds.begin();fedid<feds.end();++fedid) {
+     auto connections = cabling->fedConnections(*fedid);
      for(std::vector< FedChannelConnection >::const_iterator conn=connections.begin();conn<connections.end();++conn) {
      /*
        SiStripFedKey key(conn->fedId(),

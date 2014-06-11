@@ -21,12 +21,10 @@
 #include "DataFormats/Provenance/interface/BranchKey.h"
 #include "DataFormats/Provenance/interface/ParentageRegistry.h"
 #include "DataFormats/Provenance/interface/ProductRegistry.h"
-#include "FWCore/Framework/interface/CurrentProcessingContext.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventPrincipal.h"
 #include "FWCore/Framework/interface/OutputModuleDescription.h"
 #include "FWCore/Framework/interface/TriggerNamesService.h"
-#include "FWCore/Framework/src/CPCSentry.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -47,12 +45,10 @@ namespace edm {
     productSelectorRules_(pset, "outputCommands", "OutputModule"),
     productSelector_(),
     moduleDescription_(),
-    current_context_(nullptr),
     wantAllEvents_(false),
     selectors_(),
     selector_config_id_(),
     droppedBranchIDToKeptBranchID_(),
-    keptBranchIDToDroppedBranchID_(),
     branchIDLists_(new BranchIDLists),
     origBranchIDLists_(nullptr),
     branchParents_(),
@@ -162,7 +158,6 @@ namespace edm {
           if(keptBranchID != branchID) {
             // An EDAlias branch was persisted.
             droppedBranchIDToKeptBranchID_.insert(std::make_pair(branchID.id(), keptBranchID.id()));
-            keptBranchIDToDroppedBranchID_.insert(std::make_pair(keptBranchID.id(), branchID.id()));
           }
         }
       }
@@ -186,9 +181,7 @@ namespace edm {
     bool
     OutputModuleBase::doEvent(EventPrincipal const& ep,
                               EventSetup const&,
-                              CurrentProcessingContext const* cpc,
                               ModuleCallingContext const* mcc) {
-      detail::CPCSentry sentry(current_context_, cpc);
       detail::TRBESSentry products_sentry(selectors_);
       
       if(!wantAllEvents_) {
@@ -207,9 +200,7 @@ namespace edm {
     bool
     OutputModuleBase::doBeginRun(RunPrincipal const& rp,
                                  EventSetup const&,
-                                 CurrentProcessingContext const* cpc,
                                  ModuleCallingContext const* mcc) {
-      detail::CPCSentry sentry(current_context_, cpc);
       doBeginRun_(rp, mcc);
       return true;
     }
@@ -217,9 +208,7 @@ namespace edm {
     bool
     OutputModuleBase::doEndRun(RunPrincipal const& rp,
                                EventSetup const&,
-                               CurrentProcessingContext const* cpc,
                                ModuleCallingContext const* mcc) {
-      detail::CPCSentry sentry(current_context_, cpc);
       doEndRun_(rp, mcc);
       return true;
     }
@@ -233,9 +222,7 @@ namespace edm {
     bool
     OutputModuleBase::doBeginLuminosityBlock(LuminosityBlockPrincipal const& lbp,
                                              EventSetup const&,
-                                             CurrentProcessingContext const* cpc,
                                              ModuleCallingContext const* mcc) {
-      detail::CPCSentry sentry(current_context_, cpc);
       doBeginLuminosityBlock_(lbp, mcc);
       return true;
     }
@@ -243,9 +230,7 @@ namespace edm {
     bool
     OutputModuleBase::doEndLuminosityBlock(LuminosityBlockPrincipal const& lbp,
                                            EventSetup const&,
-                                           CurrentProcessingContext const* cpc,
                                            ModuleCallingContext const* mcc) {
-      detail::CPCSentry sentry(current_context_, cpc);
       doEndLuminosityBlock_(lbp, mcc);
       return true;
     }
@@ -269,13 +254,20 @@ namespace edm {
     
     void
     OutputModuleBase::doPreForkReleaseResources() {
-      //doPreForkReleaseResources();
+      preForkReleaseResources();
     }
     
     void
     OutputModuleBase::doPostForkReacquireResources(unsigned int iChildIndex, unsigned int iNumberOfChildren) {
-      //postForkReacquireResources_(iChildIndex, iNumberOfChildren);
+      postForkReacquireResources(iChildIndex, iNumberOfChildren);
     }
+    
+    void
+    OutputModuleBase::preForkReleaseResources() {}
+    
+    void
+    OutputModuleBase::postForkReacquireResources(unsigned int /*iChildIndex*/, unsigned int /*iNumberOfChildren*/) {}
+
     
     void OutputModuleBase::maybeOpenFile() {
       if(!isFileOpen()) reallyOpenFile();
@@ -301,11 +293,6 @@ namespace edm {
         // Check for branches dropped while an EDAlias was kept.
         for(BranchIDList& branchIDList : *branchIDLists_) {
           for(BranchID::value_type& branchID : branchIDList) {
-            // Replace BranchID of each kept alias branch with zero, so only the product ID of the original branch will be accessible.
-            std::map<BranchID::value_type, BranchID::value_type>::const_iterator kiter = keptBranchIDToDroppedBranchID_.find(branchID);
-            if(kiter != keptBranchIDToDroppedBranchID_.end()) {
-              branchID = 0;
-            }
             // Replace BranchID of each dropped branch with that of the kept alias, so the alias branch will have the product ID of the original branch.
             std::map<BranchID::value_type, BranchID::value_type>::const_iterator iter = droppedBranchIDToKeptBranchID_.find(branchID);
             if(iter != droppedBranchIDToKeptBranchID_.end()) {
@@ -316,11 +303,6 @@ namespace edm {
         return branchIDLists_.get();
       }
       return origBranchIDLists_;
-    }
-    
-    CurrentProcessingContext const*
-    OutputModuleBase::currentContext() const {
-      return current_context_;
     }
     
     ModuleDescription const&

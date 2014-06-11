@@ -4,9 +4,6 @@
 /** \class OutInConversionSeedFinder
  **  
  **
- **  $Id: OutInConversionSeedFinder.h,v 1.8 2008/05/08 20:41:27 nancy Exp $ 
- **  $Date: 2008/05/08 20:41:27 $ 
- **  $Revision: 1.8 $
  **  \author Nancy Marinelli, U. of Notre Dame, US
  **
  ***/
@@ -75,13 +72,15 @@ class OutInConversionSeedFinder : public ConversionSeedFinder {
 
   private :
     
-    float  the2ndHitdphi_;
+  float  the2ndHitdphi_;
   float   the2ndHitdzConst_;    
   float  the2ndHitdznSigma_; 
   mutable std::vector<TrajectoryMeasurement> theFirstMeasurements_;
   mutable int nSeedsPerBC_;
   int maxNumberOfOutInSeedsPerBC_;
-
+  float bcEtcut_;
+  float bcEcut_;
+  bool useEtCut_;
 
 };
 

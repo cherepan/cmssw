@@ -26,23 +26,29 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "RecoEgamma/EgammaHLTAlgos/interface/EgammaHLTTrackIsolation.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/TrackReco/interface/Track.h"
 
-//
-// class declaration
-//
+#include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
+#include "DataFormats/RecoCandidate/interface/RecoEcalCandidateFwd.h"
+
+namespace edm {
+  class ConfigurationDescriptions;
+}
 
 class EgammaHLTPhotonTrackIsolationProducersRegional : public edm::EDProducer {
    public:
       explicit EgammaHLTPhotonTrackIsolationProducersRegional(const edm::ParameterSet&);
       ~EgammaHLTPhotonTrackIsolationProducersRegional();
 
-
-      virtual void produce(edm::Event&, const edm::EventSetup&);
-   private:
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  virtual void produce(edm::Event&, const edm::EventSetup&);
+  
+private:
       // ----------member data ---------------------------
 
-  edm::InputTag recoEcalCandidateProducer_;
-  edm::InputTag trackProducer_;
+  edm::EDGetTokenT<reco::RecoEcalCandidateCollection> recoEcalCandidateProducer_;
+  edm::EDGetTokenT<reco::TrackCollection> trackProducer_;
 
   edm::ParameterSet conf_;
 

@@ -4,8 +4,6 @@
 /** \class SiStripAnalyser
  * *
  *  SiStrip SiStripAnalyser
- *  $Date: 2012/10/15 09:10:40 $
- *  $Revision: 1.33 $
  *  \author  S. Dutta INFN-Pisa
  *   
  */
@@ -17,7 +15,6 @@
 #include "FWCore/Framework/interface/LuminosityBlock.h"
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/EventSetup.h"
-#include "EventFilter/Utilities/interface/ModuleWeb.h"
 
 #include <iostream>
 #include <fstream>
@@ -32,7 +29,7 @@ class SiStripDetCabling;
 class SiStripActionExecutor;
 class SiStripClassToMonitorCondData;
 class FEDRawDataCollection;
-class SiStripAnalyser: public edm::EDAnalyzer, public evf::ModuleWeb{
+class SiStripAnalyser: public edm::EDAnalyzer{
 
 public:
 
@@ -42,8 +39,8 @@ public:
   /// Destructor
   virtual ~SiStripAnalyser();
 
-  void defaultWebPage(xgi::Input *in, xgi::Output *out); 
-  void publish(xdata::InfoSpace *){};
+  //void defaultWebPage(xgi::Input *in, xgi::Output *out); 
+  //void publish(xdata::InfoSpace *){};
   //  void handleWebRequest(xgi::Input *in, xgi::Output *out); 
 
 private:
@@ -79,7 +76,7 @@ private:
 
   DQMStore* dqmStore_;
 
-  SiStripWebInterface* sistripWebInterface_;
+  //SiStripWebInterface* sistripWebInterface_;
 
   int fileSaveFrequency_;
   int summaryFrequency_;

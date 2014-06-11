@@ -4,8 +4,6 @@
 /*
  * \file DTGlobalRecoTask.h
  *
- * $Date: 2008/03/01 00:39:53 $
- * $Revision: 1.3 $
  * \author M. Zanetti - INFN Padova
  *
 */
@@ -52,11 +50,16 @@ void endJob(void);
 private:
 
   int nevents;
-  
+
   // My monitor elements
-  
+
   std::ofstream logFile;
-  
+
 };
 
 #endif
+
+/* Local Variables: */
+/* show-trailing-whitespace: t */
+/* truncate-lines: t */
+/* End: */

@@ -1,37 +1,38 @@
 #include "Validation/RecoVertex/interface/VertexHistogramMaker.h"
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
+#include "FWCore/Framework/interface/Run.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
-#include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/Luminosity/interface/LumiDetails.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
 #include "TH2F.h"
 #include "TH1F.h"
 #include "TProfile.h"
 
 
-VertexHistogramMaker::VertexHistogramMaker():
-  m_currdir(0), m_maxLS(100), m_weightThreshold(0.5), m_trueOnly(true), 
-  m_runHisto(true), m_runHistoProfile(true), m_runHistoBXProfile(true), m_runHistoBXProfile2D(false), m_runHisto2D(false), 
-  m_bsConstrained(false),
-  m_histoParameters() { }
+VertexHistogramMaker::VertexHistogramMaker()
+  : m_currdir(0), m_maxLS(100), m_weightThreshold(0.5), m_trueOnly(true)
+  , m_runHisto(true), m_runHistoProfile(true), m_runHistoBXProfile(true), m_runHistoBXProfile2D(false), m_runHisto2D(false)
+  , m_bsConstrained(false)
+  , m_histoParameters() { }
 
-VertexHistogramMaker::VertexHistogramMaker(const edm::ParameterSet& iConfig):
-  m_currdir(0),
-  m_maxLS(iConfig.getParameter<unsigned int>("maxLSBeforeRebin")),
-  m_weightThreshold(iConfig.getUntrackedParameter<double>("weightThreshold",0.5)),
-  m_trueOnly(iConfig.getUntrackedParameter<bool>("trueOnly",true)),
-  m_runHisto(iConfig.getUntrackedParameter<bool>("runHisto",true)),
-  m_runHistoProfile(iConfig.getUntrackedParameter<bool>("runHistoProfile",true)),
-  m_runHistoBXProfile(iConfig.getUntrackedParameter<bool>("runHistoBXProfile",true)),
-  m_runHistoBXProfile2D(iConfig.getUntrackedParameter<bool>("runHistoBXProfile2D",false)),
-  m_runHisto2D(iConfig.getUntrackedParameter<bool>("runHisto2D",false)),
-  m_bsConstrained(iConfig.getParameter<bool>("bsConstrained")),
-  m_histoParameters(iConfig.getUntrackedParameter<edm::ParameterSet>("histoParameters",edm::ParameterSet())),
-  m_rhm(false),m_fhm(true)
+VertexHistogramMaker::VertexHistogramMaker(const edm::ParameterSet& iConfig, edm::ConsumesCollector&& iC)
+  : m_currdir(0)
+  , m_maxLS(iConfig.getParameter<unsigned int>("maxLSBeforeRebin"))
+  , m_weightThreshold(iConfig.getUntrackedParameter<double>("weightThreshold",0.5))
+  , m_trueOnly(iConfig.getUntrackedParameter<bool>("trueOnly",true))
+  , m_runHisto(iConfig.getUntrackedParameter<bool>("runHisto",true))
+  , m_runHistoProfile(iConfig.getUntrackedParameter<bool>("runHistoProfile",true))
+  , m_runHistoBXProfile(iConfig.getUntrackedParameter<bool>("runHistoBXProfile",true))
+  , m_runHistoBXProfile2D(iConfig.getUntrackedParameter<bool>("runHistoBXProfile2D",false))
+  , m_runHisto2D(iConfig.getUntrackedParameter<bool>("runHisto2D",false))
+  , m_bsConstrained(iConfig.getParameter<bool>("bsConstrained"))
+  , m_histoParameters(iConfig.getUntrackedParameter<edm::ParameterSet>("histoParameters",edm::ParameterSet()))
+  , m_lumiDetailsToken( iC.consumes< LumiDetails, edm::InLumi >( edm::InputTag( std::string( "lumiProducer" ) ) ) )
+  , m_rhm(false),m_fhm(true)
 { }
 
 
@@ -45,7 +46,7 @@ VertexHistogramMaker::~VertexHistogramMaker() {
 void VertexHistogramMaker::book(const std::string dirname) {
 
   edm::Service<TFileService> tfserv;
-  TFileDirectory* currdir = &(*tfserv);
+  TFileDirectory* currdir = &(tfserv->tFileDirectory());
 
   if(dirname!="") {
     currdir = new TFileDirectory(tfserv->mkdir(dirname));
@@ -200,7 +201,7 @@ void VertexHistogramMaker::beginRun(const edm::Run& iRun) {
   TFileDirectory* currdir = m_currdir;
   if(currdir==0) {
     edm::Service<TFileService> tfserv;
-    currdir = &(*tfserv);
+    currdir = &(tfserv->tFileDirectory());
   }
 
   m_rhm.beginRun(iRun,*currdir);
@@ -352,17 +353,10 @@ void VertexHistogramMaker::fill(const unsigned int orbit, const int bx, const fl
 
 void VertexHistogramMaker::fill(const edm::Event& iEvent, const reco::VertexCollection& vertices, const double weight) {
 
-  TFileDirectory* currdir = m_currdir;
-  if(currdir==0) {
-    edm::Service<TFileService> tfserv;
-    currdir = &(*tfserv);
-  }
-
-
   // get luminosity
 
   edm::Handle<LumiDetails> ld;
-  iEvent.getLuminosityBlock().getByLabel("lumiProducer",ld);
+  iEvent.getLuminosityBlock().getByToken( m_lumiDetailsToken, ld );
 
   float bxlumi = -1.;
 

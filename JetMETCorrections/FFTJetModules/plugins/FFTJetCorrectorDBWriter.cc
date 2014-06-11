@@ -13,7 +13,6 @@
 //
 // Original Author:  Igor Volobouev
 //         Created:  Wed Aug  1 20:59:12 CDT 2012
-// $Id: FFTJetCorrectorDBWriter.cc,v 1.1 2012/07/16 17:40:54 igv Exp $
 //
 //
 
@@ -51,7 +50,7 @@ private:
     FFTJetCorrectorDBWriter(const FFTJetCorrectorDBWriter&);
     FFTJetCorrectorDBWriter& operator=(const FFTJetCorrectorDBWriter&);
 
-    virtual void analyze(const edm::Event&, const edm::EventSetup&);
+    virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
 
     std::string inputFile;
     std::string record;
