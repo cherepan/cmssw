@@ -3,7 +3,7 @@ C for colour codes
 C Should be backward compatible with v3.1 and v3.2 (thanks to B. Kersevan)
 C
 C----------------------------------------------------------------------
-      SUBROUTINE MCATNLOUPEVNT(IPROC,EXITCODE,IHPRO)
+      SUBROUTINE MCATNLOUPEVNT(IPROC,EXITCODE,IHPRO,VFLAGL)
 C----------------------------------------------------------------------
 C  Reads MC@NLO input files and fills Les Houches event common HEPEUP
 C----------------------------------------------------------------------
@@ -13,7 +13,7 @@ CCC MOFIFICATIONS FOR CMSSW, FST
 C      INCLUDE 'HERWIG65.INC'
 C---Les Houches Event Common Block
       IMPLICIT NONE
-      INTEGER IPROC, IERROR, EXITCODE
+      INTEGER IPROC, IERROR, EXITCODE, VFLAGL
       DOUBLE PRECISION ZERO,ONE,TWO,THREE,FOUR,HALF
       PARAMETER (ZERO =0.D0, ONE =1.D0, TWO =2.D0,
      &           THREE=3.D0, FOUR=4.D0, HALF=0.5D0)
@@ -28,7 +28,7 @@ C----------------------------------------------------------------------
       INTEGER NUP,IDPRUP,IDUP,ISTUP,MOTHUP,ICOLUP
       DOUBLE PRECISION XWGTUP,SCALUP,AQEDUP,AQCDUP,PUP,VTIMUP,SPINUP,
      & XMP2,XMA2,XMB2,BETA,VA,VB,SIGMA,DELTA,S2,XKA,XKB,PTF,E,PL,
-     & XSCALE,XEPHO
+     & XSCALE,XEPHO,VALUE1,VALUE2,VALUE3
       COMMON/HEPEUP/NUP,IDPRUP,XWGTUP,SCALUP,AQEDUP,AQCDUP,
      &              IDUP(MAXNUP),ISTUP(MAXNUP),MOTHUP(2,MAXNUP),
      &              ICOLUP(2,MAXNUP),PUP(5,MAXNUP),VTIMUP(MAXNUP),
@@ -104,7 +104,6 @@ C*** changed for CMSSW: IF ALL EVENTS ARE READ IN, RETURN 0
       ENDIF
 C---------------------------------------------------------------
       
-
       READ(IUNIT,901) I1HPRO,IC,NP
       READ(IUNIT,902) (IDUP(I),I=1,NP)
       IF (JPR.EQ.51) THEN
@@ -116,6 +115,11 @@ C---Les Houches expects mean weight to be the cross section in pb
       XWGTUP= XWGTUP*MQQ
       READ(IUNIT,904) ((PUP(J,I),J=1,4),I=1,NP)
       NQQ=NQQ+1
+C--Reads in extra doubles for 4_1_0  
+      IF(VFLAGL.EQ.410) THEN
+         READ(IUNIT,905) VALUE1,VALUE2,VALUE3
+      ENDIF
+
 C---Input format is now (px,py,pz,m)
       DO I=1,NP
          E=SQRT(HWVDOT(4,PUP(1,I),PUP(1,I)))
@@ -1036,6 +1040,8 @@ c      ((P(J,I),J=1,4),I=1,NP)
 c 901  FORMAT(1X,I3,4(1X,I2))
 c 902  FORMAT(1X,D14.8)
 c 903  FORMAT(16(1X,D14.8))
+c format added for 4_1_0
+ 905  FORMAT(1X,D14.8,1X,D14.8,1X,D14.8)
       END
 C----------------------------------------------------------------------
       SUBROUTINE UPCODE(ICODE,ICOL)

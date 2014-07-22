@@ -62,9 +62,12 @@ private:
   
   /// Pointer to the input file
   std::unique_ptr<std::ifstream>  inputFile;
-  
+
   /// Number of events to skip
   unsigned int                  skipEvents;
+
+  // Version number
+  int version;
   
   /// Number of events
   unsigned int                  nEvents;

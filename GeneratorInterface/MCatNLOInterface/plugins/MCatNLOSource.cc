@@ -31,7 +31,7 @@
 // MC@NLO v3.4 LHE file rountines (mcatnlo_hwlhin.f)
 extern "C" {
   void mcatnloupinit_(int*, const char*, int);
-  void mcatnloupevnt_(int*, int*, int*);
+  void mcatnloupevnt_(int*, int*, int*, int*);
 }
 
 
@@ -42,6 +42,7 @@ MCatNLOSource::MCatNLOSource(const edm::ParameterSet &params,
 	ProducerSourceFromFiles(params, desc, false),
         gen::Herwig6Instance(),
 	skipEvents(params.getUntrackedParameter<unsigned int>("skipEvents", 0)),
+	version(params.getUntrackedParameter<int>("version", 341)),
         nEvents(0),
         ihpro(0),
 	processCode(params.getParameter<int>("processCode"))
@@ -100,21 +101,16 @@ static std::string makeConfigLine(const char *var, unsigned int index, T value)
 void MCatNLOSource::beginRun(edm::Run &run)
 {
   InstanceWrapper wrapper(this);
-
   // call UPINIT privided by MC@NLO (v3.4)
   mcatnloupinit_(&processCode, fileName.c_str(), fileName.length());
-
   // fill HEPRUP common block and store in edm::Run
   lhef::HEPRUP heprup;
   lhef::CommonBlocks::readHEPRUP(&heprup);
-
   // make sure we write a valid LHE header, Herwig6Hadronizer
   // will interpret it correctly and set up LHAPDF
   heprup.PDFGUP.first = 0;
   heprup.PDFGUP.second = 0;
-
   std::auto_ptr<LHERunInfoProduct> runInfo(new LHERunInfoProduct(heprup));
-
   LHERunInfoProduct::Header hw6header("herwig6header");
   hw6header.addLine("\n");
   hw6header.addLine("# Herwig6 parameters\n");
@@ -146,7 +142,6 @@ void MCatNLOSource::beginRun(edm::Run &run)
   hw6header.addLine(makeConfigLine("AVABW", wgtmax_));
   hw6header.addLine(makeConfigLine("RLTIM",6, 1.0E-23));
   hw6header.addLine(makeConfigLine("RLTIM",12, 1.0E-23));
-  
 
   runInfo->addHeader(hw6header);
 
@@ -158,20 +153,16 @@ void MCatNLOSource::beginRun(edm::Run &run)
 bool MCatNLOSource::setRunAndEventInfo(edm::EventID&, edm::TimeValue_t&)
 {
   InstanceWrapper wrapper(this);
-
   int lastEventDone=0;
   ihpro=0;
   // skip events if asked to...
-
   while(skipEvents>0) {
     skipEvents--;
-    mcatnloupevnt_(&processCode,&lastEventDone,&ihpro);
+    mcatnloupevnt_(&processCode,&lastEventDone,&ihpro,&version);
     if(lastEventDone) return false;
   }
-
   // call UPINIT privided by MC@NLO (v3.4)
-  mcatnloupevnt_(&processCode,&lastEventDone,&ihpro);
-
+  mcatnloupevnt_(&processCode,&lastEventDone,&ihpro,&version);
   if(lastEventDone) return false;
   return true;
 }
