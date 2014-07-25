@@ -16,14 +16,14 @@ using namespace edm;
 
 TauValidation::TauValidation(const edm::ParameterSet& iPSet): 
   wmanager_(iPSet,consumesCollector())
-  ,GenPartCollection_(iPSet.getParameter<edm::InputTag>("generator"))
+  ,genparticleCollection_(iPSet.getParameter<edm::InputTag>("genparticleCollection"))
   ,tauEtCut(iPSet.getParameter<double>("tauEtCutForRtau"))
   ,NJAKID(22)
   ,zsbins(20)
   ,zsmin(-0.5)
   ,zsmax(0.5)
 {    
-  GenPartCollectionToken_=consumes<reco::GenParticleCollection>(GenPartCollection_);
+  genparticleCollectionToken_=consumes<reco::GenParticleCollection>(genparticleCollection_);
 }
 
 TauValidation::~TauValidation(){}
@@ -73,7 +73,7 @@ void TauValidation::bookHistograms(DQMStore::IBooker &i, edm::Run const &, edm::
     TauMothers->setBinLabel(1+Hpm,"H^{#pm}");
     
     DecayLength = i.book1D("DecayLength","#tau Decay Length", 100 ,0,20);  DecayLength->setAxisTitle("L_{#tau} (mm)");
-    LifeTime =  i.book1D("LifeTime","#tau LifeTime ", 100 ,0,1000E-15);     LifeTime->setAxisTitle("#tau_{#tau}s)");
+    LifeTime =  i.book1D("LifeTime","#tau LifeTime ", 100 ,0,1000E-15);     LifeTime->setAxisTitle("#tau_{#tau} (s)");
     
     TauRtauW          = i.book1D("TauRtauW","W->Tau p(leading track)/E(visible tau)", 50 ,0,1);     TauRtauW->setAxisTitle("rtau");
     TauRtauHpm        = i.book1D("TauRtauHpm","Hpm->Tau p(leading track)/E(visible tau)", 50 ,0,1); TauRtauHpm->setAxisTitle("rtau");
@@ -157,7 +157,7 @@ void TauValidation::bookHistograms(DQMStore::IBooker &i, edm::Run const &, edm::
 void TauValidation::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetup){ 
   ///Gathering the reco::GenParticleCollection information
   edm::Handle<reco::GenParticleCollection> genParticles;
-  iEvent.getByToken(GenPartCollectionToken_, genParticles);
+  iEvent.getByToken(genparticleCollectionToken_, genParticles );
   
   double weight =   wmanager_.weight(iEvent);
   //////////////////////////////////////////////
@@ -254,7 +254,7 @@ void TauValidation::analyze(const edm::Event& iEvent,const edm::EventSetup& iSet
 }//analyze
 
 const reco::GenParticle* TauValidation::GetMother(const reco::GenParticle* tau){
-  for (unsigned int i=0;i<=tau->numberOfMothers();i++) {
+  for (unsigned int i=0;i<tau->numberOfMothers();i++) {
     const reco::GenParticle *mother=static_cast<const reco::GenParticle*>(tau->mother(i));
     if(mother->pdgId() == tau->pdgId()) return GetMother(mother);
     return mother;
@@ -264,7 +264,7 @@ const reco::GenParticle* TauValidation::GetMother(const reco::GenParticle* tau){
 
 const std::vector<const reco::GenParticle*> TauValidation::GetMothers(const reco::GenParticle* boson){
   std::vector<const reco::GenParticle*> mothers;
-  for (unsigned int i=0;i<=boson->numberOfMothers();i++) {
+  for (unsigned int i=0;i<boson->numberOfMothers();i++) {
     const reco::GenParticle *mother=static_cast<const reco::GenParticle*>(boson->mother(i));
     if(mother->pdgId() == boson->pdgId()) return GetMothers(mother);
     mothers.push_back(mother);
@@ -285,7 +285,7 @@ bool TauValidation::isLastTauinChain(const reco::GenParticle* tau){
 
 void TauValidation::findTauList(const reco::GenParticle* tau,std::vector<const reco::GenParticle*> &TauList){
   TauList.insert(TauList.begin(),tau);
-  for(unsigned int i=0;i<=tau->numberOfMothers();i++) {
+  for(unsigned int i=0;i<tau->numberOfMothers();i++) {
     const reco::GenParticle *mother=static_cast<const reco::GenParticle*>(tau->mother(i));
     if(mother->pdgId() == tau->pdgId()){
       findTauList(mother,TauList);
@@ -317,7 +317,7 @@ void TauValidation::FindPhotosFSR(const reco::GenParticle* p,std::vector<const r
   int mother_pid=m->pdgId();
   if(m->pdgId()!=p->pdgId()){
     for(unsigned int i=0; i <m->numberOfDaughters(); i++){
-      const reco::GenParticle *dau=static_cast<const reco::GenParticle*>(p->daughter(i));
+      const reco::GenParticle *dau=static_cast<const reco::GenParticle*>(m->daughter(i));
       if(abs(dau->pdgId()) == 22) {
 	ListofFSR.push_back(dau);
       }

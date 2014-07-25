@@ -84,7 +84,7 @@ class TauValidation : public DQMEDAnalyzer
 	const std::vector<const reco::GenParticle*> GetMothers(const reco::GenParticle* boson);
 	double Zstoa(double zs);
 
-    	edm::InputTag GenPartCollection_;
+    	edm::InputTag genparticleCollection_;
 
 	double tauEtCut;
 
@@ -111,7 +111,7 @@ class TauValidation : public DQMEDAnalyzer
 	int zsbins;
 	double zsmin,zsmax;
 
-	edm::EDGetTokenT<reco::GenParticleCollection> GenPartCollectionToken_;
+	edm::EDGetTokenT<reco::GenParticleCollection> genparticleCollectionToken_;
 };
 
 #endif
