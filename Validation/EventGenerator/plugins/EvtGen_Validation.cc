@@ -53,13 +53,13 @@ void EvtGen_Validation::bookHistograms(DQMStore::IBooker &i, edm::Run const &r, 
   Lambda_b_YT_l_nu = i.book1D("Lambda_b_YT_l_nu","Transverse Y=<l>/<nu>=(7-P)/(6+2P) for Lambda_ b",25,-1.0,1.0);  
   Lambda_b_YT_l_nu->setAxisTitle("YT=<lT>/<nuT>");
   
-  Lambda_b_eta    = i.book1D("TTbar_TopY","Lambda_b #eta",200,-5.,5.);                
+  Lambda_b_eta    = i.book1D("Lambda_b_eta","Lambda_b #eta",200,-5.,5.);                
   Lambda_b_eta->setAxisTitle("Lambda_b #eta");
   
-  Lambda_b_Mass   = i.book1D("TTbar_TopMass","Lambda_b Mass",500,0.,500.);                
+  Lambda_b_Mass   = i.book1D("Lambda_b_Mass","Lambda_b Mass",500,0.,500.);                
   Lambda_b_Mass->setAxisTitle("Lambda_b M (GeV)");
   
-  Lambda_b_Pt     = i.book1D("TTbar_TTbarPt","Lambda_b P_{t}",100,0.,100.); 
+  Lambda_b_Pt     = i.book1D("Lambda_b_Pt","Lambda_b P_{t}",100,0.,100.); 
   Lambda_b_Pt->setAxisTitle("Lambda_b P_{t} (GeV)");
 
 }
@@ -67,22 +67,20 @@ void EvtGen_Validation::bookHistograms(DQMStore::IBooker &i, edm::Run const &r, 
 std::vector<HepMC::GenParticle*> EvtGen_Validation::FindLambdaLeptonDaughters(HepMC::GenParticle* lambda_b){
   bool has_l(false), has_nu(false);
   std::vector<HepMC::GenParticle*> leptons(nlep,NULL);
-    if (lambda_b->end_vertex()){
-      for (HepMC::GenVertex::particle_iterator  dau = lambda_b->end_vertex()->particles_begin(HepMC::children); dau!= lambda_b->end_vertex()->particles_end(HepMC::children); dau++ ) {
-	int dau_pid = abs((*dau)->pdg_id());
-	if((dau_pid==PdtPdgMini::e_minus && dau_pid==PdtPdgMini::mu_minus && dau_pid==PdtPdgMini::tau_minus) || !has_l){
-	  has_l=true;
-	  leptons.at(l)(*dau);
-	}
-        if((dau_pid==PdtPdgMini::nu_e && dau_pid==PdtPdgMini::nu_mu && dau_pid==PdtPdgMini::nu_tau) || !has_nu){
-          has_l=true;
-          leptons.at(nu)(*dau);
-        }
-
-nu_e
+  if (lambda_b->end_vertex()){
+    for (HepMC::GenVertex::particle_iterator  dau = lambda_b->end_vertex()->particles_begin(HepMC::children); dau!= lambda_b->end_vertex()->particles_end(HepMC::children); dau++ ) {
+      int dau_pid = abs((*dau)->pdg_id());
+      if((dau_pid==PdtPdgMini::e_minus && dau_pid==PdtPdgMini::mu_minus && dau_pid==PdtPdgMini::tau_minus) || !has_l){
+	has_l=true;
+	leptons.at(l)=(*dau);
+      }
+      if((dau_pid==PdtPdgMini::nu_e && dau_pid==PdtPdgMini::nu_mu && dau_pid==PdtPdgMini::nu_tau) || !has_nu){
+	has_l=true;
+	leptons.at(nu)=(*dau);
       }
     }
-    return true;
   }
-  
+  if(has_l && has_nu) return leptons;
+  leptons.clear();
+  return leptons;  
 }

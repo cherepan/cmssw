@@ -503,4 +503,18 @@ postProcessorHplusValidation = cms.EDAnalyzer(
     )
 
 
-EventGeneratorPostProcessor = cms.Sequence(postProcessorBasicHepMCValidation+postProcessorBasicGenParticleValidation+postProcessorMBUEandQCDValidation+postProcessorWValidation+postProcessorDrellYanValidation+postProcessorTauValidation+postProcessorTTbarValidation+postProcessorTTbarSpinCorr+postProcessorHiggsValidation+postProcessorHplusValidation)
+postProcessorEvtGenValidation = cms.EDAnalyzer(
+    "DQMGenericClient",
+    subDirs = cms.untracked.vstring("Generator/EvtGen"),
+    efficiency = cms.vstring(""),
+    resolution = cms.vstring(""),
+    normalization = cms.untracked.vstring("Lambda_b_Y_l_nu nEvt",
+                                          "Lambda_b_YT_l_nu nEvt",
+                                          "Lambda_b_eta nEvt",
+                                          "Lambda_b_Mass nEvt",
+                                          "Lambda_b_Pt nEvt"
+                                          )
+    )
+
+
+EventGeneratorPostProcessor = cms.Sequence(postProcessorBasicHepMCValidation+postProcessorBasicGenParticleValidation+postProcessorMBUEandQCDValidation+postProcessorWValidation+postProcessorDrellYanValidation+postProcessorTauValidation+postProcessorTTbarValidation+postProcessorTTbarSpinCorr+postProcessorHiggsValidation+postProcessorHplusValidation+postProcessorEvtGenValidation)

@@ -46,17 +46,19 @@ class EvtGen_Validation : public DQMEDAnalyzer {
 
    private:
       // ----------member data ---------------------------
+  std::vector<HepMC::GenParticle*> FindLambdaLeptonDaughters(HepMC::GenParticle* lambda_b);
   
   edm::InputTag hepmcCollection_;
   std::vector<int> PDGID;
   
   MonitorElement* nEvt;
   
-  MonitorElement* Pt;
-  MonitorElement* eta;
-  MonitorElement* Mass;
-  MonitorElement* Y_l_nu; // polarization variable
+  MonitorElement *Lambda_b_Pt;
+  MonitorElement *Lambda_b_eta;
+  MonitorElement *Lambda_b_Mass;
+  MonitorElement *Lambda_b_Y_l_nu, *Lambda_b_YT_l_nu; // polarization variable
 
+  edm::EDGetTokenT<edm::HepMCProduct> hepmcCollectionToken_;
 
 };
 
