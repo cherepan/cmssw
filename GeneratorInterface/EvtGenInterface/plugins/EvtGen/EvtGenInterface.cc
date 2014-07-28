@@ -415,6 +415,7 @@ void EvtGenInterface::addToHepMC(HepMC::GenParticle* partHep,const EvtId &idEvt,
   EvtVector4R pInit(partHep->momentum().e(),partHep->momentum().px(),partHep->momentum().py(),partHep->momentum().pz()); 
   EvtParticle* parent = EvtParticleFactory::particleFactory(idEvt, pInit);
   // Reset polarization if requested....
+  if(5122==abs(partHep->pdg_id())) std::cout << partHep->pdg_id() << " " <<  EvtPDL::name(idEvt) << std::endl;
   if(EvtPDL::getSpinType(idEvt) == EvtSpinType::DIRAC && polarizations.count(partHep->pdg_id())>0){
     HepMC::FourVector momHep = partHep->momentum();
     EvtVector4R momEvt;

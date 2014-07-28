@@ -160,6 +160,12 @@ namespace edm
 		new lhef::LHEEvent(hadronizer_.getLHERunInfo(), *product);
     hadronizer_.setLHEEvent( lheEvent );
     
+    std::vector<double> spinup=lheEvent->getHEPEUP->SPINUP();
+    std::vector<int> pdg =lheEvent->getHEPEUP->IDUP();
+    for(int i=0;i<spinup.size();i++){
+      //if(abs(pdg.at(i))==5122)
+      std::cout << "Found: " << pdg.at(i) << " " << spinup.at(i) << " " << std::endl; 
+    }
     // hadronizer_.generatePartons();
     if ( !hadronizer_.hadronize() ) return false ;
 
