@@ -34,7 +34,8 @@ void PFBlockAlgo::setParameters( std::vector<double>& DPtovPtCut,
 				 bool useIterTracking,
 				 int nuclearInteractionsPurity,
 				 bool useEGPhotons,
-				 std::vector<double>& photonSelectionCuts) {
+				 std::vector<double>& photonSelectionCuts,
+				 bool useSuperClusters) {
   
   DPtovPtCut_    = DPtovPtCut;
   NHitCut_       = NHitCut;
@@ -55,6 +56,8 @@ void PFBlockAlgo::setParameters( std::vector<double>& DPtovPtCut,
 					     );
 
 
+  useSuperClusters_ = useSuperClusters;
+    
 }
 
 // Glowinski & Gouzevitch
@@ -241,7 +244,6 @@ PFBlockAlgo::packLinks( reco::PFBlock& block,
   const edm::OwnVector< reco::PFBlockElement >& els = block.elements();
   
   block.bookLinkData();
-
   unsigned elsize = els.size();
   unsigned ilStart = 0;
   //First Loop: update all link data
@@ -259,14 +261,13 @@ PFBlockAlgo::packLinks( reco::PFBlock& block,
 
       // are these elements already linked ?
       // this can be optimized
-
       unsigned linksize = links.size();
       for( unsigned il = ilStart; il<linksize; ++il ) {
 	// The following three lines exploits the increasing-element2 ordering of links.
 	if ( links[il].element2() < i1 ) ilStart = il;
 	if ( links[il].element2() > i1 ) break;
-	if( (links[il].element1() == i2 && 
-	     links[il].element2() == i1) ) { // yes
+	if( (links[il].element1() == i2 &&
+             links[il].element2() == i1) ) {  // yes
 	  
 	  dist = links[il].dist();
 	  linked = true;
@@ -1174,6 +1175,8 @@ PFBlockAlgo::checkMaskSize( const reco::PFRecTrackCollection& tracks,
 			    const reco::PFClusterCollection&  hfhads,
 			    const reco::PFClusterCollection&  pss, 
 			    const reco::PhotonCollection&  egphh, 
+			    const reco::SuperClusterCollection&  sceb, 
+			    const reco::SuperClusterCollection&  scee, 			    
 			    const Mask& trackMask, 
 			    const Mask& gsftrackMask,  
 			    const Mask& ecalMask,
@@ -1182,7 +1185,8 @@ PFBlockAlgo::checkMaskSize( const reco::PFRecTrackCollection& tracks,
 			    const Mask& hfemMask,
 			    const Mask& hfhadMask,		      
 			    const Mask& psMask,
-			    const Mask& phMask) const {
+			    const Mask& phMask,
+			    const Mask& scMask) const {
 
   if( !trackMask.empty() && 
       trackMask.size() != tracks.size() ) {
@@ -1249,13 +1253,21 @@ PFBlockAlgo::checkMaskSize( const reco::PFRecTrackCollection& tracks,
     throw std::length_error( err.c_str() );
   }
   
-    if( !phMask.empty() && 
+  if( !phMask.empty() && 
       phMask.size() != egphh.size() ) {
     string err = "PFBlockAlgo::setInput: ";
     err += "The size of the photon mask is different ";
     err += "from the size of the photon vector.";
     throw std::length_error( err.c_str() );
   }
+  
+  if( !scMask.empty() && 
+      scMask.size() != (sceb.size() + scee.size()) ) {
+    string err = "PFBlockAlgo::setInput: ";
+    err += "The size of the SC mask is different ";
+    err += "from the size of the SC vectors.";
+    throw std::length_error( err.c_str() );
+  }  
 
 }
 

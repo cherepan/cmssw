@@ -20,7 +20,7 @@
 */
 //
 // Original Author:  Dmytro Kovalskyi
-// $Id: MuonIdProducer.h,v 1.26 2011/06/07 17:59:13 bellan Exp $
+// $Id: MuonIdProducer.h,v 1.29 2013/02/25 21:29:14 chrjones Exp $
 //
 //
 
@@ -60,8 +60,8 @@ class MuonIdProducer : public edm::EDProducer {
    
    virtual ~MuonIdProducer();
    
-   virtual void produce(edm::Event&, const edm::EventSetup&);
-   virtual void beginRun(edm::Run&, const edm::EventSetup&);
+   virtual void produce(edm::Event&, const edm::EventSetup&) override;
+   virtual void beginRun(const edm::Run&, const edm::EventSetup&) override;
    
    static double sectorPhi( const DetId& id );
 
@@ -91,6 +91,7 @@ class MuonIdProducer : public edm::EDProducer {
    bool          isGoodTrack( const reco::Track& track );
    
    bool          isGoodTrackerMuon( const reco::Muon& muon );
+   bool          isGoodRPCMuon( const reco::Muon& muon );
    
    // check number of common DetIds for a given trackerMuon and a stand alone
    // muon track

@@ -24,7 +24,7 @@ class AlignmentTwoBodyDecayTrackSelector
   ~AlignmentTwoBodyDecayTrackSelector();
 
   /// select tracks
-  Tracks select(const Tracks& tracks, const edm::Event& iEvent);
+  Tracks select(const Tracks& tracks, const edm::Event& iEvent, const edm::EventSetup& iSetup);
 
   bool useThisFilter();
  private:
@@ -51,7 +51,9 @@ class AlignmentTwoBodyDecayTrackSelector
   double theMaxMass;
   double theDaughterMass;
   unsigned int theCandNumber;
-  //charge filter
+  bool secThrBool;
+  double thesecThr ;
+   //charge filter
   int theCharge;
   bool theUnsignedSwitch;
   //missing ET Filter

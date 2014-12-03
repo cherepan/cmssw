@@ -15,7 +15,7 @@
 //         Created:  Thu May 31 14:09:02 CEST 2007
 //    Code Updates:  loic Quertenmont (querten)
 //         Created:  Thu May 10 14:09:02 CEST 2008
-// $Id: DeDxEstimatorProducer.cc,v 1.1 2011/11/18 16:00:05 querten Exp $
+// $Id: DeDxEstimatorProducer.cc,v 1.3 2013/02/27 13:28:30 muzaffar Exp $
 //
 //
 
@@ -86,7 +86,7 @@ DeDxEstimatorProducer::~DeDxEstimatorProducer()
 }
 
 // ------------ method called once each job just before starting event loop  ------------
-void  DeDxEstimatorProducer::beginRun(edm::Run & run, const edm::EventSetup& iSetup)
+void  DeDxEstimatorProducer::beginRun(edm::Run const& run, const edm::EventSetup& iSetup)
 {
    if(MODsColl.size()!=0)return;
 

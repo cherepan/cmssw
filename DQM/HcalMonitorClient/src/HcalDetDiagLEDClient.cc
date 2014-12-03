@@ -6,7 +6,6 @@
 #include "CondFormats/HcalObjects/interface/HcalChannelQuality.h"
 #include "CondFormats/HcalObjects/interface/HcalCondObjectContainer.h"
 
-#include "CalibCalorimetry/HcalAlgos/interface/HcalLogicalMapGenerator.h"
 #include "CondFormats/HcalObjects/interface/HcalLogicalMap.h"
 
 #include <iostream>
@@ -14,14 +13,15 @@
 /*
  * \file HcalDetDiagLEDClient.cc
  * 
- * $Date: 2010/05/13 14:21:11 $
- * $Revision: 1.8 $
+ * $Date: 2012/11/12 23:26:19 $
+ * $Revision: 1.11 $
  * \author J. Temple
  * \brief Hcal DetDiagLED Client class
  */
 
 HcalDetDiagLEDClient::HcalDetDiagLEDClient(std::string myname){
   name_=myname;  status=0;
+  needLogicalMap_=true;
 }
 
 HcalDetDiagLEDClient::HcalDetDiagLEDClient(std::string myname, const edm::ParameterSet& ps){
@@ -40,6 +40,7 @@ HcalDetDiagLEDClient::HcalDetDiagLEDClient(std::string myname, const edm::Parame
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("DetDiagLED_BadChannelStatusMask",
                             ps.getUntrackedParameter<int>("BadChannelStatusMask",(1<<HcalChannelStatus::HcalCellDead)));
+  needLogicalMap_=true;
 }
 
 void HcalDetDiagLEDClient::analyze(){
@@ -230,9 +231,7 @@ std::string subdet[4]={"HB","HE","HO","HF"};
 
    if (debug_>0) std::cout << "<HcalDetDiagLEDClient::htmlOutput> Preparing  html output ..." << std::endl;
    if(!dqmStore_) return;
-   HcalLogicalMapGenerator gen;
-   HcalLogicalMap lmap(gen.createMap());
-   HcalElectronicsMap emap=lmap.generateHcalElectronicsMap();
+   HcalElectronicsMap emap=logicalMap_->generateHcalElectronicsMap();
    std::vector<std::string> name = HcalEtaPhiHistNames();
 
    for(int i=0;i<4;++i){
@@ -355,7 +354,7 @@ std::string subdet[4]={"HB","HE","HO","HF"};
                if(sd==1) detid=new HcalDetId(HcalEndcap,eta,phi,depth);
                if(sd==2) detid=new HcalDetId(HcalOuter,eta,phi,depth);
                if(sd==3) detid=new HcalDetId(HcalForward,eta,phi,depth);
-	       HcalFrontEndId    lmap_entry=lmap.getHcalFrontEndId(*detid);
+	       HcalFrontEndId    lmap_entry=logicalMap_->getHcalFrontEndId(*detid);
 	       HcalElectronicsId emap_entry=emap.lookup(*detid);
                std::string s=" ";
                if(badstatusmap.find(*detid)!=badstatusmap.end()){ s="Known problem"; }	
@@ -388,11 +387,11 @@ std::string subdet[4]={"HB","HE","HO","HF"};
                if(sd==1) detid=new HcalDetId(HcalEndcap,eta,phi,depth);
                if(sd==2) detid=new HcalDetId(HcalOuter,eta,phi,depth);
                if(sd==3) detid=new HcalDetId(HcalForward,eta,phi,depth);
-	       HcalFrontEndId    lmap_entry=lmap.getHcalFrontEndId(*detid);
+	       HcalFrontEndId    lmap_entry=logicalMap_->getHcalFrontEndId(*detid);
 	       HcalElectronicsId emap_entry=emap.lookup(*detid);
 	       printTableLine(BadTiming,cnt++,*detid,lmap_entry,emap_entry,comment); BadTimingCnt++;
 	       delete detid;
-	    }catch(...){ continue;}
+	    }catch(cms::Exception &){ continue;}
          }
       }	
   }
@@ -420,11 +419,11 @@ std::string subdet[4]={"HB","HE","HO","HF"};
                if(sd==1) detid=new HcalDetId(HcalEndcap,eta,phi,depth);
                if(sd==2) detid=new HcalDetId(HcalOuter,eta,phi,depth);
                if(sd==3) detid=new HcalDetId(HcalForward,eta,phi,depth);
-	       HcalFrontEndId    lmap_entry=lmap.getHcalFrontEndId(*detid);
+	       HcalFrontEndId    lmap_entry=logicalMap_->getHcalFrontEndId(*detid);
 	       HcalElectronicsId emap_entry=emap.lookup(*detid);
 	       printTableLine(Unstable,cnt++,*detid,lmap_entry,emap_entry,comment); UnstableCnt++;
 	       delete detid;
-	    }catch(...){ continue;}
+	    }catch(cms::Exception &){ continue;}
          }
       }	
   }
@@ -452,13 +451,13 @@ std::string subdet[4]={"HB","HE","HO","HF"};
                if(sd==1) detid=new HcalDetId(HcalEndcap,eta,phi,depth);
                if(sd==2) detid=new HcalDetId(HcalOuter,eta,phi,depth);
                if(sd==3) detid=new HcalDetId(HcalForward,eta,phi,depth);
-	       HcalFrontEndId    lmap_entry=lmap.getHcalFrontEndId(*detid);
+	       HcalFrontEndId    lmap_entry=logicalMap_->getHcalFrontEndId(*detid);
 	       HcalElectronicsId emap_entry=emap.lookup(*detid);
                std::string s=" ";
                if(badstatusmap.find(*detid)!=badstatusmap.end()){ s="Known problem"; }	
 	       printTableLine(BadLED,cnt++,*detid,lmap_entry,emap_entry,s); UnstableLEDCnt++;
 	       delete detid;
-	    }catch(...){ continue;}
+	    }catch(cms::Exception &){ continue;}
          }
       }	
   }

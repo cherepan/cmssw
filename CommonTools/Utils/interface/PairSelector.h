@@ -4,7 +4,7 @@
  *
  * \author Luca Lista, INFN
  *
- * $Id: PairSelector.h,v 1.3 2008/05/13 08:47:07 llista Exp $
+ * $Id: PairSelector.h,v 1.2 2012/06/26 21:13:12 wmtan Exp $
  */
 
 template<typename S1, typename S2>

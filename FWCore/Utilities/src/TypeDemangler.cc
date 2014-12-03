@@ -1,4 +1,5 @@
 #include <cxxabi.h>
+#include <cctype>
 #include <string>
 #include "FWCore/Utilities/interface/Exception.h"
 
@@ -19,19 +20,10 @@
 
         2) If an enum value is used as a non-type template parameter, the demangled name cannot
         be used successfully to load the dictionary.  This is because the enumerator value name
-        (used by Reflex) is not available in the mangled name (on this platform).
+        is not available in the mangled name (on this platform).
 
 ********************************************************************/
 namespace {
-  void
-  noSpaceAfterComma(std::string& demangledName) {
-    char const* const commaSpace = ", ";
-    std::string::size_type index = std::string::npos;
-    while ((index = demangledName.find(commaSpace)) != std::string::npos) {
-      demangledName.erase(index + 1, 1);
-    } 
-  }
-
   void
   removeParameter(std::string& demangledName, std::string const& toRemove) {
     std::string::size_type const asize = toRemove.size();
@@ -47,7 +39,7 @@ namespace {
           --depth;
           if (depth == 0) {
             demangledName.erase(index, inx + 1 - index);
-            if (demangledName[index] == ' ') {
+            if (demangledName[index] == ' ' && (index == 0 || demangledName[index - 1] != '>')) {
               demangledName.erase(index, 1);
             }
             break;
@@ -56,6 +48,37 @@ namespace {
         ++inx;
       }
     } 
+  }
+
+  bool isAlnumOrUnderscore(char c) {
+    return c == '_' || std::isalnum(c);
+  }
+
+  void
+  replaceDelimitedString(std::string& demangledName, std::string const& from, std::string const& to) {
+    // from must not be a substring of to.
+    std::string::size_type length = from.size(); 
+    std::string::size_type pos = 0;
+    while((pos = demangledName.find(from, pos)) != std::string::npos) {
+      // replace 'from', unless preceded or followed by a letter, digit, or unsderscore.
+      if(pos != 0 && isAlnumOrUnderscore(demangledName[pos - 1])) {
+        ++pos;
+      } else if(pos + length < demangledName.size() && isAlnumOrUnderscore(demangledName[pos + length])) {
+        ++pos;
+      } else {
+        demangledName.replace(pos, length, to); 
+      }
+    }
+  } 
+
+  void
+  replaceString(std::string& demangledName, std::string const& from, std::string const& to) {
+    // from must not be a substring of to.
+    std::string::size_type length = from.size(); 
+    std::string::size_type pos = 0;
+    while((pos = demangledName.find(from, pos)) != std::string::npos) {
+       demangledName.replace(pos, length, to); 
+    }
   }
 
   void
@@ -82,24 +105,35 @@ namespace {
 }
 
 namespace edm {
-  void
-  typeDemangle(char const* name, std::string& demangledName) {
+  std::string
+  typeDemangle(char const* mangledName) {
     int status = 0;
     size_t* const nullSize = 0;
     char* const null = 0;
-    demangledName += abi::__cxa_demangle(name, null, nullSize, &status);
+    
+    // The demangled C style string is allocated with malloc, so it must be deleted with free().
+    char* demangled = abi::__cxa_demangle(mangledName, null, nullSize, &status);
     if (status != 0) {
-      throw cms::Exception("Demangling error") << " '" << name << "'\n";
+      throw cms::Exception("Demangling error") << " '" << mangledName << "'\n";
     } 
+    std::string demangledName(demangled);
+    free(demangled);
     // We must use the same conventions used by REFLEX.
-    noSpaceAfterComma(demangledName);
+    // The order of these is important.
+    // No space after comma
+    replaceString(demangledName, ", ", ",");
     // Strip default allocator
     std::string const allocator(",std::allocator<");
     removeParameter(demangledName, allocator);
     // Strip default comparator
     std::string const comparator(",std::less<");
     removeParameter(demangledName, comparator);
+    // Replace 'std::string' with 'std::basic_string<char>'.
+    replaceDelimitedString(demangledName, "std::string", "std::basic_string<char>");
     // Put const qualifier before identifier.
     constBeforeIdentifier(demangledName);
+    // No two consecutive '>' 
+    replaceString(demangledName, ">>", "> >");
+    return demangledName;
   }
 }

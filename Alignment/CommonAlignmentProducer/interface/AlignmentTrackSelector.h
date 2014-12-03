@@ -7,6 +7,7 @@
 
 namespace edm {
   class Event;
+  class EventSetup;
   class ParameterSet;
 }
 
@@ -28,7 +29,7 @@ class AlignmentTrackSelector
   ~AlignmentTrackSelector();
 
   /// select tracks
-  Tracks select(const Tracks& tracks, const edm::Event& evt) const;
+  Tracks select(const Tracks& tracks, const edm::Event& evt, const edm::EventSetup& eSetup) const;
   ///returns if any of the Filters is used.
   bool useThisFilter();
 
@@ -36,9 +37,9 @@ class AlignmentTrackSelector
  private:
 
   /// apply basic cuts on pt,eta,phi,nhit
-  Tracks basicCuts(const Tracks& tracks, const edm::Event& evt) const;
+  Tracks basicCuts(const Tracks& tracks, const edm::Event& evt, const edm::EventSetup& eSetup) const;
   /// checking hit requirements beyond simple number of valid hits
-  bool detailedHitsCheck(const reco::Track* track, const edm::Event& evt) const;
+  bool detailedHitsCheck(const reco::Track* track, const edm::Event& evt, const edm::EventSetup& eSetup) const;
   bool isHit2D(const TrackingRecHit &hit) const;
   /// if valid, check for minimum charge (currently only in strip), if invalid give true 
   bool isOkCharge(const TrackingRecHit* therechit) const;
@@ -80,6 +81,10 @@ class AlignmentTrackSelector
   const int minHitsinENDCAP_, minHitsinENDCAPplus_, minHitsinENDCAPminus_;
   const double maxHitDiffEndcaps_;
   const double nLostHitMax_;
+  std::vector<double> RorZofFirstHitMin_;
+  std::vector<double> RorZofFirstHitMax_;
+  std::vector<double> RorZofLastHitMin_;
+  std::vector<double> RorZofLastHitMax_;
 
   const edm::InputTag clusterValueMapTag_;  // ValueMap containing association cluster - flag
   const int minPrescaledHits_;

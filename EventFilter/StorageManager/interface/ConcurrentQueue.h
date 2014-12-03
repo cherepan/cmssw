@@ -1,4 +1,4 @@
-// $Id: ConcurrentQueue.h,v 1.12 2011/04/07 08:22:04 mommsen Exp $
+// $Id: ConcurrentQueue.h,v 1.15 2013/01/07 11:16:27 eulisse Exp $
 /// @file: ConcurrentQueue.h 
 
 
@@ -41,9 +41,9 @@ namespace stor
         The function returns the dropped event count (1) if the
         item cannot be added.
    
-     $Author: mommsen $
-     $Revision: 1.12 $
-     $Date: 2011/04/07 08:22:04 $
+     $Author: eulisse $
+     $Revision: 1.15 $
+     $Date: 2013/01/07 11:16:27 $
    */
 
 
@@ -119,8 +119,9 @@ namespace stor
     typedef std::list<T> SequenceType;
     typedef typename SequenceType::size_type SizeType;
 
-    static struct QueueIsFull : public std::exception
+    static const struct QueueIsFull : public std::exception
     {
+      QueueIsFull() {};
       virtual const char* what() const throw()
       {
         return "Cannot add item to a full queue";
@@ -167,7 +168,8 @@ namespace stor
       }
     }         
   };
-
+  template <class T>
+  const typename FailIfFull<T>::QueueIsFull FailIfFull<T>::queueIsFull;
 
   template <class T>
   struct KeepNewest

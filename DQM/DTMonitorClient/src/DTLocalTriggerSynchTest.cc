@@ -1,8 +1,8 @@
 /*
  *  See header file for a description of this class.
  *
- *  $Date: 2009/11/02 14:43:41 $
- *  $Revision: 1.3 $
+ *  $Date: 2013/05/22 17:24:58 $
+ *  $Revision: 1.5 $
  *  \author C. Battilana - CIEMAT
  */
 
@@ -128,7 +128,7 @@ void DTLocalTriggerSynchTest::runClientDiagnostic() {
 	  makeRatioME(numH,denH,ratioH);
 	  try {
 	    getHisto<TH1F>(ratioH)->Fit("pol8","CQO");
-	  } catch (...) {
+	  } catch (cms::Exception& iException) {
 	    edm::LogPrint(category()) << "[" << testName 
 				     << "Test]: Error fitting " 
 				     << ratioH->getName() << " returned 0" << endl;

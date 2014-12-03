@@ -4,8 +4,8 @@
 /*
  * \file DTDigiTask.h
  *
- * $Date: 2011/10/21 18:29:20 $
- * $Revision: 1.34 $
+ * $Date: 2012/09/24 16:08:06 $
+ * $Revision: 1.36 $
  * \author M. Zanetti - INFN Padova
  *
 */
@@ -120,6 +120,9 @@ private:
 
   // The label to retrieve the digis 
   edm::InputTag dtDigiLabel;
+
+  edm::InputTag ltcDigiCollectionTag;
+
   // Set to true to read the ttrig from DB (useful to determine in-time and out-of-time hits)
   bool readTTrigDB;
   // Set to true to subtract t0 from test pulses

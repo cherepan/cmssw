@@ -13,7 +13,7 @@ Implementation:
 //
 // Original Author:  Giuseppe Cerati
 //         Created:  Tue Jul 10 15:05:02 CEST 2007
-// $Id: VertexConstraintProducer.cc,v 1.5 2010/02/16 17:09:48 wmtan Exp $
+// $Id: VertexConstraintProducer.cc,v 1.7 2013/02/27 14:58:17 muzaffar Exp $
 //
 //
 
@@ -47,8 +47,7 @@ public:
   ~VertexConstraintProducer();
 
 private:
-  virtual void beginRun(edm::Run & run, const edm::EventSetup&) ;
-  virtual void produce(edm::Event&, const edm::EventSetup&);
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
   virtual void endJob() ;
       
   // ----------member data ---------------------------
@@ -120,11 +119,6 @@ void VertexConstraintProducer::produce(edm::Event& iEvent, const edm::EventSetup
 
   iEvent.put(pairs);
   iEvent.put(output);
-}
-
-// ------------ method called once each job just before starting event loop  ------------
-void VertexConstraintProducer::beginRun(edm::Run & run, const edm::EventSetup&)
-{
 }
 
 // ------------ method called once each job just after ending the event loop  ------------

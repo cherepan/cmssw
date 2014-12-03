@@ -4,9 +4,9 @@
 /** \class OutInConversionSeedFinder
  **  
  **
- **  $Id: OutInConversionSeedFinder.h,v 1.7 2008/02/15 16:47:15 nancy Exp $ 
- **  $Date: 2008/02/15 16:47:15 $ 
- **  $Revision: 1.7 $
+ **  $Id: OutInConversionSeedFinder.h,v 1.9 2012/05/29 08:23:53 muzaffar Exp $ 
+ **  $Date: 2012/05/29 08:23:53 $ 
+ **  $Revision: 1.9 $
  **  \author Nancy Marinelli, U. of Notre Dame, US
  **
  ***/
@@ -17,7 +17,7 @@
 #include "RecoEgamma/EgammaPhotonAlgos/interface/ConversionSeedFinder.h"
 #include "RecoTracker/TkDetLayers/interface/GeometricSearchTracker.h"
 
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
 
 #include "RecoTracker/MeasurementDet/interface/MeasurementTracker.h"
 

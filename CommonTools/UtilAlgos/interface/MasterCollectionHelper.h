@@ -9,7 +9,7 @@
  *
  * \author Luca Lista, INFN
  *
- * \version $Id: MasterCollectionHelper.h,v 1.2 2007/12/03 15:38:51 llista Exp $
+ * \version $Id: MasterCollectionHelper.h,v 1.2 2013/02/28 00:34:26 wmtan Exp $
  *
  */
 #include "DataFormats/Common/interface/Handle.h"
@@ -59,3 +59,4 @@ namespace helper {
 }
 
 #endif
+

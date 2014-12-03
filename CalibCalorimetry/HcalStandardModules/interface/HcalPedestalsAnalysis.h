@@ -1,3 +1,5 @@
+// $Id: HcalPedestalsAnalysis.h,v 1.15 2012/11/13 03:30:20 dlange Exp $
+
 #ifndef HcalPedestalsAnalysis_H
 #define HcalPedestalsAnalysis_H
 
@@ -9,6 +11,7 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/HcalDetId/interface/HcalGenericDetId.h"
@@ -65,6 +68,8 @@ namespace edm {
       int num[4][4];
    };
 
+class HcalTopology;
+
 class HcalPedestalsAnalysis : public edm::EDAnalyzer
 {
    public:
@@ -74,6 +79,7 @@ class HcalPedestalsAnalysis : public edm::EDAnalyzer
    virtual ~HcalPedestalsAnalysis();
    //Analysis
    void analyze(const edm::Event & event, const edm::EventSetup& eventSetup);
+   virtual void endJob();
 
    private:
    //Container for data, 1 per channel
@@ -85,6 +91,7 @@ class HcalPedestalsAnalysis : public edm::EDAnalyzer
    int runnum;
    int firstTS;
    int lastTS;
+   int ievt;
    std::string ROOTfilename;
    std::string pedsADCfilename;
    std::string pedsfCfilename;
@@ -108,6 +115,11 @@ class HcalPedestalsAnalysis : public edm::EDAnalyzer
    HcalPedestalWidths* rawWidthsItem;
    HcalPedestals* rawPedsItemfc;
    HcalPedestalWidths* rawWidthsItemfc;
+   HcalTopology *theTopology;
+
+   edm::InputTag hbheDigiCollectionTag_;
+   edm::InputTag hoDigiCollectionTag_;
+   edm::InputTag hfDigiCollectionTag_;
 };
 #endif
 

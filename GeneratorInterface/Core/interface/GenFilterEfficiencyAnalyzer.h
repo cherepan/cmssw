@@ -2,7 +2,7 @@
 #define GENFILTEREFFICIENCYANALYZER_H
 
 // F. Cossutti
-// $Date:$
+// $Date: 2013/03/01 19:06:14 $
 // $Revision://
 
 // analyzer of a summary information product on filter efficiency for a user specified path
@@ -21,6 +21,7 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/GenFilterInfo.h"
 //
@@ -34,12 +35,13 @@ public:
   
   
 private:
-  virtual void analyze(const edm::Event&, const edm::EventSetup&);
-  virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
-  virtual void endJob();
+  virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+  virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
+  virtual void endJob() override;
 
   int nTota_;
   int nPass_;
+  edm::InputTag genFilterInfoTag_;
 
   // ----------member data ---------------------------
   

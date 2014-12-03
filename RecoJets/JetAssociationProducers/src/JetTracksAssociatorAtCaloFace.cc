@@ -3,7 +3,7 @@
 // Original Author:  Andrea Rizzi
 //         Created:  Wed Apr 12 11:12:49 CEST 2006
 // Accommodated for Jet Package by: Fedor Ratnikov Jul. 30, 2007
-// $Id: JetTracksAssociatorAtCaloFace.cc,v 1.4 2009/03/30 15:08:28 bainbrid Exp $
+// $Id: JetTracksAssociatorAtCaloFace.cc,v 1.6 2013/02/27 20:42:22 eulisse Exp $
 //
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
@@ -73,6 +73,3 @@ void JetTracksAssociatorAtCaloFace::produce(edm::Event& fEvent, const edm::Event
 }
 
 
-void JetTracksAssociatorAtCaloFace::beginRun( edm::Run const & run, edm::EventSetup const & setup)
-{
-}

@@ -27,7 +27,7 @@ EcalBarrelGeometry::EcalBarrelGeometry() :
    m_cellVec      ( k_NumberOfCellsForCorners )
 {
    const int neba[] = {25,45,65,85} ;
-   _EtaBaskets = std::vector<int>( &neba[0], &neba[3] ) ;
+   _EtaBaskets = std::vector<int>( neba, neba+4 ) ;
 }
 
 
@@ -93,7 +93,7 @@ EcalBarrelGeometry::getClosestCell(const GlobalPoint& r) const
 	    if (!present(EBDetId(zbin*bin,1,EBDetId::ETAPHIMODE)))
 	      continue;
 
-	    CCGFloat eta = getGeometry(EBDetId(zbin*bin,1,EBDetId::ETAPHIMODE))->getPosition().eta();
+	    CCGFloat eta = getGeometry(EBDetId(zbin*bin,1,EBDetId::ETAPHIMODE))->etaPos();
 
 	    if(fabs(pointeta-eta)<deta)
 	      {
@@ -109,10 +109,10 @@ EcalBarrelGeometry::getClosestCell(const GlobalPoint& r) const
     
 
   // Now the closest phi. always same number of phi bins(!?)
-  const CCGFloat twopi = M_PI+M_PI;
-
+  constexpr CCGFloat twopi = M_PI+M_PI;
   // 10 degree tilt
-  const CCGFloat tilt=twopi/36.;
+  constexpr CCGFloat tilt=twopi/36.;
+
   CCGFloat pointphi = r.phi()+tilt;
 
   // put phi in correct range (0->2pi)
@@ -146,8 +146,8 @@ EcalBarrelGeometry::getClosestCell(const GlobalPoint& r) const
 
       // Since the point can lie between crystals, it is necessary to keep track of the movements
       // to avoid infinite loops
-      std::vector<CCGFloat> history;
-      history.resize(4,0.);
+      CCGFloat history[4]{0.f};
+
       //
       // stop movement in eta direction when closest cell was found (point between crystals)
       int start = 1;
@@ -159,7 +159,7 @@ EcalBarrelGeometry::getClosestCell(const GlobalPoint& r) const
 	  levery = 0;
 	  const CaloCellGeometry::CornersVec& corners 
 	     ( getGeometry(myCell)->getCorners() ) ;
-	  std::vector<CCGFloat> SS;
+	  CCGFloat SS[4];
 
 	  // compute the distance of the point with respect of the 4 crystal lateral planes
 	  for (short i=0; i < 4 ; ++i)
@@ -172,7 +172,7 @@ EcalBarrelGeometry::getClosestCell(const GlobalPoint& r) const
 	      CCGFloat distance = plane.distance(point);
 	      if(plane.d()>0.) distance=-distance;
 	      if (corners[0].z()<0.) distance=-distance;
-	      SS.push_back(distance);
+	      SS[i] = distance;
 	    }
 
 	  // SS's - normals
@@ -270,7 +270,7 @@ EcalBarrelGeometry::getClosestCell(const GlobalPoint& r) const
 	  
 	  // Update the history. If the point lies between crystals, the closest one
 	  // is returned
-	  history =SS;
+	  std::copy(SS,SS+4,history);
 	  
 	  counter++;
 	  if (counter == 10)
@@ -293,8 +293,10 @@ CaloSubdetectorGeometry::DetIdSet
 EcalBarrelGeometry::getCells( const GlobalPoint& r, 
 			      double             dR ) const 
 {
-   static const int maxphi ( EBDetId::MAX_IPHI ) ;
-   static const int maxeta ( EBDetId::MAX_IETA ) ;
+   constexpr int maxphi ( EBDetId::MAX_IPHI ) ;
+   constexpr int maxeta ( EBDetId::MAX_IETA ) ;
+   constexpr float scale( maxphi/(2*M_PI) ) ; // angle to index
+
    CaloSubdetectorGeometry::DetIdSet dis;  // this is the return object
 
    if( 0.000001 < dR )
@@ -305,67 +307,62 @@ EcalBarrelGeometry::getCells( const GlobalPoint& r,
       }
       else
       {
-	 const double dR2     ( dR*dR ) ;
-	 const double reta    ( r.eta() ) ;
-	 const double rz      ( r.z()   ) ;
-	 const double rphi    ( r.phi() ) ;
-	 const double lowEta  ( reta - dR ) ;
-	 const double highEta ( reta + dR ) ;
+	 const float dR2     ( dR*dR ) ;
+	 const float reta    ( r.eta() ) ;
+	 const float rz      ( r.z()   ) ;
+	 const float rphi    ( r.phi() ) ;
+	 const float lowEta  ( reta - dR ) ;
+	 const float highEta ( reta + dR ) ;
 	 
 	 if( highEta > -1.5 &&
 	     lowEta  <  1.5    ) // in barrel
 	 {
-	    const double scale       ( maxphi/(2*M_PI) ) ; // angle to index
-	    const int    ieta_center ( int( reta*scale + ((rz<0)?(-1):(1))) ) ;
-	    const double phi         ( rphi<0 ? rphi + 2*M_PI : rphi ) ;
-	    const int    iphi_center ( int( phi*scale + 11. ) ) ; // phi=-9.4deg is iphi=1
+	   const int    ieta_center ( int( reta*scale + ((rz<0)?(-1):(1))) ) ;
+	   const float phi         ( rphi<0 ? rphi + float(2*M_PI) : rphi ) ;
+	   const int    iphi_center ( int( phi*scale + 11.f ) ) ; // phi=-9.4deg is iphi=1
 
-	    const double fr    ( dR*scale    ) ; // # crystal widths in dR
-	    const double frp   ( 1.08*fr + 1. ) ; // conservatively above fr 
-	    const double frm   ( 0.92*fr - 1. ) ; // conservatively below fr
-	    const int    idr   ( (int)frp        ) ; // integerize
-	    const int    idr2p ( (int)(frp*frp)     ) ;
-	    const int    idr2m ( frm > 0 ? int(frm*frm) : 0 ) ;
-
-	    for( int de ( -idr ) ; de <= idr ; ++de ) // over eta limits
-	    {
+	   const float fr    ( dR*scale    ) ; // # crystal widths in dR
+	   const float frp   ( 1.08f*fr + 1.f ) ; // conservatively above fr 
+	   const float frm   ( 0.92f*fr - 1.f ) ; // conservatively below fr
+	   const int    idr   ( (int)frp        ) ; // integerize
+	   const int    idr2p ( (int)(frp*frp)     ) ;
+	   const int    idr2m ( frm > 0 ? int(frm*frm) : 0 ) ;
+	   
+	   for( int de ( -idr ) ; de <= idr ; ++de ) // over eta limits
+	     {
 	       int ieta ( de + ieta_center ) ;
 	       
 	       if( std::abs(ieta) <= maxeta &&
 		   ieta      != 0         ) // eta is in EB
-	       {
-		  const int de2 ( de*de ) ;
-		  for( int dp ( -idr ) ; dp <= idr ; ++dp )  // over phi limits
-		  {
-		     const int irange2 ( dp*dp + de2 ) ;
-		     
-		     if( irange2 <= idr2p ) // cut off corners that must be too far away
+		 {
+		   const int de2 ( de*de ) ;
+		   for( int dp ( -idr ) ; dp <= idr ; ++dp )  // over phi limits
 		     {
-			const int iphi ( ( iphi_center + dp + maxphi - 1 )%maxphi + 1 ) ;
-			
-			if( iphi != 0 )
-			{
-			   const EBDetId id ( ieta, iphi ) ;
+		       const int irange2 ( dp*dp + de2 ) ;
+		       
+		       if( irange2 <= idr2p ) // cut off corners that must be too far away
+			 {
+			   const int iphi ( ( iphi_center + dp + maxphi - 1 )%maxphi + 1 ) ;
 			   
-			   bool ok ( irange2 < idr2m ) ;  // no more calculation necessary if inside this radius
+			   if( iphi != 0 )
+			     {
+			       const EBDetId id ( ieta, iphi ) ;
+			       
+			       bool ok ( irange2 < idr2m ) ;  // no more calculation necessary if inside this radius
 			   
-			   if( !ok ) // if not ok, then we have to test this cell for being inside cone
-			   {
-			      const CaloCellGeometry* cell ( getGeometry( id ) );
-			      if( 0 != cell )
-			      {
-				 const GlobalPoint& p   ( cell->getPosition() ) ;
-				 const double       eta ( p.eta() ) ;
-				 const double       phi ( p.phi() ) ;
-				 ok = ( reco::deltaR2( eta, phi, reta, rphi ) < dR2 ) ;
-			      }
+			       if( !ok ) // if not ok, then we have to test this cell for being inside cone
+				 {
+				   const CaloCellGeometry* cell  = &m_cellVec[ id.denseIndex()];
+				   const float       eta ( cell->etaPos() ) ;
+				   const float       phi ( cell->phiPos() ) ;
+				   ok = ( reco::deltaR2( eta, phi, reta, rphi ) < dR2 ) ;
 			   }
-			   if( ok ) dis.insert( id ) ;
-			}
+			       if( ok ) dis.insert( id ) ;
+			     }
+			 }
 		     }
-		  }
-	       }
-	    }
+		 }
+	     }
 	 }
       }
    }

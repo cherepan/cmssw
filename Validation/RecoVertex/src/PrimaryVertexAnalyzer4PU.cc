@@ -71,7 +71,9 @@ typedef reco::Vertex::trackRef_iterator trackit_t;
 //
 // constructors and destructor
 //
-PrimaryVertexAnalyzer4PU::PrimaryVertexAnalyzer4PU(const ParameterSet& iConfig):theTrackFilter(iConfig.getParameter<edm::ParameterSet>("TkFilterParameters"))
+PrimaryVertexAnalyzer4PU::PrimaryVertexAnalyzer4PU(const ParameterSet& iConfig) :
+  theTrackFilter(iConfig.getParameter<edm::ParameterSet>("TkFilterParameters")),
+  beamSpot_(iConfig.getParameter<edm::InputTag>("beamSpot"))
 {
    //now do what ever initialization is needed
   simG4_=iConfig.getParameter<edm::InputTag>( "simG4" );
@@ -1978,7 +1980,7 @@ PrimaryVertexAnalyzer4PU::analyze(const Event& iEvent, const EventSetup& iSetup)
 
   
 
-  if(iEvent.getByType(recoBeamSpotHandle_)){
+  if(iEvent.getByLabel(beamSpot_, recoBeamSpotHandle_)){
     vertexBeamSpot_= *recoBeamSpotHandle_;
     wxy2_=pow(vertexBeamSpot_.BeamWidthX(),2)+pow(vertexBeamSpot_.BeamWidthY(),2);
     Fill(hsimPV, "xbeam",vertexBeamSpot_.x0()); Fill(hsimPV, "wxbeam",vertexBeamSpot_.BeamWidthX());
@@ -2027,8 +2029,8 @@ PrimaryVertexAnalyzer4PU::analyze(const Event& iEvent, const EventSetup& iSetup)
 
   edm::Handle<TrackingParticleCollection>  TPCollectionH ;
   edm::Handle<TrackingVertexCollection>    TVCollectionH ;
-  bool gotTP=iEvent.getByLabel("mergedtruth","MergedTrackTruth",TPCollectionH);
-  bool gotTV=iEvent.getByLabel("mergedtruth","MergedTrackTruth",TVCollectionH);
+  bool gotTP=iEvent.getByLabel("mix","MergedTrackTruth",TPCollectionH);
+  bool gotTV=iEvent.getByLabel("mix","MergedTrackTruth",TVCollectionH);
 
 
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB_);
@@ -2041,7 +2043,7 @@ PrimaryVertexAnalyzer4PU::analyze(const Event& iEvent, const EventSetup& iSetup)
     edm::ESHandle<TrackAssociatorBase> theHitsAssociator;
     iSetup.get<TrackAssociatorRecord>().get("TrackAssociatorByHits",theHitsAssociator);
     associatorByHits_ = (TrackAssociatorBase *) theHitsAssociator.product();
-    r2s_ =   associatorByHits_->associateRecoToSim (trackCollectionH,TPCollectionH, &iEvent ); 
+    r2s_ =   associatorByHits_->associateRecoToSim (trackCollectionH,TPCollectionH, &iEvent, &iSetup ); 
     //simEvt=getSimEvents(iEvent, TPCollectionH, TVCollectionH, trackCollectionH);
     simEvt=getSimEvents(TPCollectionH, TVCollectionH, trackCollectionH);
 

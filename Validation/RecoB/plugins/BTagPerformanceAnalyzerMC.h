@@ -28,7 +28,7 @@
 #include "DQMOffline/RecoB/interface/CorrectJet.h"
 #include "DQMOffline/RecoB/interface/MatchJet.h"
 
-
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
 #include <string>
 #include <vector>
@@ -83,6 +83,9 @@ typedef std::map<edm::RefToBase<reco::Jet>, reco::JetFlavour::Leptons, JetRefCom
   bool update, allHisto;
   bool finalize;
   bool finalizeOnly;
+
+  bool ptHatWeight;
+
   edm::InputTag jetMCSrc;
   edm::InputTag slInfoTag;
 
@@ -98,7 +101,9 @@ typedef std::map<edm::RefToBase<reco::Jet>, reco::JetFlavour::Leptons, JetRefCom
   std::vector<edm::ParameterSet> moduleConfig;
   std::map<BaseTagInfoPlotter*, size_t> binTagInfoPlottersToModuleConfig;
 
-  bool mcPlots_, makeDiffPlots_;
+  std::string flavPlots_;
+  unsigned int mcPlots_;
+  bool makeDiffPlots_;
 
   CorrectJet jetCorrector;
   MatchJet jetMatcher;

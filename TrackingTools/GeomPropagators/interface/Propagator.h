@@ -5,6 +5,8 @@
 #include "TrackingTools/TrajectoryState/interface/FreeTrajectoryState.h"
 #include <utility>
 
+#include "FWCore/Utilities/interface/GCC11Compatibility.h"
+
 class FreeTrajectoryState;
 class TrajectoryStateOnSurface;
 class Plane;
@@ -140,7 +142,7 @@ public:
    *  path lengt means "alongMomentum", an egeative sign means 
    *  "oppositeToMomentum".
    */
-  virtual PropagationDirection propagationDirection() const {
+  virtual PropagationDirection propagationDirection() const GCC11_FINAL {
     return theDir;
   }
 

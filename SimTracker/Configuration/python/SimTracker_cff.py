@@ -1,12 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-# Tracker Digitization 
-# (modeling of the electronics response in pixels and sistrips)
+# The strip digi-sim link has been taken out, because it's now part of
+# the strip digitizer.
 
-# Pixel's digitization
-from SimTracker.SiPixelDigitizer.PixelDigi_cfi import *
-# SiStrip's digitization in APV Mode Deconvolution
-from SimTracker.SiStripDigitizer.SiStripDigi_APVModeDec_cff import *
-
-# Combined sequence
-trDigi = cms.Sequence(simSiPixelDigis+simSiStripDigis)
+import SimGeneral.MixingModule.stripDigitizer_APVModeDec_cff 

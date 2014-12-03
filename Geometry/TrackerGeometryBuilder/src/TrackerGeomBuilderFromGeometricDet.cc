@@ -1,23 +1,17 @@
-/// clhep
-
-//#include "DetectorDescription/Core/interface/DDExpandedView.h"
-//temporary
-//#include "DetectorDescription/Core/interface/DDSolid.h"
-//
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeomBuilderFromGeometricDet.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "Geometry/TrackerGeometryBuilder/interface/PlaneBuilderForGluedDet.h"
 #include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
 #include "Geometry/TrackerGeometryBuilder/interface/GluedGeomDet.h"
-#include "Geometry/CommonDetUnit/interface/GeomDetType.h"
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetType.h"
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
 #include "Geometry/TrackerGeometryBuilder/interface/StripGeomDetType.h"
 #include "Geometry/TrackerGeometryBuilder/interface/StripGeomDetUnit.h"
+#include "Geometry/TrackerGeometryBuilder/interface/PixelTopologyBuilder.h"
+#include "Geometry/TrackerGeometryBuilder/interface/StripTopologyBuilder.h"
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
 #include "DataFormats/GeometrySurface/interface/MediumProperties.h"
-
 
 #include <cfloat>
 #include <cassert>
@@ -40,8 +34,21 @@ namespace {
   }
 }
 
-TrackerGeometry* TrackerGeomBuilderFromGeometricDet::build( const GeometricDet* gd){
-
+TrackerGeometry*
+TrackerGeomBuilderFromGeometricDet::build( const GeometricDet* gd, const edm::ParameterSet& pSet )
+{
+  bool upgradeGeometry = false;
+  int BIG_PIX_PER_ROC_X = 1;
+  int BIG_PIX_PER_ROC_Y = 2;
+  
+  if( pSet.exists( "trackerGeometryConstants" ))
+  {
+    const edm::ParameterSet tkGeomConsts( pSet.getParameter<edm::ParameterSet>( "trackerGeometryConstants" ));
+    upgradeGeometry = tkGeomConsts.getParameter<bool>( "upgradeGeometry" );  
+    BIG_PIX_PER_ROC_X = tkGeomConsts.getParameter<int>( "BIG_PIX_PER_ROC_X" );
+    BIG_PIX_PER_ROC_Y = tkGeomConsts.getParameter<int>( "BIG_PIX_PER_ROC_Y" );
+  }
+    
   thePixelDetTypeMap.clear();
   theStripDetTypeMap.clear();
    
@@ -61,12 +68,18 @@ TrackerGeometry* TrackerGeomBuilderFromGeometricDet::build( const GeometricDet* 
     dets[comp[i]->geographicalID().subdetId()-1].push_back(comp[i]);
   
   // this order is VERY IMPORTANT!!!!!
-  buildPixel(pixB,tracker,theDetIdToEnum.type(1), "barrel"); //"PixelBarrel" 
-  buildPixel(pixF,tracker,theDetIdToEnum.type(2), "endcap"); //"PixelEndcap" 
-  buildSilicon(tib,tracker,theDetIdToEnum.type(3), "barrel");// "TIB"	
-  buildSilicon(tid,tracker,theDetIdToEnum.type(4), "endcap");//"TID" 
-  buildSilicon(tob,tracker,theDetIdToEnum.type(5), "barrel");//"TOB"	
-  buildSilicon(tec,tracker,theDetIdToEnum.type(6), "endcap");//"TEC"        
+  buildPixel(pixB,tracker,GeomDetEnumerators::SubDetector::PixelBarrel,
+	     upgradeGeometry,
+	     BIG_PIX_PER_ROC_X,
+	     BIG_PIX_PER_ROC_Y); //"PixelBarrel" 
+  buildPixel(pixF,tracker,GeomDetEnumerators::SubDetector::PixelEndcap,
+	     upgradeGeometry,
+	     BIG_PIX_PER_ROC_X,
+	     BIG_PIX_PER_ROC_Y); //"PixelEndcap" 
+  buildSilicon(tib,tracker,GeomDetEnumerators::SubDetector::TIB, "barrel");//"TIB"	
+  buildSilicon(tid,tracker,GeomDetEnumerators::SubDetector::TID, "endcap");//"TID" 
+  buildSilicon(tob,tracker,GeomDetEnumerators::SubDetector::TOB, "barrel");//"TOB"	
+  buildSilicon(tec,tracker,GeomDetEnumerators::SubDetector::TEC, "endcap");//"TEC"        
   buildGeomDet(tracker);//"GeomDet"
 
   verifyDUinTG(*tracker);
@@ -77,7 +90,10 @@ TrackerGeometry* TrackerGeomBuilderFromGeometricDet::build( const GeometricDet* 
 void TrackerGeomBuilderFromGeometricDet::buildPixel(std::vector<const GeometricDet*>  const & gdv, 
 						    TrackerGeometry* tracker,
 						    GeomDetType::SubDetector det,
-						    const std::string& part){ 
+						    bool upgradeGeometry,
+						    int BIG_PIX_PER_ROC_X, // in x direction, rows. BIG_PIX_PER_ROC_X = 0 for SLHC
+						    int BIG_PIX_PER_ROC_Y) // in y direction, cols. BIG_PIX_PER_ROC_Y = 0 for SLHC
+{
   tracker->setOffsetDU(det);
 
   for(u_int32_t i=0; i<gdv.size(); i++){
@@ -85,13 +101,15 @@ void TrackerGeomBuilderFromGeometricDet::buildPixel(std::vector<const GeometricD
     std::string const & detName = gdv[i]->name().fullname();
     if (thePixelDetTypeMap.find(detName) == thePixelDetTypeMap.end()) {
       std::auto_ptr<const Bounds> bounds(gdv[i]->bounds());
+      
       PixelTopology* t = 
-	theTopologyBuilder->buildPixel(&*bounds,
+	  PixelTopologyBuilder().build(&*bounds,
+				       upgradeGeometry,
 				       gdv[i]->pixROCRows(),
 				       gdv[i]->pixROCCols(),
-				       gdv[i]->pixROCx(),
-				       gdv[i]->pixROCy(),
-				       part);
+				       BIG_PIX_PER_ROC_X,
+				       BIG_PIX_PER_ROC_Y,
+				       gdv[i]->pixROCx(), gdv[i]->pixROCy());
       
       thePixelDetTypeMap[detName] = new PixelGeomDetType(t,detName,det);
       tracker->addType(thePixelDetTypeMap[detName]);
@@ -120,7 +138,7 @@ void TrackerGeomBuilderFromGeometricDet::buildSilicon(std::vector<const Geometri
     if (theStripDetTypeMap.find(detName) == theStripDetTypeMap.end()) {
        std::auto_ptr<const Bounds> bounds(gdv[i]->bounds());
        StripTopology* t =
-	theTopologyBuilder->buildStrip(&*bounds,
+	   StripTopologyBuilder().build(&*bounds,
 				       gdv[i]->siliconAPVNum(),
 				       part);
       theStripDetTypeMap[detName] = new  StripGeomDetType( t,detName,det,
@@ -175,56 +193,6 @@ void TrackerGeomBuilderFromGeometricDet::buildGeomDet(TrackerGeometry* tracker){
     }
   }
 }
-
-
-// std::string TrackerGeomBuilderFromGeometricDet::getString(const std::string & s, DDExpandedView* ev) const
-// {
-//     DDValue val(s);
-//     vector<const DDsvalues_type *> result;
-//     ev->specificsV(result);
-//     vector<const DDsvalues_type *>::iterator it = result.begin();
-//     bool foundIt = false;
-//     for (; it != result.end(); ++it)
-//     {
-// 	foundIt = DDfetch(*it,val);
-// 	if (foundIt) break;
-
-//     }    
-//     if (foundIt)
-//     { 
-// 	const std::vector<std::string> & temp = val.strings(); 
-// 	if (temp.size() != 1)
-// 	{
-// 	  throw cms::Exception("Configuration") << "I need 1 "<< s << " tags";
-// 	}
-// 	return temp[0]; 
-//     }
-//     return "NotFound";
-// }
-
-// double TrackerGeomBuilderFromGeometricDet::getDouble(const std::string & s,  DDExpandedView* ev) const 
-// {
-//   DDValue val(s);
-//   vector<const DDsvalues_type *> result;
-//   ev->specificsV(result);
-//   vector<const DDsvalues_type *>::iterator it = result.begin();
-//   bool foundIt = false;
-//   for (; it != result.end(); ++it)
-//     {
-//       foundIt = DDfetch(*it,val);
-//       if (foundIt) break;
-//     }    
-//   if (foundIt)
-//     { 
-//       const std::vector<std::string> & temp = val.strings(); 
-//       if (temp.size() != 1)
-// 	{
-// 	  throw cms::Exception("Configuration") << "I need 1 "<< s << " tags";
-// 	}
-//       return double(atof(temp[0].c_str())); 
-//     }
-//   return 0;
-// }
 
 PlaneBuilderFromGeometricDet::ResultType
 TrackerGeomBuilderFromGeometricDet::buildPlaneWithMaterial(const GeometricDet* gd,

@@ -16,6 +16,7 @@ from FastSimulation.ParticleFlow.FSparticleFlow_cfi import *
 #from RecoParticleFlow.PFProducer.pfGsfElectronCiCSelector_cff import *
 from RecoParticleFlow.PFProducer.pfGsfElectronMVASelector_cff import *
 from RecoParticleFlow.PFProducer.pfLinker_cff import *
+from RecoParticleFlow.PFProducer.particleFlowEGamma_cff import *
 particleFlow.PFCandidate = [cms.InputTag("FSparticleFlow")]
 
 particleFlowSimParticle.sim = 'famosSimHits'
@@ -51,13 +52,15 @@ famosParticleFlowSequence = cms.Sequence(
 #    pfGsfElectronCiCSelectionSequence+
     pfGsfElectronMVASelectionSequence+
     particleFlowBlock+
+    particleFlowEGamma+
     particleFlowTmp+
+    particleFlowTmpPtrs+
     FSparticleFlow+
     pfElectronTranslatorSequence+
     pfPhotonTranslatorSequence
 )
 
-particleFlowLinks = cms.Sequence(particleFlow)
+particleFlowLinks = cms.Sequence(particleFlow+particleFlowPtrs)
 
 # PF Reco Jets and MET
 

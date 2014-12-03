@@ -4,23 +4,23 @@
 // Class:      MuonIsolationDQM
 // 
 /*
+  
+Description: Muon Isolation DQM class
 
- Description: Muon Isolation DQM class
-
- NOTE: The static member variable declerations *should* include the key word "static", but 
-	 I haven't found an elegant way to initalize the vectors.  Static primatives (e.g. int, 
-	 float, ...) and simple static objects are easy to initialze.  Outside of the class 
-	 decleration, you would write
+NOTE: The static member variable declarations *should* include the key word "static", but 
+I haven't found an elegant way to initalize the vectors.  Static primatives (e.g. int, 
+float, ...) and simple static objects are easy to initialze.  Outside of the class 
+decleration, you would write
 	
- 		int MuonIsolationDQM::CONST_INT = 5;
- 		FooType MuonIsolationDQM::CONST_FOOT = Foo(constructor_argument);
+int MuonIsolationDQM::CONST_INT = 5;
+FooType MuonIsolationDQM::CONST_FOOT = Foo(constructor_argument);
 	
-	 but you can't do this if you want to, say, initalize a std::vector with a bunch of 
-	 different values.  So, you can't make them static and you have to initialize them using 
-	 a member method.  To keep it consistent, I've just initialized them all in the same 
-	 method, even the simple types.
- 
+but you can't do this if you want to, say, initalize a std::vector with a bunch of 
+different values.  So, you can't make them static and you have to initialize them using 
+a member method.  To keep it consistent, I've just initialized them all in the same 
+method, even the simple types.
 */
+
 //
 // Original Author:  "C. Jess Riedel", UC Santa Barbara
 //         Created:  Tue Jul 17 15:58:24 CDT 2007
@@ -72,12 +72,17 @@ private:
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
   virtual void endJob() ;
   void InitStatics();
-  void RecordData(MuonIterator muon);//Fills Histograms with info from single muon
+  void RecordData(MuonIterator muon);//Fills Histograms with info from single muo
+  //  void doPFIsoPlots(MuonIterator muon); //Fills Histograms with PF info from single muo (only for GLB)
   void InitHistos();//adds title, bin information to member histograms
-  void FillHistos();//Fills histograms with data
+  void FillHistos(int);//Fills histograms with data
+  void FillNVtxHistos(int);
   void NormalizeHistos(); //Normalize to number of muons
+
+  //----- helper methods
+  int  GetNVtxBin(int); 
   TH1* GetTH1FromMonitorElement(MonitorElement* me);
-  
+
   //----------Static Variables---------------
   
   //Collection labels
@@ -86,7 +91,8 @@ private:
   edm::InputTag hcalIsoDeposit_Tag;
   edm::InputTag ecalIsoDeposit_Tag;
   edm::InputTag hoIsoDeposit_Tag;
-  
+  edm::InputTag theVertexCollectionLabel;
+
   //root file name
   std::string rootfilename;
   // Directories within the rootfile
@@ -94,7 +100,10 @@ private:
   //  std::string subDirName;
 
   //Histogram parameters
-  static const int NUM_VARS = 24; // looking at R03 and R05.  Total of 48 histos.
+  static const int NUM_VARS      = 48; // looking at R03 and R05.  Total of 54 histos.
+  static const int NUM_VARS_2D   = 10; // looking only at R03.  Total of 8 TH2F. 
+  static const int NUM_VARS_NVTX = 6 ;
+  
   double L_BIN_WIDTH;//large bins
   double S_BIN_WIDTH;//small bins
   int LOG_BINNING_ENABLED;//pseudo log binning for profile plots
@@ -114,6 +123,12 @@ private:
   std::vector< std::vector<double> > param;//[NUM_VARS][3]
   std::vector<int> isContinuous;//[NUM_VARS]
   
+  std::vector<std::string> titles_2D;     //[NUM_VARS]
+  std::vector<std::string> names_2D;      //[NUM_VARS]
+
+  std::vector<std::string> main_titles_NVtxs;
+  std::vector<std::string> names_NVtxs;
+  std::vector<std::string> axis_titles_NVtxs;
   //---------------Dynamic Variables---------------------
   
   //MonitorElement
@@ -122,10 +137,15 @@ private:
   //The Data
   int theMuonData;//[number of muons]
   double theData[NUM_VARS];
-  
+  double theData2D[NUM_VARS_2D];
+  double theDataNVtx[NUM_VARS_NVTX];
+
   //Histograms
   MonitorElement* h_nMuons;
-  std::vector<MonitorElement*> h_1D;//[NUM_VARS]
+  std::vector<MonitorElement*> h_1D;     //[NUM_VARS]
+  std::vector<MonitorElement*> h_2D;     //[NUM_VARS_2D]
+  std::vector<MonitorElement*> h_1D_NVTX;//[NUM_VARS_NVTX]
+  
   //  std::vector<MonitorElement*> cd_plots;//[NUM_VARS]
   
   //Counters

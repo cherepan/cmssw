@@ -1,5 +1,5 @@
 //
-// $Id: Fourvec_Event.cc,v 1.6 2011/04/26 13:35:49 haryo Exp $
+// $Id: Fourvec_Event.cc,v 1.2 2013/05/28 17:55:59 gartung Exp $
 //
 // File: src/Fourvec_Event.cc
 // Purpose: Represent an event for kinematic fitting as a collection
@@ -46,7 +46,7 @@ using std::ostream;
 namespace hitfit {
 
 
-FE_Obj::FE_Obj (Fourvec the_p,
+FE_Obj::FE_Obj (const Fourvec& the_p,
                 double the_mass,
                 int the_label,
                 double the_p_error,

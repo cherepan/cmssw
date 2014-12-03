@@ -13,7 +13,7 @@
 //
 // Original Author:  Giuseppe Cerati
 //         Created:  Thu Mar 11 10:48:48 CET 2010
-// $Id: ConversionSeedFilterCharge.cc,v 1.1 2011/08/01 13:20:53 vlimant Exp $
+// $Id: ConversionSeedFilterCharge.cc,v 1.3 2013/02/27 14:58:16 muzaffar Exp $
 //
 //
 
@@ -42,7 +42,7 @@ public:
   
 private:
   virtual void beginJob() ;
-  virtual void produce(edm::Event&, const edm::EventSetup&);
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
   virtual void endJob() ;
   edm::InputTag inputCollPos;
   edm::InputTag inputCollNeg;

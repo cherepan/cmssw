@@ -18,7 +18,7 @@
 //         Created:  June 2008
 // Rewritten by: Vladimir Rekovic
 //         Date:  May 2009
-// $Id: FourVectorHLTriggerOffline.h,v 1.28 2010/02/25 19:45:23 wdd Exp $
+// $Id: FourVectorHLTriggerOffline.h,v 1.33 2013/04/23 16:41:39 wmtan Exp $
 //
 //
 
@@ -631,15 +631,9 @@ class FourVectorHLTriggerOffline : public edm::EDAnalyzer {
 	  float getPtMax() const { return ptmax_; }
       };
 
-      // simple collection - just 
-      class PathInfoCollection: public std::vector<PathInfo> {
-      public:
-	PathInfoCollection(): std::vector<PathInfo>() 
-	  {};
-	  std::vector<PathInfo>::iterator find(std::string pathName) {
-	    return std::find(begin(), end(), pathName);
-	  }
-      };
+public:
+      typedef std::vector<PathInfo> PathInfoCollection;
+private:
       PathInfoCollection hltPaths_;
 
 
@@ -655,9 +649,9 @@ public:
 		 EtMin_= etMin; 
 		 DRMatch_= drMatch;
 		}
-		void setTriggerType(std::vector<int> trigType) { triggerType_ = trigType; }
+		void setTriggerType(const std::vector<int>& trigType) { triggerType_ = trigType; }
 		void pushTriggerType(int trigType) { triggerType_.push_back(trigType); }
-		void setL1TriggerType(std::vector<int> trigType) { l1triggerType_ = trigType; }
+		void setL1TriggerType(const std::vector<int>& trigType) { l1triggerType_ = trigType; }
 		void pushL1TriggerType(int trigType) { l1triggerType_.push_back(trigType); }
 		void setPath(FourVectorHLTriggerOffline::PathInfoCollection::iterator v) { v_ = v; }
 		void setReco(edm::Handle<T> offColl) { offColl_ = offColl; }
@@ -1927,6 +1921,8 @@ void objMon<T>::clearSets()
      OffMCDRMatchSet.clear();
 
 }
+
+
 
 
 #endif

@@ -18,7 +18,7 @@
 //
 // Author:      Christophe Saout
 // Created:     Sat Apr 24 15:18 CEST 2007
-// $Id: MVAComputer.cc,v 1.9 2009/01/15 20:42:28 saout Exp $
+// $Id: MVAComputer.cc,v 1.14 2013/01/25 17:01:38 wmtan Exp $
 //
 #include <functional>
 #include <algorithm>
@@ -32,6 +32,7 @@
 #include <Reflex/Reflex.h>
 
 #include "FWCore/Utilities/interface/Exception.h"
+#include "FWCore/Utilities/interface/TypeID.h"
 
 #include "CondFormats/PhysicsToolsObjects/interface/MVAComputer.h"
 
@@ -41,7 +42,8 @@ namespace Calibration {
 std::string VarProcessor::getInstanceName() const
 {
 	static const char prefix[] = "PhysicsTools::Calibration::";
-	std::string type = ROOT::Reflex::Tools::Demangle(typeid(*this));
+        edm::TypeID typeID(typeid(*this));
+	std::string type(typeID.className());
 	if (type.size() <= sizeof prefix - 1 ||
 	    type.substr(0, sizeof prefix - 1) != prefix)
 		throw cms::Exception("MVAComputerCalibration")

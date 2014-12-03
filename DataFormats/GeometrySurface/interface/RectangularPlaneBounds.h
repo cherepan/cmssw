@@ -11,7 +11,7 @@
  *  Local Coordinate system coincides with center of the box
  *  with X axis along the width and Y axis along the lenght.
  */
-class RectangularPlaneBounds : public Bounds {
+class RectangularPlaneBounds GCC11_FINAL : public Bounds {
 public:
 
   /// Construct from  half width (extension in local X),
@@ -34,9 +34,13 @@ public:
 
 
   virtual bool inside( const Local3DPoint& p, const LocalError& err,
-		       float scale=1.) const;
+		       float scale=1.f) const;
 
-  virtual bool inside( const Local2DPoint& p, const LocalError& err, float scale=1.) const;
+  virtual bool inside( const Local2DPoint& p, const LocalError& err, float scale=1.f) const;
+
+  // compatible of being inside or outside...
+ std::pair<bool,bool> inout( const Local3DPoint& p, const LocalError& err, float scale=1.f) const;
+
 
   virtual Bounds* clone() const;
 

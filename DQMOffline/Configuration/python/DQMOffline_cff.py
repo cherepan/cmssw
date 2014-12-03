@@ -27,7 +27,7 @@ DQMOfflinePreDPG = cms.Sequence( dqmDcsInfo *
                                  cscSources *
                                  es_dqm_source_offline *
                                  castorSources *
-                                 HcalDQMOfflineSequence )
+                                 HcalDQMOfflineSequence)
 
 DQMOfflineDPG = cms.Sequence( DQMOfflinePreDPG *
                               DQMMessageLogger )
@@ -49,7 +49,8 @@ DQMOfflinePrePOG = cms.Sequence( muonMonitors *
                                  l1TriggerDqmOffline *
                                  triggerOfflineDQMSource *
                                  pvMonitor *
-                                 bTagPlots *
+                                 prebTagSequence *
+                                 bTagPlotsDATA *
                                  alcaBeamMonitor *
                                  dqmPhysics *
                                  produceDenoms *
@@ -63,12 +64,13 @@ DQMOffline = cms.Sequence( DQMOfflinePreDPG *
                            DQMMessageLogger )
 
 DQMOfflinePrePOGMC = cms.Sequence( pvMonitor *
-                                   bTagPlots *
+                                   prebTagSequence *
+                                   bTagPlotsDATA *
                                    dqmPhysics )
 
 DQMOfflinePOGMC = cms.Sequence( DQMOfflinePrePOGMC *
                                 DQMMessageLogger )
-
+    
 DQMOfflinePhysics = cms.Sequence( dqmPhysics )
 
 
@@ -83,7 +85,7 @@ DQMOfflineCommon = cms.Sequence( dqmDcsInfo *
                                  dqmPhysics *
                                  pvMonitor *
                                  produceDenoms *
-                                 pfTauRunDQMValidation
+                                 pfTauRunDQMValidation 
                                 )
 DQMOfflineCommonSiStripZeroBias = cms.Sequence( dqmDcsInfo *
                                  DQMMessageLogger *
@@ -96,7 +98,7 @@ DQMOfflineCommonSiStripZeroBias = cms.Sequence( dqmDcsInfo *
                                  dqmPhysics *
                                  pvMonitor *
                                  produceDenoms *
-                                 pfTauRunDQMValidation
+                                 pfTauRunDQMValidation 
                                  )
 DQMOfflineMuon = cms.Sequence( dtSources *
                                rpcTier0Source *
@@ -110,7 +112,9 @@ DQMOfflineEcal = cms.Sequence( ecal_dqm_source_offline *
                              )
 DQMOfflineJetMET = cms.Sequence( jetMETDQMOfflineSource )
 
-DQMOfflineEGamma = cms.Sequence(  photonAnalysis *
-                                  zmumugammaAnalysis *
-                                  piZeroAnalysis )
+DQMOfflineEGamma = cms.Sequence( egammaDQMOffline )
+
+DQMOfflineBTag = cms.Sequence( prebTagSequence *
+                               bTagPlotsDATA )
+                                                                 
 

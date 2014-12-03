@@ -5,7 +5,7 @@
  * Binary Operator expression
  *
  * \author original version: Chris Jones, Cornell, 
- *         adapted to Reflex by Luca Lista, INFN
+ *         adapted by Luca Lista, INFN
  *
  * \version $Revision: 1.3 $
  *
@@ -17,7 +17,7 @@ namespace reco {
   namespace parser {
     template<typename Op>
     struct ExpressionBinaryOperator : public ExpressionBase {
-      virtual double value(const Reflex::Object& o) const { 
+      virtual double value(const edm::ObjectWithDict& o) const { 
 	return op_((*lhs_).value(o), (*rhs_).value(o));
       }
       ExpressionBinaryOperator(ExpressionStack & expStack) { 

@@ -19,6 +19,8 @@
 
 #include "DQM/HcalMonitorTasks/interface/HcalEtaPhiHists.h"
 
+class HcalLogicalMap;
+
 class HcalBaseDQMonitor : public edm::EDAnalyzer
 {
 
@@ -27,17 +29,19 @@ public:
   // Constructor
   HcalBaseDQMonitor(const edm::ParameterSet& ps);
   // Constructor with no arguments
-  HcalBaseDQMonitor(){};
+ HcalBaseDQMonitor():logicalMap_(0),needLogicalMap_(false),setupDone_(false){};
 
   // Destructor
-  ~HcalBaseDQMonitor();
+  virtual ~HcalBaseDQMonitor();
 
 protected:
 
   // Analyze
   virtual void analyze(const edm::Event& e, const edm::EventSetup& c);
 
-  // BeginJob
+  void getLogicalMap(const edm::EventSetup& c);
+ 
+ // BeginJob
   virtual void beginJob();
 
   // BeginRun
@@ -116,7 +120,12 @@ protected:
   // index 0 = HB, 1 = HE, 2 = HF, 3 HO  (index = subdetector - 1)
   std::map<unsigned int, int> KnownBadCells_;
 
+  HcalLogicalMap* logicalMap_;
+  bool needLogicalMap_;
+
   int badChannelStatusMask_;
+  private:
+  bool setupDone_;
 };// class HcalBaseDQMonitor : public edm::EDAnalyzer
 
 

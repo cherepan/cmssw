@@ -1,5 +1,5 @@
 //
-// $Id: Top_Decaykin.cc,v 1.10 2010/08/05 02:31:24 haryo Exp $
+// $Id: Top_Decaykin.cc,v 1.2 2013/05/28 17:55:59 gartung Exp $
 //
 // File: src/Top_Decaykin.cc
 // Purpose: Calculate some kinematic quantities for ttbar events.
@@ -433,9 +433,9 @@ ostream& Top_Decaykin::dump_ev (std::ostream& s, const Lepjets_Event& ev)
 }
 
 
-double Top_Decaykin::cos_theta_star(const Fourvec fermion,
-                                    const Fourvec W,
-                                    const Fourvec top)
+double Top_Decaykin::cos_theta_star(const Fourvec& fermion,
+                                    const Fourvec& W,
+                                    const Fourvec& top)
 //
 // Purpose: Calculate cos theta star in top decay
 //

@@ -4,7 +4,7 @@
  *
  * \author Luca Lista, INFN
  *
- * $Id: FunctionMinSelector.h,v 1.1 2007/08/03 09:38:38 llista Exp $
+ * $Id: FunctionMinSelector.h,v 1.2 2012/06/26 21:13:12 wmtan Exp $
  */
 
 template<typename F>

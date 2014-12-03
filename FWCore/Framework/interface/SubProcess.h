@@ -10,13 +10,13 @@
 #include "FWCore/ServiceRegistry/interface/ServiceToken.h"
 #include "FWCore/Utilities/interface/BranchType.h"
 
-#include "boost/scoped_ptr.hpp"
 #include "boost/shared_ptr.hpp"
 
 #include <map>
 #include <memory>
 
 namespace edm {
+  class BranchIDListHelper;
   class EDLooperBase;
   class HistoryAppender;
   class IOVSyncValue;
@@ -30,6 +30,7 @@ namespace edm {
     SubProcess(ParameterSet& parameterSet,
                ParameterSet const& topLevelParameterSet,
                boost::shared_ptr<ProductRegistry const> parentProductRegistry,
+               boost::shared_ptr<BranchIDListHelper const> parentBranchIDListHelper,
                eventsetup::EventSetupsController& esController,
                ActivityRegistry& parentActReg,
                ServiceToken const& token,
@@ -87,11 +88,7 @@ namespace edm {
     }
 
     // Call respondToOpenInputFile() on all Modules
-    void respondToOpenInputFile(FileBlock const& fb) {
-      ServiceRegistry::Operate operate(serviceToken_);
-      schedule_->respondToOpenInputFile(fb);
-      if(subProcess_.get()) subProcess_->respondToOpenInputFile(fb);
-    }
+    void respondToOpenInputFile(FileBlock const& fb);
 
     // Call respondToCloseInputFile() on all Modules
     void respondToCloseInputFile(FileBlock const& fb) {
@@ -212,17 +209,19 @@ namespace edm {
     virtual void writeLuminosityBlock(LuminosityBlockPrincipal const&) { throw 0; }
 
     void propagateProducts(BranchType type, Principal const& parentPrincipal, Principal& principal) const;
+    void fixBranchIDListsForEDAliases(std::map<BranchID::value_type, BranchID::value_type> const& droppedBranchIDToKeptBranchID);
 
     ServiceToken                                  serviceToken_;
     boost::shared_ptr<ProductRegistry const>      parentPreg_;
-    boost::shared_ptr<SignallingProductRegistry>  preg_;
-    boost::shared_ptr<ActionTable const>          act_table_;
-    boost::shared_ptr<ProcessConfiguration>       processConfiguration_;
+    boost::shared_ptr<ProductRegistry const>	  preg_;
+    boost::shared_ptr<BranchIDListHelper>         branchIDListHelper_;
+    std::unique_ptr<ActionTable const>            act_table_;
+    boost::shared_ptr<ProcessConfiguration const> processConfiguration_;
     PrincipalCache                                principalCache_;
     boost::shared_ptr<eventsetup::EventSetupProvider> esp_;
     std::auto_ptr<Schedule>                       schedule_;
     std::map<ProcessHistoryID, ProcessHistoryID>  parentToChildPhID_;
-    boost::scoped_ptr<HistoryAppender>            historyAppender_;
+    std::unique_ptr<HistoryAppender>              historyAppender_;
     std::auto_ptr<ESInfo>                         esInfo_;
     std::auto_ptr<SubProcess>                     subProcess_;
     bool                                          cleaningUpAfterException_;

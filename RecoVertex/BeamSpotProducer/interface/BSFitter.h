@@ -9,7 +9,7 @@
 
  author: Francisco Yumiceva, Fermilab (yumiceva@fnal.gov)
 
- version $Id: BSFitter.h,v 1.10 2010/03/17 20:31:21 yumiceva Exp $
+ version $Id: BSFitter.h,v 1.12 2013/04/11 23:08:42 wmtan Exp $
 
 ________________________________________________________________**/
 
@@ -35,7 +35,7 @@ class BSFitter {
 	//typedef std::vector <BSTrkParameters> BSTrkCollection;
 	
 	BSFitter();
-	BSFitter( std::vector< BSTrkParameters > BSvector);
+	BSFitter( const std::vector< BSTrkParameters > &BSvector);
 	
 	virtual ~BSFitter();
 

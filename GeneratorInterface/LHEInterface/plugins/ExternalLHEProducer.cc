@@ -13,7 +13,7 @@ Implementation:
 //
 // Original Author:  Brian Paul Bockelman,8 R-018,+41227670861,
 //         Created:  Fri Oct 21 11:37:26 CEST 2011
-// $Id: ExternalLHEProducer.cc,v 1.6 2012/04/01 13:30:08 davidlt Exp $
+// $Id: ExternalLHEProducer.cc,v 1.10 2013/05/17 19:00:53 chrjones Exp $
 //
 //
 
@@ -33,7 +33,7 @@ Implementation:
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/one/EDProducer.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
 
 #include "FWCore/Framework/interface/Run.h"
@@ -61,24 +61,21 @@ Implementation:
 // class declaration
 //
 
-class ExternalLHEProducer : public edm::EDProducer {
+class ExternalLHEProducer : public edm::one::EDProducer<edm::BeginRunProducer,
+                                                        edm::EndRunProducer> {
 public:
   explicit ExternalLHEProducer(const edm::ParameterSet& iConfig);
-  ~ExternalLHEProducer();
+  virtual ~ExternalLHEProducer();
   
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
   
 private:
-  virtual void beginJob();
-  virtual void produce(edm::Event&, const edm::EventSetup&) ;
-  virtual void endJob();
-  
-  virtual void beginRun(edm::Run& run, edm::EventSetup const& es);
-  virtual void endRun(edm::Run&, edm::EventSetup const&);
-  virtual void beginLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&);
-  
-  virtual void endLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&);
-  
+
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
+  virtual void endJob() override;
+  virtual void beginRunProduce(edm::Run& run, edm::EventSetup const& es) override;
+  virtual void endRunProduce(edm::Run&, edm::EventSetup const&) override;
+
   int closeDescriptors(int preserve);
   void executeScript();
   std::auto_ptr<std::string> readOutput();
@@ -195,23 +192,16 @@ ExternalLHEProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
   return; 
 }
 
-// ------------ method called once each job just before starting event loop  ------------
-void 
-ExternalLHEProducer::beginJob()
-{
-}
-
 // ------------ method called once each job just after ending the event loop  ------------
 void 
 ExternalLHEProducer::endJob() {
 
   reader_.reset();
-
 }
 
 // ------------ method called when starting to processes a run  ------------
 void 
-ExternalLHEProducer::beginRun(edm::Run& run, edm::EventSetup const& es)
+ExternalLHEProducer::beginRunProduce(edm::Run& run, edm::EventSetup const& es)
 {
 
   // pass the number of events as previous to last argument
@@ -277,7 +267,7 @@ ExternalLHEProducer::beginRun(edm::Run& run, edm::EventSetup const& es)
 
 // ------------ method called when ending the processing of a run  ------------
 void 
-ExternalLHEProducer::endRun(edm::Run& run, edm::EventSetup const& es)
+ExternalLHEProducer::endRunProduce(edm::Run& run, edm::EventSetup const& es)
 {
 
   if (!runInfoProducts.empty()) {
@@ -437,18 +427,6 @@ std::auto_ptr<std::string> ExternalLHEProducer::readOutput()
   }
 
   return std::auto_ptr<std::string>(new std::string(ss.str()));
-}
-
-// ------------ method called when starting to processes a luminosity block  ------------
-void 
-ExternalLHEProducer::beginLuminosityBlock(edm::LuminosityBlock& lumi, edm::EventSetup const&)
-{
-}
-
-// ------------ method called when ending the processing of a luminosity block  ------------
-void 
-ExternalLHEProducer::endLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&)
-{
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------

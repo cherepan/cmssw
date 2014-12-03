@@ -16,14 +16,10 @@
 namespace edm {
 
   StreamerInputFile::~StreamerInputFile() {
-    if(storage_) {
-      storage_->close();
-      if(currentFileOpen_) logFileAction("  Closed file ");
-    }
+    closeStreamerFile();
   }
 
   StreamerInputFile::StreamerInputFile(std::string const& name,
-                                       int* numberOfEventsToSkip,
                                        boost::shared_ptr<EventSkipperByID> eventSkipperByID) :
     startMsg_(),
     currentEvMsg_(),
@@ -35,7 +31,6 @@ namespace edm {
     currentFileName_(),
     currentFileOpen_(false),
     eventSkipperByID_(eventSkipperByID),
-    numberOfEventsToSkip_(numberOfEventsToSkip),
     currRun_(0),
     currProto_(0),
     newHeader_(false),
@@ -46,7 +41,6 @@ namespace edm {
   }
 
   StreamerInputFile::StreamerInputFile(std::vector<std::string> const& names,
-                                       int* numberOfEventsToSkip,
                                        boost::shared_ptr<EventSkipperByID> eventSkipperByID) :
     startMsg_(),
     currentEvMsg_(),
@@ -58,7 +52,6 @@ namespace edm {
     currentFileName_(),
     currentFileOpen_(false),
     eventSkipperByID_(eventSkipperByID),
-    numberOfEventsToSkip_(numberOfEventsToSkip),
     currRun_(0),
     currProto_(0),
     newHeader_(false),
@@ -73,13 +66,9 @@ namespace edm {
   void
   StreamerInputFile::openStreamerFile(std::string const& name) {
 
-    if(storage_) {
-      storage_->close();
-      if(currentFileOpen_) logFileAction("  Closed file ");
-    }
+    closeStreamerFile();
 
     currentFileName_ = name;
-    currentFileOpen_ = false;
     logFileAction("  Initiating request to open file ");
 
     IOOffset size = -1;
@@ -102,6 +91,15 @@ namespace edm {
     }
     currentFileOpen_ = true;
     logFileAction("  Successfully opened file ");
+  }
+
+  void
+  StreamerInputFile::closeStreamerFile() {
+    if(currentFileOpen_ && storage_) {
+      storage_->close();
+      logFileAction("  Closed file ");
+    }
+    currentFileOpen_ = false;
   }
 
   IOSize StreamerInputFile::readBytes(char *buf, IOSize nBytes) {
@@ -263,10 +261,6 @@ namespace edm {
           eventRead = false;
         }
       }
-      if(eventRead && numberOfEventsToSkip_ && *numberOfEventsToSkip_ > 0) {
-        eventRead = false;
-        --(*numberOfEventsToSkip_);
-      }
       nWant = eventSize - sizeof(EventHeader);
       if(eventRead) {
         if(eventBuf_.size() < eventSize) eventBuf_.resize(eventSize);
@@ -287,6 +281,31 @@ namespace edm {
     }
     currentEvMsg_.reset(new EventMsgView((void*)&eventBuf_[0]));
     return 1;
+  }
+
+  bool StreamerInputFile::eofRecordMessage(uint32 const& hlt_path_cnt, EOFRecordView*& view) {
+    if(!endOfFile_) return false;
+
+    HeaderView head(&eventBuf_[0]);
+    uint32 code = head.code();
+    
+    if(code != Header::EOFRECORD) {
+      return false;
+    }
+    
+    uint32 eofSize = head.size();
+    IOSize nWant = eofSize - sizeof(EventHeader);
+    if(nWant>0) {
+      IOSize nGot = readBytes(&eventBuf_[sizeof(EventHeader)], nWant);
+      if(nGot != nWant) {
+          throw Exception(errors::FileReadError, "StreamerInputFile::eofRecordMessage")
+            << "Failed reading streamer file, second read in eofRecordMessage\n"
+            << "Requested " << nWant << " bytes, read function returned " << nGot << " bytes\n";
+      }
+    }
+
+    view = new EOFRecordView(&eventBuf_[0], hlt_path_cnt);
+    return true;
   }
 
   void StreamerInputFile::logFileAction(char const* msg) {

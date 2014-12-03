@@ -3,7 +3,8 @@
 #include "DataFormats/MuonDetId/interface/MuonSubdetId.h"
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
-#include "DataFormats/MuonReco/interface/MuonCocktails.h"
+#include "DataFormats/MuonReco/interface/MuonRPCHitMatch.h"
+
 namespace muon {
 SelectionType selectionTypeFromString( const std::string &label )
 {
@@ -32,6 +33,7 @@ SelectionType selectionTypeFromString( const std::string &label )
       { "TMOneStationAngTight", TMOneStationAngTight },
       { "TMLastStationOptimizedBarrelLowPtLoose", TMLastStationOptimizedBarrelLowPtLoose },
       { "TMLastStationOptimizedBarrelLowPtTight", TMLastStationOptimizedBarrelLowPtTight },
+      { "RPCMuLoose", RPCMuLoose },
       { 0, (SelectionType)-1 }
    };
 
@@ -528,6 +530,37 @@ bool muon::isGoodMuon( const reco::Muon& muon,
          return false;
    } // TMOneStation
 
+  if ( type == RPCMu )
+  {
+    if ( minNumberOfMatches == 0 ) return true;
+    
+    int nMatch = 0;
+    for ( std::vector<reco::MuonChamberMatch>::const_iterator chamberMatch = muon.matches().begin();
+          chamberMatch != muon.matches().end(); ++chamberMatch )
+    {
+      if ( chamberMatch->detector() != 3 ) continue;
+
+      const double trkX = chamberMatch->x;
+      const double errX = chamberMatch->xErr;
+
+      for ( std::vector<reco::MuonRPCHitMatch>::const_iterator rpcMatch = chamberMatch->rpcMatches.begin();
+            rpcMatch != chamberMatch->rpcMatches.end(); ++rpcMatch )
+      {
+        const double rpcX = rpcMatch->x;
+
+        const double dX = fabs(rpcX-trkX);
+        if ( dX < maxAbsDx or dX/errX < maxAbsPullX )
+        {
+          ++nMatch;
+          break;
+        }
+      }
+    }
+
+    if ( nMatch >= minNumberOfMatches ) return true;
+    else return false;
+  } // RPCMu
+
    return goodMuon;
 }
 
@@ -632,6 +665,9 @@ bool muon::isGoodMuon( const reco::Muon& muon, SelectionType type,
       else
 	return muon.isTrackerMuon() && isGoodMuon(muon,TMLastStation,2,3,3,3,3,-3,-3,arbitrationType,true,false);
       break;
+    case muon::RPCMuLoose:
+	return muon.isRPCMuon() && isGoodMuon(muon, RPCMu, 2, 20, 4, 1e9, 1e9, 1e9, 1e9, arbitrationType, false, false);
+      break;
     default:
       return false;
     }
@@ -722,67 +758,43 @@ bool muon::isTightMuon(const reco::Muon& muon, const reco::Vertex& vtx){
   return muID && hits && ip;
 }
 
+
 bool muon::isLooseMuon(const reco::Muon& muon){
   return muon.isPFMuon() && ( muon.isGlobalMuon() || muon.isTrackerMuon());
 }
 
+
 bool muon::isSoftMuon(const reco::Muon& muon, const reco::Vertex& vtx){
 
   bool muID = muon::isGoodMuon(muon, TMOneStationTight);
-  if(!muID) return false;
 
-  bool layers = muon.innerTrack()->hitPattern().trackerLayersWithMeasurement() > 5 && muon.innerTrack()->hitPattern().pixelLayersWithMeasurement() > 1;
+  if(!muID) return false;
+  
+  bool layers = muon.innerTrack()->hitPattern().trackerLayersWithMeasurement() > 5 &&
+    muon.innerTrack()->hitPattern().pixelLayersWithMeasurement() > 1;
 
   bool chi2 = muon.innerTrack()->normalizedChi2() < 1.8;  
-
+  
   bool ip = fabs(muon.innerTrack()->dxy(vtx.position())) < 3. && fabs(muon.innerTrack()->dz(vtx.position())) < 30.;
-
-  return muID && layers && ip && chi2;
+  
+  return muID && layers && ip && chi2 ;
 }
 
-bool muon::isHighPtMuon(const reco::Muon& muon, const reco::Vertex& vtx, TunePType tunePType){
 
-  bool muID =  muon.isGlobalMuon() && muon.globalTrack()->hitPattern().numberOfValidMuonHits() >0 && (muon.numberOfMatchedStations() > 1);
+
+bool muon::isHighPtMuon(const reco::Muon& muon, const reco::Vertex& vtx){
+  bool muID =   muon.isGlobalMuon() && muon.globalTrack()->hitPattern().numberOfValidMuonHits() >0 && (muon.numberOfMatchedStations() > 1);
   if(!muID) return false;
 
-  if(tunePType == improvedTuneP){ 
-  // Get the optimized track
-    reco::TrackRef cktTrack = (muon::tevOptimized(muon, 200, 17., 40., 0.25)).first;
+  bool hits = muon.innerTrack()->hitPattern().trackerLayersWithMeasurement() > 5 &&
+    muon.innerTrack()->hitPattern().numberOfValidPixelHits() > 0; 
 
+  bool momQuality = muon.muonBestTrack()->ptError()/muon.muonBestTrack()->pt() < 0.3;
 
-    bool momQuality = cktTrack->ptError()/cktTrack->pt() < 0.3;
+  bool ip = fabs(muon.muonBestTrack()->dxy(vtx.position())) < 0.2 && fabs(muon.bestTrack()->dz(vtx.position())) < 0.5;
+  
+  return muID && hits && momQuality && ip;
 
-
-    bool hits = muon.innerTrack()->hitPattern().trackerLayersWithMeasurement() > 5 && muon.innerTrack()->hitPattern().numberOfValidPixelHits() > 0;
-
-
-
-    bool ip = fabs(cktTrack->dxy(vtx.position())) < 0.2 && fabs(cktTrack->dz(vtx.position())) < 0.5;
-
-
-
-    return muID && hits && momQuality && ip;}
-
-  else if(tunePType == defaultTuneP){
-  // Get the optimized track
-    reco::TrackRef cktTrack = (muon::tevOptimized(muon, 200, 4., 6., -1)).first;
-
-    bool hits = muon.innerTrack()->hitPattern().trackerLayersWithMeasurement() > 8 && muon.innerTrack()->hitPattern().numberOfValidPixelHits() > 0; 
-
-    bool ip = fabs(cktTrack->dxy(vtx.position())) < 0.2 && fabs(cktTrack->dz(vtx.position())) < 0.5;
-
-    return muID && hits && ip;} 
-
-  else return false;
-}
-
-reco::TrackRef muon::improvedMuonBestTrack(const reco::Muon& muon, TunePType tunePType){
-  reco::TrackRef cktTrack;
-  if(tunePType == improvedTuneP){ 
-    cktTrack = (muon::tevOptimized(muon, 200, 17., 40., 0.25)).first;}
-  else if (tunePType == defaultTuneP){
-    cktTrack = (muon::tevOptimized(muon, 200, 4., 6., -1)).first;}
-  return cktTrack;
 }
 
 int muon::sharedSegments( const reco::Muon& mu, const reco::Muon& mu2, unsigned int segmentArbitrationMask ) {

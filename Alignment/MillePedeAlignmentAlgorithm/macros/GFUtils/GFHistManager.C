@@ -3,7 +3,7 @@
 // GFHistManager
 //   Author:      Gero Flucke
 //   Date:        Feb. 10th, 2002
-//   last update: $Date: 2011/08/08 17:05:22 $  
+//   last update: $Date: 2012/12/07 10:07:24 $  
 //   by:          $Author: flucke $
 //
 
@@ -253,7 +253,7 @@ void GFHistManager::DrawReally(Int_t layer)
     Int_t nPads = this->NumberOfSubPadsOf(can);
     if (fNoX[layer] * fNoY[layer] != nPads && 
 	!(nPads == 0 && fNoX[layer] * fNoY[layer] == 1)) {
-      this->Warning("Update", "inconsistent number of pads %d, expect %d*%d",
+      this->Warning("DrawReally", "inconsistent number of pads %d, expect %d*%d",
 		    nPads, fNoX[layer], fNoY[layer]);
     }
     for(Int_t i = 0; i <= nPads; ++i){
@@ -271,12 +271,18 @@ void GFHistManager::DrawReally(Int_t layer)
 	if(histsOfPad->GetEntriesFast() > 1){
 	  const Double_t max = this->MaxOfHists(histsOfPad);
 	  if(//firstHist->GetMaximumStored() != -1111. &&  ????
-	     max > firstHist->GetMaximumStored()){
+	     //max > firstHist->GetMaximumStored()){
+	     max > firstHist->GetMaximum()){
 	    firstHist->SetMaximum((fLogY[layer] ? 1.1 : 1.05) * max);
 	  }
 	  const Double_t min = this->MinOfHists(histsOfPad);
-	  if(!(gStyle->GetHistMinimumZero() && min > 0.)) {
+	  if (min < 0.) {
 	    firstHist->SetMinimum(min * 1.05);
+	  } else if (gStyle->GetHistMinimumZero()) {
+	    // nothing to do
+	  } else if (min != 0. || !fLogY[layer]) {
+	    // Do not set to zero: log scale issue!
+	    firstHist->SetMinimum(min * 0.95);
 	  }
 	}
 	if(fLogY[layer] 
@@ -432,19 +438,33 @@ void GFHistManager::Update(Int_t layer)
   if(!this->CheckDepth("Update", layer, kFALSE)) {
     return;
   }
-  TIter canIter(static_cast<TObjArray*>(fCanArrays->At(layer)));
 
+  // First loop on canvases:
+  // If meanwhile the setting of fNoX/fNoY has changed, we are better with
+  // drawing from scratch:
+  Bool_t drawFromScratch = kFALSE;
+  TIter canIter(static_cast<TObjArray*>(fCanArrays->At(layer)));
+  while(TCanvas* can = static_cast<TCanvas*>(canIter.Next())){
+    const Int_t nPads = this->NumberOfSubPadsOf(can);
+    if (fNoX[layer] * fNoY[layer] != nPads && // does not fit...
+	!(nPads == 0 && fNoX[layer] * fNoY[layer] == 1)) {// ...nor single hist canvas
+      drawFromScratch = kTRUE;
+      break;
+    }
+  }
+  if (drawFromScratch) {
+    this->Draw(layer);
+    return; // nothing else to be done...
+  }
+
+  // Now second loop doing the real Update work:
+  canIter = static_cast<TObjArray*>(fCanArrays->At(layer));
   Int_t numPreviousCansHists = 0;
   const Int_t numHistsLayer = this->GetNumHistsOf(layer);
   while(TCanvas* can = static_cast<TCanvas*>(canIter.Next())){
-    Int_t nPads = this->NumberOfSubPadsOf(can);
-    if (fNoX[layer] * fNoY[layer] != nPads && 
-	!(nPads == 0 && fNoX[layer] * fNoY[layer] == 1)) {
-      this->Warning("Update", "inconsistent number of pads %d, expect %d*%d",
-		    nPads, fNoX[layer], fNoY[layer]);
-    }
+    const Int_t nPads = this->NumberOfSubPadsOf(can); // get numbers of first loop?
     for(Int_t i = 0; i <= nPads; ++i){
-      if (i == 0 && nPads != 0) i = 1;
+      if (i == 0 && nPads != 0) i = 1;// i==0: single hist canvas, else step into pad
       can->cd(i);
 
       const Int_t histNo = TMath::Max(0, numPreviousCansHists + i - 1);// for nPad == 0
@@ -455,12 +475,21 @@ void GFHistManager::Update(Int_t layer)
       if(fLegendArrays && fLegendArrays->GetSize() > layer && fLegendArrays->At(layer)){
 	this->DrawLegend(layer, histNo);
       }
-      const TH1 *h1 = this->GetHistsOf(layer, histNo)->First();
 
-      if(fLogY[layer] 
-	 && (h1->GetMinimum() > 0. 
+      if(fLogY[layer]) {
+	GFHistArray *histsOfPad = this->GetHistsOf(layer, histNo);
+	TH1 *h1 = histsOfPad->First();
+	if (h1->GetMinimumStored() == 0. && histsOfPad->GetEntriesFast() > 1
+	    && this->MinOfHists(histsOfPad) == 0.) {
+	  // trouble with log scale, but assume that 0. set in DrawReally(..)!
+	  h1->SetMinimum(-1111.);
+	}
+	if ((h1->GetMinimum() > 0. 
 	     || (h1->GetMinimum() == 0. && h1->GetMinimumStored() == -1111.))) {
-	gPad->SetLogy();
+	  gPad->SetLogy();
+	} else {
+	  gPad->SetLogy(kFALSE);
+	}
       } else {
 	gPad->SetLogy(kFALSE);
       }
@@ -722,13 +751,18 @@ void GFHistManager::AddLegend(TLegend* leg, Int_t layer, Int_t histoNum)
 //_____________________________________________________
 void GFHistManager::AddObject(TObject* obj, Int_t layer, Int_t histoNum, Option_t* opt)
 {
-  // hist and layer must already exist
+  // Hist and layer must already exist.
+  // If the given pad is already drawn, it will get updated to display the object.
+  // If you add many objects, this can become pretty slow, so it is recommended
+  // to first work in batch mode (SetBatch()), add all hists and objects and then
+  // go back and draw: SetBatch(false); Draw();// or Draw(layer)
   if(!this->CheckHistNum("AddObject", layer, histoNum)) return;
 
   TList* objList = this->MakeObjList(layer, histoNum);
   objList->Add(obj, opt);
 
   if(layer < fCanArrays->GetEntriesFast()) {
+    // Would be nice to update only for histoNum to speed up...
     this->Update(layer); // if canvas already drawn
   }
 }
@@ -843,7 +877,7 @@ Int_t GFHistManager::NumberOfSubPadsOf(TCanvas* can)
 
   TIter next(can ? can->GetListOfPrimitives() : NULL);
   while (TObject* obj = next()) {
-    if (obj->InheritsFrom(TPad::Class())){
+    if (obj->InheritsFrom(TVirtualPad::Class())){
       ++n;
     }
   }

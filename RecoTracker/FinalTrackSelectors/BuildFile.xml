@@ -23,7 +23,11 @@
 <use   name="RecoLocalTracker/SiStripClusterizer"/>
 <use   name="TrackingTools/TransientTrack"/>
 <use   name="RecoTracker/TrackProducer"/>
+<use   name="CondCore/DBOutputService"/>
+<use   name="CondFormats/EgammaObjects"/>
 <use   name="CommonTools/Utils"/>
+<use   name="CommonTools/Statistics"/>
 <use   name="clhep"/>
+<use   name="roottmva"/>
 <flags   EDM_PLUGIN="1"/>
 

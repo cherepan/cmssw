@@ -9,7 +9,7 @@
 #include "CompatibleDetToGroupAdder.h"
 
 #include "TrackingTools/DetLayers/interface/DetLayerException.h"
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
 #include "TrackingTools/GeomPropagators/interface/HelixBarrelCylinderCrossing.h"
 #include "TrackingTools/DetLayers/src/DetLessZ.h"
 
@@ -121,10 +121,10 @@ TIBLayer::cylinder( const vector<const GeometricSearchDet*>& rings)
   float rmax = r+thick;
   float zpos = 0.5*(leftPos+rightPos);
 
-  return new BoundCylinder( Surface::PositionType( 0, 0, zpos), 
-			    rings.front()->surface().rotation(),
-			    SimpleCylinderBounds( rmin, rmax,
-						  zmin-zpos, zmax-zpos));
+  auto scp = new SimpleCylinderBounds(rmin, rmax, zmin-zpos, zmax-zpos);
+  return new Cylinder(r, Surface::PositionType( 0, 0, zpos),
+                         rings.front()->surface().rotation(), scp);
+
 }
 
 
@@ -155,7 +155,7 @@ TIBLayer::groupedCompatibleDetsV( const TrajectoryStateOnSurface& tsos,
 		   nextResult, true);
 
   int crossingSide = LayerCrossingSide().barrelSide( closestGel.trajectoryState(), prop);
-  DetGroupMerger::orderAndMergeTwoLevels( closestResult, nextResult, result, 
+  DetGroupMerger::orderAndMergeTwoLevels( std::move(closestResult), std::move(nextResult), result, 
 					  crossings.closestIndex(), crossingSide);
 }
 

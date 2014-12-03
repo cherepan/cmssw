@@ -14,19 +14,22 @@ class TrackIPHistograms : public FlavourHistograms<T>
   TrackIPHistograms(const std::string& baseNameTitle_ , const std::string& baseNameDescription_,
                     const int& nBins_, const double& lowerBound_, const double& upperBound_,
                     const bool& statistics, const bool& plotLog_, const bool& plotNormalized_,
-                    const std::string& plotFirst_, const bool& update, const std::string& folder, const bool& mc, const bool& quality);
+                    const std::string& plotFirst_, const bool& update, const std::string& folder, const unsigned int& mc, const bool& quality);
 
   virtual ~TrackIPHistograms(){};
 
   void fill(const int& flavour, const reco::TrackBase::TrackQuality& quality, const T& variable, const bool& hasTrack) const;
+  void fill(const int& flavour, const reco::TrackBase::TrackQuality& quality, const T& variable, const bool& hasTrack, const T & w) const;
  
   void fill(const int& flavour, const reco::TrackBase::TrackQuality& quality, const T* variable, const bool& hasTrack) const;
+  void fill(const int& flavour, const reco::TrackBase::TrackQuality& quality, const T* variable, const bool& hasTrack, const T & w) const;
 
   void settitle(const char* title);
 
   protected:
 
   void fillVariable ( const reco::TrackBase::TrackQuality& qual, const T & var, const bool& hasTrack) const;
+  void fillVariable ( const reco::TrackBase::TrackQuality& qual, const T & var, const bool& hasTrack, const T & w) const;
 
   bool quality_;
 
@@ -43,7 +46,7 @@ template <class T>
 TrackIPHistograms<T>::TrackIPHistograms (const std::string& baseNameTitle_, const std::string& baseNameDescription_,
                                          const int& nBins_, const double& lowerBound_, const double& upperBound_,
                                          const bool& statistics_, const bool& plotLog_, const bool& plotNormalized_,
-                                         const std::string& plotFirst_, const bool& update, const std::string& folder, const bool& mc, const bool& quality) :
+                                         const std::string& plotFirst_, const bool& update, const std::string& folder, const unsigned int& mc, const bool& quality) :
   FlavourHistograms<T>(baseNameTitle_, baseNameDescription_, nBins_, lowerBound_, upperBound_, statistics_, plotLog_, plotNormalized_,
                        plotFirst_, update, folder, mc), quality_(quality)
 {
@@ -80,6 +83,14 @@ void TrackIPHistograms<T>::fill(const int& flavour, const reco::TrackBase::Track
 }
 
 template <class T>
+void TrackIPHistograms<T>::fill(const int& flavour, const reco::TrackBase::TrackQuality& quality, const T& variable, const bool& hasTrack, const T & w) const
+{
+  FlavourHistograms<T>::fill(flavour, variable , w);
+  if(quality_)
+    fillVariable(quality, variable, hasTrack, w);
+}
+
+template <class T>
 void TrackIPHistograms<T>::fill(const int& flavour, const reco::TrackBase::TrackQuality& quality, const T* variable, const bool& hasTrack) const
 {
   const int* theArrayDimension = FlavourHistograms<T>::arrayDimension();
@@ -100,6 +111,31 @@ void TrackIPHistograms<T>::fill(const int& flavour, const reco::TrackBase::Track
       if(theIndexToPlot >= iMax && quality_) {
         const T& theZero = static_cast<T> (0.0);
         fillVariable ( quality, theZero, hasTrack);
+      }
+  }
+}
+
+template <class T>
+void TrackIPHistograms<T>::fill(const int& flavour, const reco::TrackBase::TrackQuality& quality, const T* variable, const bool& hasTrack, const T & w) const
+{
+  const int* theArrayDimension = FlavourHistograms<T>::arrayDimension();
+  const int& theMaxDimension = FlavourHistograms<T>::maxDimension();
+  const int& theIndexToPlot = FlavourHistograms<T>::indexToPlot();
+
+  FlavourHistograms<T>::fill(flavour, variable ,w);
+  if( theArrayDimension == 0 && quality_) {
+    fillVariable( quality, *variable,w);
+  } else {
+      int iMax = (*theArrayDimension > theMaxDimension) ? theMaxDimension : *theArrayDimension ;
+      for(int i = 0; i != iMax; ++i) {
+        if( quality_ && (( theIndexToPlot < 0) || ( i == theIndexToPlot)) ) {
+          fillVariable ( flavour , *(variable + i), hasTrack,w);
+        }
+      }
+
+      if(theIndexToPlot >= iMax && quality_) {
+        const T& theZero = static_cast<T> (0.0);
+        fillVariable ( quality, theZero, hasTrack,w);
       }
   }
 }
@@ -131,6 +167,27 @@ void TrackIPHistograms<T>::fillVariable( const reco::TrackBase::TrackQuality& qu
       break;
     default:
       theQual_undefined->Fill(var);
+      break;
+  }
+}
+
+template<class T>
+void TrackIPHistograms<T>::fillVariable( const reco::TrackBase::TrackQuality& qual, const T& var, const bool& hasTrack, const T & w) const
+{
+  if(!hasTrack || !quality_) return;
+
+  switch(qual) {
+    case reco::TrackBase::loose:
+      theQual_loose->Fill(var,w);
+      break;
+    case reco::TrackBase::tight:
+      theQual_tight->Fill(var,w);
+      break;
+    case reco::TrackBase::highPurity:
+      theQual_highpur->Fill(var,w);
+      break;
+    default:
+      theQual_undefined->Fill(var,w);
       break;
   }
 }

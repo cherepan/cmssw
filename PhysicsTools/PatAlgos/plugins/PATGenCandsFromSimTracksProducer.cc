@@ -6,7 +6,7 @@
    
 
   \author   Jordan Tucker (original module), Giovanni Petrucciani (PAT integration)
-  \version  $Id: PATGenCandsFromSimTracksProducer.cc,v 1.7 2010/01/11 13:36:48 hegner Exp $
+  \version  $Id: PATGenCandsFromSimTracksProducer.cc,v 1.9 2013/02/27 23:26:56 wmtan Exp $
 */
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -32,7 +32,7 @@ public:
   ~PATGenCandsFromSimTracksProducer() {}
 
 private:
-  virtual void produce(edm::Event&, const edm::EventSetup&);
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
   virtual void endJob() {}
 
   bool firstEvent_;

@@ -16,7 +16,7 @@
 //
 // Original Author:  dutta
 //         Created:  Fri Dec  7 20:49:51 CET 2007
-// $Id: SiStripMonitorQuality.h,v 1.2 2008/03/01 00:38:25 dutta Exp $
+// $Id: SiStripMonitorQuality.h,v 1.5 2013/01/03 18:59:36 wmtan Exp $
 //
 
 // system include files
@@ -56,7 +56,7 @@ class SiStripMonitorQuality : public edm::EDAnalyzer {
   
  private:
 
-  MonitorElement* getQualityME(uint32_t idet);
+  MonitorElement* getQualityME(uint32_t idet, const TrackerTopology* tTopo);
   
   
   DQMStore* dqmStore_;

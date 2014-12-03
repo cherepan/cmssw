@@ -10,17 +10,12 @@ Really against OO principles, but pragmatism should prevale, I guess.
 import os
 import sys
 
-from Configuration.DataProcessing.Reco import Reco
-
+from Configuration.DataProcessing.Scenario import *
 from Configuration.DataProcessing.Utils import stepALCAPRODUCER,addMonitoring,dictIO,dqmIOSource,harvestingMode,dqmSeq
 import FWCore.ParameterSet.Config as cms
-from Configuration.PyReleaseValidation.ConfigBuilder import ConfigBuilder
-from Configuration.PyReleaseValidation.ConfigBuilder import Options
-from Configuration.PyReleaseValidation.ConfigBuilder import defaultOptions
-from Configuration.PyReleaseValidation.ConfigBuilder import installFilteredStream
 from Configuration.DataProcessing.RecoTLR import customisePrompt,customiseExpress
 
-class DataScouting(Reco):
+class DataScouting(Scenario):
     """
     _DataScouting_
 
@@ -39,7 +34,7 @@ class DataScouting(Reco):
         I follow the structure of the package.
         """
         options = Options()
-        options.scenario = self.cbSc
+        options.scenario = 'pp'
         options.__dict__.update(defaultOptions.__dict__)
         options.step = 'DQM:DQM/DataScouting/dataScouting_cff.dataScoutingDQMSequence,ENDJOB'
         dictIO(options,args)        
@@ -56,30 +51,6 @@ class DataScouting(Reco):
         
         return process        
 
-    def __getEmptyProcess(self):
-      return cms.Process('Empty')
-      
-
-    def expressProcessing(self, globalTag, **args):
-        """
-        _expressProcessing_
-
-        In this scheme this method does not make any sense, but I have to 
-        override the Reco one.
-
-        """       
-        return self.__getEmptyProcess()
-
-
-    def alcaSkim(self, skims, **args):
-        """
-        _alcaSkim_
-
-        Same as above
-
-        """
-        return self.__getEmptyProcess()
-
     def dqmHarvesting(self, datasetName, runNumber, globalTag, **args):
         """
         _dqmHarvesting_
@@ -88,7 +59,7 @@ class DataScouting(Reco):
 
         """
         options = defaultOptions
-        options.scenario = self.cbSc
+        options.scenario = 'pp'
         options.step = "HARVESTING"+dqmSeq(args,':DQMOffline')
         options.name = "EDMtoMEConvert"
         options.conditions = globalTag
@@ -100,14 +71,3 @@ class DataScouting(Reco):
 
         harvestingMode(process,datasetName,args,rANDl=False)
         return process
-
-
-    def alcaHarvesting(self, globalTag, datasetName, **args):
-        """
-        _alcaHarvesting_
-
-        Again the same thing.
-
-        """
-        return self.__getEmptyProcess()
-        

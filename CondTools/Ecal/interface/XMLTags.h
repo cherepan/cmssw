@@ -40,6 +40,7 @@ namespace xuti{
   const  std::string EcalTBWeight_tag("EcalTBWeight");
   const  std::string EcalXtalGroupId_tag("EcalXtalGroupId");
  
+  const  std::string LinearCorrections_tag("EcalLinearCorrections");
   const  std::string IntercalibConstants_tag("EcalIntercalibConstants");
   const  std::string IntercalibConstant_tag("IntercalibConstant");
   const  std::string IntercalibError_tag("IntercalibError");
@@ -85,6 +86,13 @@ namespace xuti{
   const std::string Laser_t2_tag("t2");
   const std::string Laser_t3_tag("t3");
 
+  const std::string Linearization_tag("EcalTPGLinearizationConts");
+  const std::string Linearization_m12_tag("mult12");
+  const std::string Linearization_m6_tag("mult6");
+  const std::string Linearization_m1_tag("mult1");
+  const std::string Linearization_s12_tag("shift12");
+  const std::string Linearization_s6_tag("shift6");
+  const std::string Linearization_s1_tag("shift1");
 
   const  std::string AlignmentConstant_tag("EcalAlignmentConstant");
   const  std::string subdet_tag("SubDet");
@@ -96,6 +104,7 @@ namespace xuti{
   const  std::string Psi_tag("Psi");
 
   const  std::string TimeOffsetConstant_tag("EcalTimeOffsetConstant");
+  const  std::string ESGain_tag("ESGain");
 
 }
 

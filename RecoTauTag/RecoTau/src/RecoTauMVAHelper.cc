@@ -10,6 +10,7 @@
 #include "RecoTauTag/RecoTau/interface/RecoTauDiscriminantPlugins.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 
 namespace reco { namespace tau {
 
@@ -36,7 +37,7 @@ void RecoTauMVAHelper::setEvent(const edm::Event& evt,
     loadDiscriminantPlugins(container->find(name_));
   // Update the event info for all of our discriminators
   BOOST_FOREACH(PluginMap::value_type plugin, plugins_) {
-    plugin.second->setup(evt, es);
+    plugin.second->setup(*const_cast<edm::Event*>(&evt), es);
   }
 }
 
@@ -85,7 +86,7 @@ void RecoTauMVAHelper::fillValues(const reco::PFTauRef& tau) const {
     std::vector<double> pluginOutput = (plugin->second)->operator()(tau);
     // Check for nans
     for(size_t instance = 0; instance < pluginOutput.size(); ++instance) {
-      if (std::isnan(pluginOutput[instance])) {
+      if (edm::isNotFinite(pluginOutput[instance])) {
         std::ostringstream error;
         error << "A nan was detected in"
             << " the tau MVA variable " << id << " returning zero instead!"

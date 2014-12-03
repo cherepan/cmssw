@@ -4,8 +4,8 @@
 /** \class TrackAssociatorByPosition
  *  Class that performs the association of reco::Tracks and TrackingParticles based on position in muon detector
  *
- *  $Date: 2010/05/18 15:40:39 $
- *  $Revision: 1.10 $
+ *  $Date: 2010/10/12 12:10:00 $
+ *  $Revision: 1.11 $
  *  \author vlimant
  */
 
@@ -21,6 +21,8 @@
 #include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
 
 #include <TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h>
+
+#include "SimGeneral/TrackingAnalysis/interface/SimHitTPAssociationProducer.h"
 
 #include<map>
 
@@ -50,6 +52,7 @@ class TrackAssociatorByPosition : public TrackAssociatorBase {
        edm::LogError("TrackAssociatorByPosition")<<meth<<" mothed not recognized. Use dr or chi2.";     }
 
      theConsiderAllSimHits = iConfig.getParameter<bool>("ConsiderAllSimHits");
+     _simHitTpMapTag = iConfig.getParameter<edm::InputTag>("simHitTpMapTag");
    };
 
 
@@ -84,8 +87,9 @@ class TrackAssociatorByPosition : public TrackAssociatorBase {
   bool theConsiderAllSimHits;
   
   FreeTrajectoryState getState(const reco::Track &) const;
-  TrajectoryStateOnSurface getState(const TrackingParticle &)const;
-
+  TrajectoryStateOnSurface getState(const TrackingParticleRef)const;
+  mutable edm::Handle<SimHitTPAssociationProducer::SimHitTPAssociationList> simHitsTPAssoc;
+  edm::InputTag _simHitTpMapTag;
 };
 
 #endif

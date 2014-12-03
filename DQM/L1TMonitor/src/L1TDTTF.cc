@@ -1,11 +1,17 @@
 /*
  * \file L1TDTTF.cc
  *
- * $Date: 2010/11/01 11:27:53 $
- * $Revision: 1.27 $
+ * $Date: 2013/05/22 17:25:02 $
+ * $Revision: 1.29 $
  * \author J. Berryhill
  *
  * $Log: L1TDTTF.cc,v $
+ * Revision 1.29  2013/05/22 17:25:02  deguio
+ * removing the use of catch(...)
+ *
+ * Revision 1.28  2010/11/02 13:58:20  gcodispo
+ * Added protection against missing products
+ *
  * Revision 1.27  2010/11/01 11:27:53  gcodispo
  * Cleaned up 2nd track sections
  *
@@ -72,6 +78,12 @@
  * DQM core migration.
  *
  * $Log: L1TDTTF.cc,v $
+ * Revision 1.29  2013/05/22 17:25:02  deguio
+ * removing the use of catch(...)
+ *
+ * Revision 1.28  2010/11/02 13:58:20  gcodispo
+ * Added protection against missing products
+ *
  * Revision 1.27  2010/11/01 11:27:53  gcodispo
  * Cleaned up 2nd track sections
  *
@@ -622,7 +634,7 @@ void L1TDTTF::analyze(const edm::Event& event,
   edm::Handle<L1MuDTTrackContainer > myL1MuDTTrackContainer;
   try {
     event.getByLabel(trackInputTag_, myL1MuDTTrackContainer);
-  } catch (...) {
+  } catch (cms::Exception& iException) {
     edm::LogError("L1TDTTF::analyze::DataNotFound")
       << "can't getByLabel L1MuDTTrackContainer with label " 
       << dttpgSource_.label() << ":DATA:" << dttpgSource_.process();
@@ -692,7 +704,7 @@ void L1TDTTF::analyze(const edm::Event& event,
       }
 
 
-    } catch (...) {
+    } catch (cms::Exception& iException) {
       /// in case of problems accept all
       accept = true;
       edm::LogError("DataNotFound") << "Unable to getByLabel MuonCollection with label "
@@ -740,7 +752,7 @@ void L1TDTTF::analyze(const edm::Event& event,
       }
     }
 
-  } catch (...) {
+  } catch (cms::Exception& iException) {
     edm::LogError("DataNotFound") << "Unable to getByLabel L1MuGMTReadoutCollection with label "
 				  << gmtSource_.label() ;
   }

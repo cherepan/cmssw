@@ -11,10 +11,10 @@ import copy
 
 
 ### Reference release
-RefRelease='CMSSW_6_0_0_pre8'
+RefRelease='CMSSW_6_1_0'
 
 ### Relval release (set if different from $CMSSW_VERSION)
-NewRelease='CMSSW_6_0_0_pre10'
+NewRelease='CMSSW_6_2_0_pre1'
 
 ### sample list 
 
@@ -22,7 +22,9 @@ NewRelease='CMSSW_6_0_0_pre10'
 startupsamples= [
 'RelValMinBias',   ### list of samples to be validated for each pre-release  
 'RelValQCD_Pt_3000_3500',
+'RelValQCD_Pt_600_800',
 'RelValSingleElectronPt35', 
+'RelValSingleElectronPt10', 
 'RelValTTbar', 
 'RelValSingleMuPt10', 
 'RelValSingleMuPt100',
@@ -44,12 +46,12 @@ pileupfastsimstartupsamples = [
 Version='v1'
 
 # Global tags
-StartupTag='START60_V4'
+StartupTag='START61_V8'
 
-RefStartupTag='START60_V1'
+RefStartupTag='START61_V8'
 
 ### Track algorithm name and quality. Can be a list.
-Algos= ['ootb', 'iter0', 'iter1','iter2','iter3','iter4','iter5','iter6']
+Algos= ['ootb', 'iter0', 'iter1','iter2','iter3','iter4','iter5','iter6','iter9','iter10']
 Qualities=['', 'highPurity']
 
 ### Leave unchanged unless the track collection name changes
@@ -120,8 +122,8 @@ def replace(map, filein, fileout):
 def do_validation(samples, GlobalTag, trackquality, trackalgorithm, PileUp, sampleType, dofastfull):
     global Sequence, Version, RefSelection, RefRepository, NewSelection, NewRepository, defaultNevents, Events, castorHarvestedFilesDirectory
     global cfg, macro, Tracksname
-    tracks_map = { 'ootb':'general_AssociatorByHitsRecoDenom','iter0':'cutsRecoZero_AssociatorByHitsRecoDenom','iter1':'cutsRecoFirst_AssociatorByHitsRecoDenom','iter2':'cutsRecoSecond_AssociatorByHitsRecoDenom','iter3':'cutsRecoThird_AssociatorByHitsRecoDenom','iter4':'cutsRecoFourth_AssociatorByHitsRecoDenom','iter5':'cutsRecoFifth_AssociatorByHitsRecoDenom','iter6':'cutsRecoSixth_AssociatorByHitsRecoDenom'}
-    tracks_map_hp = { 'ootb':'cutsRecoHp_AssociatorByHitsRecoDenom','iter0':'cutsRecoZeroHp_AssociatorByHitsRecoDenom','iter1':'cutsRecoFirstHp_AssociatorByHitsRecoDenom','iter2':'cutsRecoSecondHp_AssociatorByHitsRecoDenom','iter3':'cutsRecoThirdHp_AssociatorByHitsRecoDenom','iter4':'cutsRecoFourthHp_AssociatorByHitsRecoDenom','iter5':'cutsRecoFifthHp_AssociatorByHitsRecoDenom','iter6':'cutsRecoSixthHp_AssociatorByHitsRecoDenom'}
+    tracks_map = { 'ootb':'general_AssociatorByHitsRecoDenom','iter0':'cutsRecoZero_AssociatorByHitsRecoDenom','iter1':'cutsRecoFirst_AssociatorByHitsRecoDenom','iter2':'cutsRecoSecond_AssociatorByHitsRecoDenom','iter3':'cutsRecoThird_AssociatorByHitsRecoDenom','iter4':'cutsRecoFourth_AssociatorByHitsRecoDenom','iter5':'cutsRecoFifth_AssociatorByHitsRecoDenom','iter6':'cutsRecoSixth_AssociatorByHitsRecoDenom','iter9':'cutsRecoNinth_AssociatorByHitsRecoDenom','iter10':'cutsRecoTenth_AssociatorByHitsRecoDenom'}
+    tracks_map_hp = { 'ootb':'cutsRecoHp_AssociatorByHitsRecoDenom','iter0':'cutsRecoZeroHp_AssociatorByHitsRecoDenom','iter1':'cutsRecoFirstHp_AssociatorByHitsRecoDenom','iter2':'cutsRecoSecondHp_AssociatorByHitsRecoDenom','iter3':'cutsRecoThirdHp_AssociatorByHitsRecoDenom','iter4':'cutsRecoFourthHp_AssociatorByHitsRecoDenom','iter5':'cutsRecoFifthHp_AssociatorByHitsRecoDenom','iter6':'cutsRecoSixthHp_AssociatorByHitsRecoDenom','iter9':'cutsRecoNinthHp_AssociatorByHitsRecoDenom','iter10':'cutsRecoTenthHp_AssociatorByHitsRecoDenom'}
     if(trackalgorithm=='iter0' or trackalgorithm=='ootb'):
         mineff='0.0'
         maxeff='1.025'
@@ -129,6 +131,14 @@ def do_validation(samples, GlobalTag, trackquality, trackalgorithm, PileUp, samp
     elif(trackalgorithm=='iter1'):
         mineff='0.0'
         maxeff='0.5'
+        maxfake='0.8'
+    elif(trackalgorithm=='iter2'):
+        mineff='0.0'
+        maxeff='0.25'
+        maxfake='0.8'
+    elif(trackalgorithm=='iter4'):
+        mineff='0.0'
+        maxeff='0.3'
         maxfake='0.8'
     elif(trackalgorithm=='iter5' or trackalgorithm=='iter6'):
         mineff='0.0'
@@ -173,9 +183,8 @@ def do_validation(samples, GlobalTag, trackquality, trackalgorithm, PileUp, samp
             elif( Sequence=="comparison_only"):
                 if (sampleType == 'FullSim' and PileUp == 'noPU') : harvestedfile='./DQM_V0001_R000000001__' + sample+ '__' + NewRelease+ '-' +GlobalTag + '-' + Version + '__DQM.root'
                 if (sampleType == 'FullSim' and PileUp == 'PU') : harvestedfile='./DQM_V0001_R000000001__' + sample+ '__' + NewRelease+ '-PU_' +GlobalTag + '-' + Version + '__DQM.root'
-                if (sampleType == 'FastSim' and PileUp == 'noPU') : harvestedfile = './DQM_V0001_R000000001__' + sample+ '__' + NewRelease+ '-' +GlobalTag + '_FastSim-' + Version + '__GEN-SIM-DIGI-RECO.root'
-                if (sampleType == 'FastSim' and PileUp == 'PU') : 
-                    harvestedfile = './DQM_V0001_R000000001__' + sample+ '__' + NewRelease+ '-PU_' +GlobalTag + '_FastSim_PU_2012_Startup_inTimeOnly-' + Version + '__GEN-SIM-DIGI-RECO.root'
+                if (sampleType == 'FastSim' and PileUp == 'noPU') : harvestedfile = './DQM_V0001_R000000001__' + sample+ '__' + NewRelease+ '-' +GlobalTag + '_FastSim-' + Version + '__DQM.root'
+                if (sampleType == 'FastSim' and PileUp == 'PU') : harvestedfile = './DQM_V0001_R000000001__' + sample+ '__' + NewRelease+ '-PU_' +GlobalTag + '_FastSim-' + Version + '__DQM.root'
 
             print 'Sample:  ', sample, sampleType, PileUp, trackquality, trackalgorithm, '\n'
 
@@ -186,7 +195,7 @@ def do_validation(samples, GlobalTag, trackquality, trackalgorithm, PileUp, samp
                 if (sampleType == 'FullSim' and PileUp == 'noPU'): cmd+=sample+'/'+NewRelease+'-'+GlobalTag+'*'+Version+'/GEN-SIM-RECO order by dataset.createdate "'
                 if (sampleType == 'FullSim' and PileUp == 'PU'):   cmd+=sample+'/'+NewRelease+'-PU_'+GlobalTag+'*'+Version+'/GEN-SIM-RECO order by dataset.createdate "'
                 if (sampleType == 'FastSim' and PileUp == 'noPU'): cmd+=sample+'/'+NewRelease+'-'+GlobalTag+'_FastSim-'+Version+'/GEN-SIM-DIGI-RECO order by dataset.createdate "'
-                if (sampleType == 'FastSim' and PileUp == 'PU'): cmd+=sample+'/'+NewRelease+'-PU_'+GlobalTag+'_FastSim_PU_2012_Startup_inTimeOnly-'+Version+'/GEN-SIM-DIGI-RECO order by dataset.createdate "'
+                if (sampleType == 'FastSim' and PileUp == 'PU'): cmd+=sample+'/'+NewRelease+'-PU_'+GlobalTag+'_FastSim-'+Version+'/GEN-SIM-DIGI-RECO order by dataset.createdate "'
                 cmd+='|grep '+sample+'|grep -v test|tail -1'
                 print cmd
                 #Check if a dataset is found
@@ -281,49 +290,48 @@ def do_validation(samples, GlobalTag, trackquality, trackalgorithm, PileUp, samp
 
                 if (retcode!=0):
                        print 'Job for sample '+ sample + ' failed. \n'
+            if (Sequence=="harvesting" or Sequence=="preproduction" or Sequence=="comparison_only"):
+                    #copy only the needed histograms
+                    if(trackquality==""):
+                            rootcommand='root -b -q -l CopySubdir.C\\('+ '\\\"'+harvestedfile+'\\\",\\\"val.' +sample+'.root\\\",\\\"'+ tracks_map[trackalgorithm]+ '\\\"\\) >& /dev/null'
+                            #rootcommand='root -b -q -l CopySubdir.C\\('+ '\\\"'+harvestedfile+'\\\",\\\"val.' +sample+'.root\\\",\\\"'+ tracks_map[trackalgorithm]+ '\\\"\\)'
+                            os.system(rootcommand)
+                    elif(trackquality=="highPurity"):
+                            os.system('root -b -q -l CopySubdir.C\\('+ '\\\"'+harvestedfile+'\\\",\\\"val.' +sample+'.root\\\",\\\"'+ tracks_map_hp[trackalgorithm]+ '\\\"\\) >& /dev/null')
+                            #os.system('root -b -q -l CopySubdir.C\\('+ '\\\"'+harvestedfile+'\\\",\\\"val.' +sample+'.root\\\",\\\"'+ tracks_map_hp[trackalgorithm]+ '\\\"\\)')
+
+            if (sampleType == 'FastSim' and dofastfull == False): referenceSample=RefRepository+'/'+RefRelease+'/fastsim/'+RefRelease+'/'+RefSelection+'/'+sample+'/'+'val.'+sample+'.root'
+            if (sampleType == 'FullSim' or dofastfull == True): referenceSample=RefRepository+'/'+RefRelease+'/'+RefSelection+'/'+sample+'/'+'val.'+sample+'.root'
+            if os.path.isfile(referenceSample ):
+                    replace_map = { 'NEW_FILE':'val.'+sample+'.root', 'REF_FILE':RefRelease+'/'+RefSelection+'/val.'+sample+'.root', 'REF_LABEL':sample, 'NEW_LABEL': sample, 'REF_RELEASE':RefRelease, 'NEW_RELEASE':NewRelease, 'REFSELECTION':RefSelection, 'NEWSELECTION':NewSelection, 'TrackValHistoPublisher': cfgFileName, 'MINEFF':mineff, 'MAXEFF':maxeff, 'MAXFAKE':maxfake}
+
+                    if(os.path.exists(RefRelease+'/'+RefSelection)==False):
+                            os.makedirs(RefRelease+'/'+RefSelection)
+                    os.system('cp ' + referenceSample+ ' '+RefRelease+'/'+RefSelection)  
             else:
-                    if (Sequence=="harvesting" or Sequence=="preproduction" or Sequence=="comparison_only"):
-                            #copy only the needed histograms
-                            if(trackquality==""):
-                                    rootcommand='root -b -q -l CopySubdir.C\\('+ '\\\"'+harvestedfile+'\\\",\\\"val.' +sample+'.root\\\",\\\"'+ tracks_map[trackalgorithm]+ '\\\"\\) >& /dev/null'
-                                    #rootcommand='root -b -q -l CopySubdir.C\\('+ '\\\"'+harvestedfile+'\\\",\\\"val.' +sample+'.root\\\",\\\"'+ tracks_map[trackalgorithm]+ '\\\"\\)'
-                                    os.system(rootcommand)
-                            elif(trackquality=="highPurity"):
-                                    os.system('root -b -q -l CopySubdir.C\\('+ '\\\"'+harvestedfile+'\\\",\\\"val.' +sample+'.root\\\",\\\"'+ tracks_map_hp[trackalgorithm]+ '\\\"\\) >& /dev/null')
-                                    #os.system('root -b -q -l CopySubdir.C\\('+ '\\\"'+harvestedfile+'\\\",\\\"val.' +sample+'.root\\\",\\\"'+ tracks_map_hp[trackalgorithm]+ '\\\"\\)')
-
-                    if (sampleType == 'FastSim' and dofastfull == False): referenceSample=RefRepository+'/'+RefRelease+'/fastsim/'+RefRelease+'/'+RefSelection+'/'+sample+'/'+'val.'+sample+'.root'
-                    if (sampleType == 'FullSim' or dofastfull == True): referenceSample=RefRepository+'/'+RefRelease+'/'+RefSelection+'/'+sample+'/'+'val.'+sample+'.root'
-                    if os.path.isfile(referenceSample ):
-                            replace_map = { 'NEW_FILE':'val.'+sample+'.root', 'REF_FILE':RefRelease+'/'+RefSelection+'/val.'+sample+'.root', 'REF_LABEL':sample, 'NEW_LABEL': sample, 'REF_RELEASE':RefRelease, 'NEW_RELEASE':NewRelease, 'REFSELECTION':RefSelection, 'NEWSELECTION':NewSelection, 'TrackValHistoPublisher': cfgFileName, 'MINEFF':mineff, 'MAXEFF':maxeff, 'MAXFAKE':maxfake}
-
-                            if(os.path.exists(RefRelease+'/'+RefSelection)==False):
-                                    os.makedirs(RefRelease+'/'+RefSelection)
-                            os.system('cp ' + referenceSample+ ' '+RefRelease+'/'+RefSelection)  
-                    else:
-                            print "No reference file found at: ", RefRelease+'/'+RefSelection
-                            replace_map = { 'NEW_FILE':'val.'+sample+'.root', 'REF_FILE':'val.'+sample+'.root', 'REF_LABEL':sample, 'NEW_LABEL': sample, 'REF_RELEASE':NewRelease, 'NEW_RELEASE':NewRelease, 'REFSELECTION':NewSelection, 'NEWSELECTION':NewSelection, 'TrackValHistoPublisher': cfgFileName, 'MINEFF':mineff, 'MAXEFF':maxeff, 'MAXFAKE':maxfake}
+                    print "No reference file found at: ", RefRelease+'/'+RefSelection
+                    replace_map = { 'NEW_FILE':'val.'+sample+'.root', 'REF_FILE':'val.'+sample+'.root', 'REF_LABEL':sample, 'NEW_LABEL': sample, 'REF_RELEASE':NewRelease, 'NEW_RELEASE':NewRelease, 'REFSELECTION':NewSelection, 'NEWSELECTION':NewSelection, 'TrackValHistoPublisher': cfgFileName, 'MINEFF':mineff, 'MAXEFF':maxeff, 'MAXFAKE':maxfake}
 
 
-                    macroFile = open(cfgFileName+'.C' , 'w' )
-                    replace(replace_map, templatemacroFile, macroFile)
+            macroFile = open(cfgFileName+'.C' , 'w' )
+            replace(replace_map, templatemacroFile, macroFile)
 
 
-                    os.system('root -b -q -l '+ cfgFileName+'.C'+ '>  macro.'+cfgFileName+'.log')
+            os.system('root -b -q -l '+ cfgFileName+'.C'+ '>  macro.'+cfgFileName+'.log')
 
 
-                    if(os.path.exists(newdir)==False):
-                            os.makedirs(newdir)
+            if(os.path.exists(newdir)==False):
+                    os.makedirs(newdir)
 
-                    print "moving pdf files for sample: " , sample
-                    os.system('mv  *.pdf ' + newdir)
+            print "moving pdf files for sample: " , sample
+            os.system('mv  *.pdf ' + newdir)
 
-                    print "moving root file for sample: " , sample
-                    os.system('mv val.'+ sample+ '.root ' + newdir)
+            print "moving root file for sample: " , sample
+            os.system('mv val.'+ sample+ '.root ' + newdir)
 
-                    print "copy py file for sample: " , sample
-                    if (Sequence!="comparison_only"): 
-                        os.system('cp '+cfgFileName+'.py ' + newdir)
+            print "copy py file for sample: " , sample
+            if (Sequence!="comparison_only"): 
+                os.system('cp '+cfgFileName+'.py ' + newdir)
 	
 	
         else:

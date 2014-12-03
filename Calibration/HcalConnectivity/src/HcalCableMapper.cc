@@ -8,7 +8,7 @@
 
 using namespace std;
 
-/*$Date: 2010/02/25 00:28:50 $
+/*$Date: 2012/08/05 22:53:25 $
 version 3.1 02-13-07 
 
 author Kevin Klapoetke - Minnesota*/
@@ -61,7 +61,7 @@ HcalCableMapper::HcalCableMapper(edm::ParameterSet const& conf) :
   
 }
 
-static const char* det_names[] = {"Zero","HcalBarrel","HcalEndcap","HcalForward","HcalOuter"};
+constexpr char const* det_names[] = {"Zero","HcalBarrel","HcalEndcap","HcalForward","HcalOuter"};
 
 
 

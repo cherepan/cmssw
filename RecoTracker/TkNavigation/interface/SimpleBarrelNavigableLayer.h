@@ -9,7 +9,7 @@
 /** A concrete NavigableLayer for the barrel 
  */
 
-class SimpleBarrelNavigableLayer : public SimpleNavigableLayer {
+class SimpleBarrelNavigableLayer GCC11_FINAL : public SimpleNavigableLayer {
 
 public:
 
@@ -21,22 +21,6 @@ public:
 			      float epsilon,
 			      bool checkCrossingSide=true);
 
-  SimpleBarrelNavigableLayer( BarrelDetLayer* detLayer,
-			      const BDLC& outerBLC, 
-			      const BDLC& innerBLC,
-			      const BDLC& allOuterBLC,
-			      const BDLC& allInnerBLC,
-			      const FDLC& outerLeftFL, 
-			      const FDLC& outerRightFL,
-			      const FDLC& allOuterLeftFL,
-			      const FDLC& allOuterRightFL,
-			      const FDLC& innerLeftFL,
-			      const FDLC& innerRightFL,
-			      const FDLC& allInnerLeftFL,
-			      const FDLC& allInnerRightFL,
-			      const MagneticField* field,
-			      float epsilon,
-			      bool checkCrossingSide=true);
   
   // NavigableLayer interface
   virtual std::vector<const DetLayer*> 
@@ -51,33 +35,28 @@ public:
 
   virtual std::vector<const DetLayer*> 
   compatibleLayers( const FreeTrajectoryState& fts, 
-		    PropagationDirection timeDirection) const;
+		    PropagationDirection dir) const {
+    int counter=0;
+    return SimpleNavigableLayer::compatibleLayers(fts,dir,counter);
+  }
 
   virtual void setAdditionalLink(DetLayer*, NavigationDirection direction=insideOut);
 
-  virtual DetLayer* detLayer() const;
+  virtual DetLayer* detLayer() const { return theDetLayer;}
   virtual void   setDetLayer( DetLayer* dl);
   
   virtual void setInwardLinks(const BDLC& theBarrelv, const FDLC& theForwardv,TkLayerLess sorter = TkLayerLess(outsideIn));
 
 private:
-  bool areAllReachableLayersSet;
-
   BarrelDetLayer*   theDetLayer;
   BDLC              theOuterBarrelLayers;
   BDLC              theInnerBarrelLayers;
-  BDLC              theAllOuterBarrelLayers;
-  BDLC              theAllInnerBarrelLayers;
 
   FDLC              theOuterLeftForwardLayers;
   FDLC              theOuterRightForwardLayers;
-  FDLC              theAllOuterLeftForwardLayers;
-  FDLC              theAllOuterRightForwardLayers;
 
   FDLC              theInnerLeftForwardLayers;
   FDLC              theInnerRightForwardLayers;
-  FDLC              theAllInnerLeftForwardLayers;
-  FDLC              theAllInnerRightForwardLayers;
 
   DLC               theNegOuterLayers;
   DLC               thePosOuterLayers;

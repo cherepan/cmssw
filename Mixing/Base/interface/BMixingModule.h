@@ -5,7 +5,7 @@
  *
  * BMixingModule is the EDProducer subclass 
  * which fills the CrossingFrame object
- * It is the baseclass for all modules mnixing events 
+ * It is the baseclass for all modules mixing events
  *
  * \author Ursula Berthon, LLR Palaiseau, Bill Tanenbaum
  *
@@ -15,16 +15,16 @@
  *
  ************************************************************/
 
+#include <vector>
+
 #include "boost/shared_ptr.hpp"
 
-#include "FWCore/Framework/interface/EventPrincipal.h"
 #include "FWCore/Framework/interface/EDProducer.h"
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "DataFormats/Provenance/interface/EventID.h"
 #include "Mixing/Base/interface/PileUp.h"
 #include "FWCore/Framework/interface/ESWatcher.h"
 #include "CondFormats/DataRecord/interface/MixingRcd.h"
+
 
 namespace edm {
   class BMixingModule : public edm::EDProducer {
@@ -36,10 +36,18 @@ namespace edm {
       virtual ~BMixingModule();
 
       /**Cumulates the pileup events onto this event*/
-      virtual void produce(edm::Event& e1, const edm::EventSetup& c);
+      virtual void produce(edm::Event& e1, const edm::EventSetup& c) override;
 
-      virtual void beginRun(edm::Run & r, const edm::EventSetup & setup);
-      virtual void beginLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&);
+      virtual void initializeEvent(const edm::Event& event, const edm::EventSetup& setup) {}
+
+      // edm::Event is non-const because digitizers put their products into the Event.
+      virtual void finalizeEvent(edm::Event& event, const edm::EventSetup& setup) {}
+
+      virtual void beginRun(const edm::Run& r, const edm::EventSetup& setup) override;
+      virtual void beginLuminosityBlock(const edm::LuminosityBlock& l, const edm::EventSetup& setup) override;
+
+      virtual void endRun(const edm::Run& r, const edm::EventSetup& setup) override {}
+      virtual void endLuminosityBlock(const edm::LuminosityBlock& l, const edm::EventSetup& setup) override {}
 
       // to be overloaded by dependent class
       virtual void reload(const edm::EventSetup & setup){};

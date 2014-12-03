@@ -12,11 +12,11 @@ autoDQM = { 'common' : ['DQMOfflineCommon',
                            'DQMHarvestEcal+DQMCertEcal'],
             'egamma':       ['DQMOfflineEGamma',
                            'DQMHarvestEGamma'],
+            'btag':       ['DQMOfflineBTag',
+                           'DQMHarvestBTag'],
             'express':       ['@commonSiStripZeroBias+@muon+@hcal+@jetmet+@ecal',
                               '@commonSiStripZeroBias+@muon+@hcal+@jetmet+@ecal'],
             'allForPrompt':  ['@common+@muon+@hcal+@jetmet+@ecal',
-                              '@common+@muon+@hcal+@jetmet+@ecal'],
-            'MinimumBias': ['@commonSiStripZeroBias+bTagPlots+@muon+@hcal+HcalDQMOfflineSequence+@jetmet+@ecal+egammaDQMOffline',
-                            '@commonSiStripZeroBias+bTagCollectorSequence+@muon+@hcal+HcalDQMOfflinePostProcessor+@jetmet+@ecal+egammaPostProcessing']
+                              '@common+@muon+@hcal+@jetmet+@ecal']
             }
 

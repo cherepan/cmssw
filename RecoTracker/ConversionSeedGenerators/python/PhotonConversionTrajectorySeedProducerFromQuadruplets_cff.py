@@ -250,6 +250,7 @@ convStepTracks = RecoTracker.TrackProducer.TrackProducer_cfi.TrackProducer.clone
     clusterRemovalInfo = 'convClusters',
     AlgorithmName = cms.string('iter9')
     )
+    
 # TRACK SELECTION AND QUALITY FLAG SETTING.
 import RecoTracker.FinalTrackSelectors.selectLoose_cfi
 import RecoTracker.FinalTrackSelectors.selectTight_cfi
@@ -304,11 +305,22 @@ convStep = RecoTracker.FinalTrackSelectors.selectHighPurity_cfi.selectHighPurity
     dz_par2 = ( 5., 8.0 )
     )
 
+#import RecoTracker.FinalTrackSelectors.trackListMerger_cfi
+#QuadSeedStep = RecoTracker.FinalTrackSelectors.trackListMerger_cfi.trackListMerger.clone(
+#    TrackProducers = cms.VInputTag(cms.InputTag('convStepTracks')),
+#    hasSelector=cms.vint32(1),
+#    selectedTrackQuals = cms.VInputTag(cms.InputTag("convStep")),
+#    setsToMerge = cms.VPSet( cms.PSet( tLists=cms.vint32(0), pQual=cms.bool(True) )),
+#    writeOnlyTrkQuals=cms.bool(True)
+#)
+
 convSequence = cms.Sequence( TrackRefitterStd * convFilter * convClusters * convPixelRecHits * convStripRecHits 
                              * photonConvTrajSeedFromQuadruplets 
                              *convTrackCandidates*convStepTracks
                              #*convStepLoose*convStepTight
-                             *convStep)
+                             *convStep
+                             #*QuadSeedStep
+                             )
 
 
 

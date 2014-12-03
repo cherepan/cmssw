@@ -115,7 +115,7 @@ void MultiVertexFitter::createSeed( const vector < TransientTrack > & tracks )
   };
 }
 
-void MultiVertexFitter::createPrimaries ( const std::vector < reco::TransientTrack > tracks )
+void MultiVertexFitter::createPrimaries ( const std::vector < reco::TransientTrack > &tracks )
 {
   // cout << "[MultiVertexFitter] creating primaries: ";
   for ( vector< reco::TransientTrack >::const_iterator i=tracks.begin(); 
@@ -551,10 +551,7 @@ bool MultiVertexFitter::updateSeeds()
     } catch ( exception & e )
     {
       cout << "[MultiVertexFitter] exception: " << e.what() << endl;
-    } catch ( ... )
-    {
-      cout << "[MultiVertexFitter] unknown exception." << endl;
-    };
+    }
   };
 
   // now discard all old seeds and weights, compute new ones.

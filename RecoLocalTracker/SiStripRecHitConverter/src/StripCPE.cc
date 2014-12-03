@@ -1,6 +1,6 @@
 #include "RecoLocalTracker/SiStripRecHitConverter/interface/StripCPE.h"
 #include "Geometry/CommonTopologies/interface/StripTopology.h"
-#include "Geometry/CommonTopologies/interface/RadialStripTopology.h"
+#include "Geometry/CommonTopologies/interface/TkRadialStripTopology.h"
 #include "Geometry/TrackerGeometryBuilder/interface/StripGeomDetType.h"
 #include "boost/bind.hpp"
 #include "boost/lambda/lambda.hpp"
@@ -12,12 +12,14 @@ StripCPE::StripCPE( edm::ParameterSet & conf,
 		    const MagneticField& mag, 
 		    const TrackerGeometry& geom, 
 		    const SiStripLorentzAngle& LorentzAngle,
+                    const SiStripBackPlaneCorrection& BackPlaneCorrection,
 		    const SiStripConfObject& confObj,
 		    const SiStripLatency& latency)
   : peakMode_(latency.singleReadOutMode() == 1),
     geom_(geom),
     magfield_(mag),
-    LorentzAngleMap_(LorentzAngle)
+    LorentzAngleMap_(LorentzAngle),
+    BackPlaneCorrectionMap_(BackPlaneCorrection)
 {
   typedef std::map<std::string,SiStripDetId::ModuleGeometry> map_t;
   map_t modules;
@@ -39,22 +41,18 @@ StripCPE::StripCPE( edm::ParameterSet & conf,
   const unsigned size = max_element( modules.begin(),modules.end(),
 				     boost::bind(&map_t::value_type::second,boost::lambda::_1) < 
 				     boost::bind(&map_t::value_type::second,boost::lambda::_2) )->second + 1;
-  shift.resize(size);
   xtalk1.resize(size);
   xtalk2.resize(size);
 
   for(map_t::const_iterator it=modules.begin(); it!=modules.end(); it++) {
     const std::string 
       modeS(peakMode_?"Peak":"Deco"),
-      shiftS( "shift_"  + it->first + modeS ),
       xtalk1S("xtalk1_" + it->first + modeS ),
       xtalk2S("xtalk2_" + it->first + modeS );
 
-    if(!confObj.isParameter(shiftS)) throw cms::Exception("SiStripConfObject does not contain: ") << shiftS;
     if(!confObj.isParameter(xtalk1S)) throw cms::Exception("SiStripConfObject does not contain: ") << xtalk1S;
     if(!confObj.isParameter(xtalk2S)) throw cms::Exception("SiStripConfObject does not contain: ") << xtalk2S;
 
-    shift[it->second] = confObj.get<double>(shiftS);
     xtalk1[it->second] = confObj.get<double>(xtalk1S);
     xtalk2[it->second] = confObj.get<double>(xtalk2S);
   }
@@ -67,8 +65,8 @@ StripClusterParameterEstimator::LocalValues StripCPE::
 localParameters( const SiStripCluster& cluster, const GeomDetUnit& det) const {
   StripCPE::Param const & p = param(det);
   const float barycenter = cluster.barycenter();
-  const float fullProjection = p.coveredStrips( p.drift + LocalVector(0,0,-p.thickness), LocalPoint(barycenter,0,0));
-  const float strip = barycenter - 0.5f * (1-shift[p.moduleGeom]) * fullProjection;
+  const float fullProjection = p.coveredStrips( p.drift + LocalVector(0,0,-p.thickness), p.topology->localPosition(barycenter));
+  const float strip = barycenter - 0.5f * (1.f-p.backplanecorrection) * fullProjection;
 
   return std::make_pair( p.topology->localPosition(strip),
 			 p.topology->localError(strip, 1.f/12.f) );
@@ -76,9 +74,7 @@ localParameters( const SiStripCluster& cluster, const GeomDetUnit& det) const {
 
 float StripCPE::Param::
 coveredStrips(const LocalVector& lvec, const LocalPoint& lpos) const {  
-  return 
-    ( topology->measurementPosition(lpos + 0.5f*lvec) 
-    - topology->measurementPosition(lpos - 0.5f*lvec)).x();
+  return topology->coveredStrips(lpos + 0.5f*lvec,lpos - 0.5f*lvec);
 }
 
 LocalVector StripCPE::
@@ -113,8 +109,9 @@ StripCPE::fillParams() {
     p.topology=(StripTopology*)(&stripdet->topology());    
     p.nstrips = p.topology->nstrips(); 
     p.moduleGeom = SiStripDetId(stripdet->geographicalId()).moduleGeometry();
+    p.backplanecorrection = BackPlaneCorrectionMap_.getBackPlaneCorrection(stripdet->geographicalId().rawId());
     
-    const RadialStripTopology* rtop = dynamic_cast<const RadialStripTopology*>(&stripdet->specificType().specificTopology());
+    const TkRadialStripTopology* rtop = dynamic_cast<const TkRadialStripTopology*>(&stripdet->specificType().specificTopology());
     p.pitch_rel_err2 = (rtop) 
       ? pow( 0.5f * rtop->angularWidth() * rtop->stripLength()/rtop->localPitch(LocalPoint(0,0,0)), 2.f) / 12.f
       : 0.f;

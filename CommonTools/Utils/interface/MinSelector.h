@@ -4,7 +4,7 @@
  *
  * \author Luca Lista, INFN
  *
- * $Id: MinSelector.h,v 1.5 2007/06/18 18:33:54 llista Exp $
+ * $Id: MinSelector.h,v 1.2 2012/06/26 21:13:12 wmtan Exp $
  */
 
 template<typename T>

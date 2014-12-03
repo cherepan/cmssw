@@ -15,6 +15,9 @@ persisted across invocations of the program.
 #include "FWCore/Utilities/interface/TypeIDBase.h"
 
 namespace edm {
+  bool stripTemplate(std::string& theName);
+
+  std::string stripNamespace(std::string const& theName);
 
   class TypeID : private TypeIDBase {
   public:
@@ -28,16 +31,18 @@ namespace edm {
     explicit TypeID(T const& t) : TypeIDBase(typeid(t)) {
     }
 
-    // Print out the name of the type, using the reflection class name.
+    // Print out the name of the type, using the dictionary class name.
     void print(std::ostream& os) const;
 
-    std::string className() const;
+    std::string const& className() const;
 
     std::string userClassName() const;
 
     std::string friendlyClassName() const;
 
-    bool hasDictionary() const;
+#ifndef __GCCXML__
+    explicit operator bool() const;
+#endif
     
     using TypeIDBase::name;
 
@@ -45,13 +50,9 @@ namespace edm {
 
     bool operator==(TypeID const& b) const {return this->TypeIDBase::operator==(b);}
 
-  protected:
     using TypeIDBase::typeInfo;
 
   private:
-    static bool stripTemplate(std::string& theName);
-
-    static bool stripNamespace(std::string& theName);
 
   };
 

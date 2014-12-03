@@ -20,7 +20,6 @@ is the DataBlock.
 #include "DataFormats/Provenance/interface/EventSelectionID.h"
 #include "FWCore/Framework/interface/Principal.h"
 
-#include "boost/scoped_ptr.hpp"
 #include "boost/shared_ptr.hpp"
 
 #include <map>
@@ -29,6 +28,7 @@ is the DataBlock.
 #include <vector>
 
 namespace edm {
+  class BranchIDListHelper;
   class BranchMapper;
   class DelayedReader;
   class EventID;
@@ -42,17 +42,17 @@ namespace edm {
     typedef EventAuxiliary Auxiliary;
     typedef Principal Base;
 
-    typedef Base::ConstGroupPtr ConstGroupPtr;
+    typedef Base::ConstProductPtr ConstProductPtr;
     static int const invalidBunchXing = EventAuxiliary::invalidBunchXing;
     static int const invalidStoreNumber = EventAuxiliary::invalidStoreNumber;
     EventPrincipal(
         boost::shared_ptr<ProductRegistry const> reg,
+        boost::shared_ptr<BranchIDListHelper const> branchIDListHelper,
         ProcessConfiguration const& pc,
-        HistoryAppender* historyAppender = 0);
+        HistoryAppender* historyAppender);
     ~EventPrincipal() {}
 
     void fillEventPrincipal(EventAuxiliary const& aux,
-        boost::shared_ptr<LuminosityBlockPrincipal> lbp,
         boost::shared_ptr<EventSelectionIDVector> eventSelectionIDs = boost::shared_ptr<EventSelectionIDVector>(),
         boost::shared_ptr<BranchListIndexes> branchListIndexes = boost::shared_ptr<BranchListIndexes>(),
         boost::shared_ptr<BranchMapper> mapper = boost::shared_ptr<BranchMapper>(new BranchMapper),
@@ -112,8 +112,6 @@ namespace edm {
 
     RunPrincipal const& runPrincipal() const;
 
-    RunPrincipal & runPrincipal();
-
     boost::shared_ptr<BranchMapper> branchMapperPtr() const {return branchMapperPtr_;}
 
     void setUnscheduledHandler(boost::shared_ptr<UnscheduledHandler> iHandler);
@@ -153,9 +151,9 @@ namespace edm {
 
     BranchID pidToBid(ProductID const& pid) const;
 
-    virtual bool unscheduledFill(std::string const& moduleLabel) const;
+    virtual bool unscheduledFill(std::string const& moduleLabel) const override;
 
-    virtual void resolveProduct_(Group const& g, bool fillOnDemand) const;
+    virtual void resolveProduct_(ProductHolderBase const& phb, bool fillOnDemand) const override;
 
   private:
 
@@ -172,6 +170,8 @@ namespace edm {
     mutable std::vector<std::string> moduleLabelsRunning_;
 
     boost::shared_ptr<EventSelectionIDVector> eventSelectionIDs_;
+
+    boost::shared_ptr<BranchIDListHelper const> branchIDListHelper_;
 
     boost::shared_ptr<BranchListIndexes> branchListIndexes_;
 

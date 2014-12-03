@@ -1,8 +1,8 @@
 /** \file LaserOpticalPhysicsList.cc
  *  
  *
- *  $Date: 2007/12/04 23:53:08 $
- *  $Revision: 1.4 $
+ *  $Date: 2012/11/21 16:38:47 $
+ *  $Revision: 1.6 $
  *  \author Maarten Thomas
  */
 
@@ -76,7 +76,7 @@ void LaserOpticalPhysicsList::ConstructProcess()
   pManager = G4OpticalPhoton::OpticalPhoton()->GetProcessManager();
   pManager->AddDiscreteProcess(theAbsorptionProcess);
   pManager->AddDiscreteProcess(theRayleighScattering);
-  theBoundaryProcess->SetModel(unified);
+  //theBoundaryProcess->SetModel(unified);
   pManager->AddDiscreteProcess(theBoundaryProcess);
   pManager->AddDiscreteProcess(theWLSProcess);
   

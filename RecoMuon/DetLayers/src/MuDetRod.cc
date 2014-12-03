@@ -1,14 +1,14 @@
 /** \file
  *
- *  $Date: 2006/10/19 14:42:16 $
- *  $Revision: 1.7 $
+ *  $Date: 2012/05/29 08:23:54 $
+ *  $Revision: 1.9 $
  *  \author N. Amapane - CERN
  */
 
 #include "RecoMuon/DetLayers/interface/MuDetRod.h"
 #include "Geometry/CommonDetUnit/interface/GeomDet.h"
 #include "TrackingTools/GeomPropagators/interface/Propagator.h"
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include <iostream>

@@ -8,6 +8,9 @@ Original Authors: W. David Dagenhart, Marc Paterno
 */
 
 #include "DataFormats/Provenance/interface/ProcessHistoryID.h"
+#include "DataFormats/Provenance/interface/RunID.h"
+#include "DataFormats/Provenance/interface/LuminosityBlockID.h"
+
 
 #include <string>
 
@@ -38,7 +41,6 @@ namespace edm {
     virtual ~IEventProcessor();
 
     virtual StatusCode runToCompletion(bool onlineStateTransitions) = 0;
-    virtual StatusCode runEventCount(int numberOfEventsToProcess) = 0;
 
     virtual void readFile() = 0;
     virtual void closeInputFile(bool cleaningUpAfterException) = 0;
@@ -61,15 +63,17 @@ namespace edm {
     virtual void beginRun(statemachine::Run const& run) = 0;
     virtual void endRun(statemachine::Run const& run, bool cleaningUpAfterException) = 0;
 
-    virtual void beginLumi(ProcessHistoryID const& phid, int run, int lumi) = 0;
-    virtual void endLumi(ProcessHistoryID const& phid, int run, int lumi, bool cleaningUpAfterException) = 0;
+    virtual void beginLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi) = 0;
+    virtual void endLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi, bool cleaningUpAfterException) = 0;
 
-    virtual statemachine::Run readAndCacheRun(bool merge) = 0;
-    virtual int readAndCacheLumi(bool merge) = 0;
+    virtual statemachine::Run readAndCacheRun() = 0;
+    virtual statemachine::Run readAndMergeRun() = 0;
+    virtual int readAndCacheLumi() = 0;
+    virtual int readAndMergeLumi() = 0;
     virtual void writeRun(statemachine::Run const& run) = 0;
     virtual void deleteRunFromCache(statemachine::Run const& run) = 0;
-    virtual void writeLumi(ProcessHistoryID const& phid, int run, int lumi) = 0;
-    virtual void deleteLumiFromCache(ProcessHistoryID const& phid,int run, int lumi) = 0;
+    virtual void writeLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi) = 0;
+    virtual void deleteLumiFromCache(ProcessHistoryID const& phid,RunNumber_t run, LuminosityBlockNumber_t lumi) = 0;
 
     virtual void readAndProcessEvent() = 0;
     virtual bool shouldWeStop() const = 0;

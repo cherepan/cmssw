@@ -3,7 +3,7 @@
 // Package:    JetPlusTracks
 // Class:      JetPlusTrackProducer
 // 
-/**\class JetPlusTrackProducer JetPlusTrackProducer.cc RecoJets/JetPlusTracks/src/JetPlusTrackProducer.cc
+/**\class JetPlusTrackProducer JetPlusTrackProducer.cc JetPlusTrackProducer.cc
 
  Description: [one line class summary]
 
@@ -13,7 +13,7 @@
 //
 // Original Author:  Olga Kodolova,40 R-A12,+41227671273,
 //         Created:  Fri Feb 19 10:14:02 CET 2010
-// $Id: JetPlusTrackProducer.cc,v 1.6 2011/07/01 08:15:52 kodolova Exp $
+// $Id: JetPlusTrackProducer.cc,v 1.9 2013/04/30 09:02:46 kodolova Exp $
 //
 //
 
@@ -68,6 +68,7 @@ JetPlusTrackProducer::JetPlusTrackProducer(const edm::ParameterSet& iConfig)
    srcPVs_ = iConfig.getParameter<edm::InputTag>("srcPVs");
    vectorial_ = iConfig.getParameter<bool>("VectorialCorrection");
    useZSP = iConfig.getParameter<bool>("UseZSP");
+   ptCUT = iConfig.getParameter<double>("ptCUT");
    mJPTalgo  = new JetPlusTrackCorrector(iConfig);
    if(useZSP) mZSPalgo  = new ZSPJPTJetCorrector(iConfig);
  
@@ -273,7 +274,7 @@ JetPlusTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
    //   fJet.printJet();
 
 // Output module
-    pOut->push_back(fJet); 
+    if(fJet.pt()>ptCUT) pOut->push_back(fJet); 
           
   }
   

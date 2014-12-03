@@ -1,7 +1,7 @@
 /** \file 
  *
- *  $Date: 2012/08/18 14:19:15 $
- *  $Revision: 1.61 $
+ *  $Date: 2012/11/30 19:09:46 $
+ *  $Revision: 1.67 $
  *  \author N. Amapane - S. Argiro'
  */
 
@@ -18,7 +18,6 @@
 #include "FWCore/Framework/interface/LuminosityBlockPrincipal.h"
 #include "FWCore/Framework/interface/EventPrincipal.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
-#include "DataFormats/Provenance/interface/EventAuxiliary.h"
 #include "DataFormats/Provenance/interface/LuminosityBlockAuxiliary.h"
 #include "DataFormats/Provenance/interface/RunAuxiliary.h"
 #include "DataFormats/Provenance/interface/EventID.h"
@@ -59,18 +58,23 @@ namespace edm {
     , evf::ModuleWeb("DaqSource")
     , reader_(0)
     , lumiSegmentSizeInEvents_(pset.getUntrackedParameter<unsigned int>("evtsPerLS",0))
+    , lumiSegmentSizeInSeconds_(pset.getUntrackedParameter<unsigned int>("secondsPerLS",0))
     , useEventCounter_(pset.getUntrackedParameter<bool>("useEventCounter",false))
+    , useTimer_(lumiSegmentSizeInSeconds_!=0)
     , eventCounter_(0)
     , keepUsingPsidFromTrigger_(pset.getUntrackedParameter<bool>("keepUsingPsidFromTrigger",false))
-    , fakeLSid_(lumiSegmentSizeInEvents_ != 0)
-    , runNumber_(RunID::firstValidRun().run())
+    , fakeLSid_(lumiSegmentSizeInEvents_ != 0 || lumiSegmentSizeInSeconds_ != 0)
+    , runNumber_(pset.getUntrackedParameter<unsigned int>("runNumber",RunID::firstValidRun().run()))
     , luminosityBlockNumber_(LuminosityBlockID::firstValidLuminosityBlock().luminosityBlock())
     , daqProvenanceHelper_(TypeID(typeid(FEDRawDataCollection)))
     , noMoreEvents_(false)
-    , newRun_(true)
-    , newLumi_(true)
-    , eventCached_(false)
     , alignLsToLast_(false)
+    , lumiSectionIndex_(0)
+    , prescaleSetIndex_(0)
+    , lastLumiPrescaleIndex_(0)
+    , lastLumiUsingEol_(0)
+    , lsTimedOut_(0)
+    , lsToBeRecovered_(0)
     , is_(0)
     , mis_(0)
     , thisEventLSid(0)
@@ -79,12 +83,20 @@ namespace edm {
     , forkInfo_(nullptr)
     , runFork_(false)
     , beginRunTiming_(false)
+    , bunchCrossing_(EventAuxiliary::invalidBunchXing)
+    , orbitNumber_(EventAuxiliary::invalidBunchXing)
+    , evttype_(EventAuxiliary::Undefined)
+    , eventID_(0,0,0)
+    , fedCollection_(nullptr)
   {
     count = 0;
     pthread_mutex_init(&mutex_,0);
     pthread_mutex_init(&signal_lock_,0);
     pthread_cond_init(&cond_,0);
 
+    std::cout << " DaqSourceFake will use fake ls id ? " << fakeLSid_ << std::endl; 
+    if(fakeLSid_) std::cout << " DaqSourceFake set to make a new ls every " << lumiSegmentSizeInEvents_ << " events " << std::endl;
+    if(fakeLSid_) std::cout << " DaqSourceFake set to make a new ls every " << lumiSegmentSizeInSeconds_ << " seconds " << std::endl;
 
     setTimestamp(Timestamp::beginOfTime());
     
@@ -108,8 +120,11 @@ namespace edm {
       }
     }
 
-   // Initialize metadata, and save the process history ID for use every event.
-   phid_ = daqProvenanceHelper_.daqInit(productRegistryUpdate());
+    // Initialize LS timer if requested
+    if(lumiSegmentSizeInSeconds_ != 0) gettimeofday(&startOfLastLumi,0);
+
+    // Initialize metadata, and save the process history ID for use every event.
+    phid_ = daqProvenanceHelper_.daqInit(productRegistryUpdate());
 
   }
   
@@ -136,7 +151,7 @@ namespace edm {
     if (forkInfo_) {
       while (!immediateStop) {
 	//queue new run to Framework (causes EP beginRun to be executed)
-	if (newRun_) {
+	if (newRun()) {
 	  beginRunTiming_=true;
 	  gettimeofday(&tvStat_, NULL);
 	  return 2;
@@ -179,7 +194,7 @@ namespace edm {
 	    //got unblocked due to next run
 	    if (forkInfo_->forkParams.isMaster==-1) {
 	            forkInfo_->unlock();
-		    continue; // check here for newRun_?
+		    continue; // check here for newRun()?
             }
 	    //check if asked to stop
 	    immediateStop=forkInfo_->stopCondition;
@@ -220,7 +235,7 @@ namespace edm {
     }
 
     //get initial time before beginRun (used with old forking)
-    if (!forkInfo_ && newRun_) {
+    if (!forkInfo_ && newRun()) {
       beginRunTiming_=true;
       gettimeofday(&tvStat_, NULL);
     }
@@ -235,7 +250,7 @@ namespace edm {
       pthread_mutex_unlock(&mutex_);
       return IsStop;
     }
-    if (newRun_) {
+    if (newRun()) {
       return IsRun;
     }
 
@@ -252,7 +267,7 @@ namespace edm {
       beginRunTiming_=false;
     }
 
-    if (newLumi_ && luminosityBlockAuxiliary()) {
+    if (newLumi() && luminosityBlockAuxiliary()) {
       //      std::cout << "newLumi & lumiblock valid " << std::endl;
       return IsLumi;
     }
@@ -264,9 +279,10 @@ namespace edm {
       luminosityBlockNumber_++;
       //       std::cout << getpid() << "alignLsToLast signaled and incremented " 
       // 		<< luminosityBlockNumber_ << " eventcached " 
-      // 		<< eventCached_ << std::endl;
-      newLumi_ = true;
-      lumiSectionIndex_->value_ = luminosityBlockNumber_;
+      // 		<< eventCached() << std::endl;
+      setNewLumi();
+      if (lumiSectionIndex_!=0)
+        lumiSectionIndex_->value_ = luminosityBlockNumber_;
       resetLuminosityBlockAuxiliary();
       if(luminosityBlockNumber_ == thisEventLSid+1) 
       {
@@ -281,15 +297,15 @@ namespace edm {
       }
       return IsLumi;
     }
-    if (eventCached_) {
+    if (eventCached()) {
       //      std::cout << "read event already cached " << std::endl;
       return IsEvent;
     }
+
     if(reader_ == 0) {
       throw edm::Exception(errors::LogicError)
 	  << "DaqSource is used without a reader. Check your configuration !";
     }
-    EventID eventId;
     TimeValue_t time = 0LL;
     timeval stv;
     gettimeofday(&stv,0);
@@ -297,19 +313,19 @@ namespace edm {
     time = (time << 32) + stv.tv_usec;
     Timestamp tstamp(time);
 
-    int bunchCrossing = EventAuxiliary::invalidBunchXing;
-    int orbitNumber   = EventAuxiliary::invalidBunchXing;
+    bunchCrossing_ = EventAuxiliary::invalidBunchXing;
+    orbitNumber_   = EventAuxiliary::invalidBunchXing;
+    evttype_ = EventAuxiliary::Undefined;
     
-    // pass a 0 pointer to fillRawData()!
-    FEDRawDataCollection* fedCollection(0);
+    // pass a null pointer to fillRawData()!
+    fedCollection_ = nullptr ;
 
-    edm::EventAuxiliary::ExperimentType evttype = EventAuxiliary::Undefined;
   
     // let reader_ fill the fedCollection 
-    int retval = reader_->fillRawData(eventId, tstamp, fedCollection);
+    int retval = reader_->fillRawData(eventID_, tstamp, fedCollection_);
     if(retval==0) {
       // fillRawData() failed, clean up the fedCollection in case it was allocated!
-      if (0 != fedCollection) delete fedCollection;
+      if (nullptr != fedCollection_) delete fedCollection_;
       noMoreEvents_ = true;
       pthread_mutex_lock(&mutex_);
       pthread_cond_signal(&cond_);
@@ -324,13 +340,15 @@ namespace edm {
 // 		  << " was " << luminosityBlockNumber_ << std::endl;
 	if(luminosityBlockNumber_ == (nextLsFromSignal-1) )
 	  {
-	    lastLumiUsingEol_->value_ = nextLsFromSignal;
-	    if(lsToBeRecovered_->value_){
+	    if (lastLumiUsingEol_ != 0)
+	      lastLumiUsingEol_->value_ = nextLsFromSignal;
+	    if(lsToBeRecovered_ != 0 && lsToBeRecovered_->value_){
 // 	      std::cout << getpid() << "eol::recover ls::for " << (-1)*retval << std::endl;
 	      signalWaitingThreadAndBlock();
 	      luminosityBlockNumber_++;
-	      newLumi_ = true;
-	      lumiSectionIndex_->value_ = luminosityBlockNumber_;
+	      setNewLumi();
+	      if (lumiSectionIndex_ != 0)
+	        lumiSectionIndex_->value_ = luminosityBlockNumber_;
 	      resetLuminosityBlockAuxiliary();
 	      thisEventLSid = nextLsFromSignal - 1;
 	      if(luminosityBlockNumber_ != thisEventLSid+1) 
@@ -340,8 +358,9 @@ namespace edm {
 	    else{
 	      //	      std::cout << getpid() << "eol::realign ls::for " << (-1)*retval << std::endl;
 	      luminosityBlockNumber_ = nextLsFromSignal;
-	      newLumi_ = true;
-	      lumiSectionIndex_->value_ = luminosityBlockNumber_;
+	      setNewLumi();
+	      if (lumiSectionIndex_ != 0)
+	        lumiSectionIndex_->value_ = luminosityBlockNumber_;
 	      resetLuminosityBlockAuxiliary();
 	    }
 	  }
@@ -353,11 +372,13 @@ namespace edm {
 	  }
 	  if (nextLsFromSignal > luminosityBlockNumber_+2) //recover on delta > 2
 	  {
-	      lastLumiUsingEol_->value_ = nextLsFromSignal;
+	      if (lastLumiUsingEol_ != 0)
+	        lastLumiUsingEol_->value_ = nextLsFromSignal;
               thisEventLSid=nextLsFromSignal-1;//set new LS
 	      signalWaitingThreadAndBlock();
 	      luminosityBlockNumber_++;
-	      newLumi_ = true;
+	      setNewLumi();
+	      if (lumiSectionIndex_ != 0)
 	      lumiSectionIndex_->value_ = luminosityBlockNumber_;
 	      alignLsToLast_ = true;
 
@@ -374,7 +395,7 @@ namespace edm {
       }
     else
       {
-	if (eventId.event() == 0) {
+	if (eventID_.event() == 0) {
 	  throw edm::Exception(errors::LogicError)
 	    << "The reader used with DaqSource has returned an invalid (zero) event number!\n"
 	    << "Event numbers must begin at 1, not 0.";
@@ -382,40 +403,73 @@ namespace edm {
 	EventSourceSentry(*this);
 	setTimestamp(tstamp);
     
-	unsigned char *gtpFedAddr = fedCollection->FEDData(daqsource::gtpEvmId_).size()!=0 ? fedCollection->FEDData(daqsource::gtpEvmId_).data() : 0;
+	unsigned char *gtpFedAddr = fedCollection_->FEDData(daqsource::gtpEvmId_).size()!=0 ? fedCollection_->FEDData(daqsource::gtpEvmId_).data() : 0;
 	uint32_t gtpsize = 0;
-	if(gtpFedAddr !=0) gtpsize = fedCollection->FEDData(daqsource::gtpEvmId_).size();
-	unsigned char *gtpeFedAddr = fedCollection->FEDData(daqsource::gtpeId_).size()!=0 ? fedCollection->FEDData(daqsource::gtpeId_).data() : 0; 
+	if(gtpFedAddr !=0) gtpsize = fedCollection_->FEDData(daqsource::gtpEvmId_).size();
+	unsigned char *gtpeFedAddr = fedCollection_->FEDData(daqsource::gtpeId_).size()!=0 ? fedCollection_->FEDData(daqsource::gtpeId_).data() : 0; 
 
 	unsigned int nextFakeLs	= 0;
 	eventCounter_++;
 	if (fakeLSid_)
-	    evttype =  edm::EventAuxiliary::PhysicsTrigger; 
-	if(fakeLSid_ && luminosityBlockNumber_ != 
+	    evttype_ =  edm::EventAuxiliary::PhysicsTrigger;
+	bool fakeLSFromEventCount = fakeLSid_ && (lumiSegmentSizeInEvents_ != 0);
+	bool fakeLSFromTimer = fakeLSid_ && (lumiSegmentSizeInSeconds_ != 0);
+	if(fakeLSFromEventCount && luminosityBlockNumber_ != 
 	   (nextFakeLs = useEventCounter_ ? ((eventCounter_-1)/lumiSegmentSizeInEvents_ + 1) :
-	    ((eventId.event() - 1)/lumiSegmentSizeInEvents_ + 1))) {
-	  lastLumiPrescaleIndex_->value_ = prescaleSetIndex_->value_;
-	  prescaleSetIndex_->value_ = 0; // since we do not know better but we want to be able to run
-	 
+	    ((eventID_.event() - 1)/lumiSegmentSizeInEvents_ + 1))) {
+	    if (prescaleSetIndex_ != 0 && lastLumiPrescaleIndex_!= 0) {
+	      lastLumiPrescaleIndex_->value_ = prescaleSetIndex_->value_;
+	      prescaleSetIndex_->value_ = 0; // since we do not know better but we want to be able to run
+	    }
 	  if(luminosityBlockNumber_ == nextFakeLs-1)
 	    signalWaitingThreadAndBlock();
 	  luminosityBlockNumber_ = nextFakeLs;
 	  thisEventLSid = nextFakeLs-1;
-	  newLumi_ = true;
-	  lumiSectionIndex_->value_ = luminosityBlockNumber_;
+	  setNewLumi();
+	  if (lumiSectionIndex_ != 0)
+	    lumiSectionIndex_->value_ = luminosityBlockNumber_;
 	  resetLuminosityBlockAuxiliary();
 	  if(keepUsingPsidFromTrigger_ && 
 	     gtpFedAddr!=0 && evf::evtn::evm_board_sense(gtpFedAddr,gtpsize)){
-	    prescaleSetIndex_->value_  = (evf::evtn::getfdlpsc(gtpFedAddr) & 0xffff);
+	    if (prescaleSetIndex_ != 0)
+	      prescaleSetIndex_->value_  = (evf::evtn::getfdlpsc(gtpFedAddr) & 0xffff);
 	  }	  
 	}
+	else if(fakeLSFromTimer){
+	  struct timeval tv;
+	  gettimeofday(&tv,0);
+	  unsigned int elapsed_time = tv.tv_sec - startOfLastLumi.tv_sec;
+	  //	  std::cout << "daqsource elapsed time " << elapsed_time << std::endl;
+	  if(luminosityBlockNumber_ != 
+	     (nextFakeLs = elapsed_time/lumiSegmentSizeInSeconds_ + 1)) {
+	    if(prescaleSetIndex_ != 0){
+	      lastLumiPrescaleIndex_->value_ = prescaleSetIndex_->value_;
+	      prescaleSetIndex_->value_ = 0; // since we do not know better but we want to be able to run
+	    }
+	    if(luminosityBlockNumber_ == (nextFakeLs-1))
+	      signalWaitingThreadAndBlock();
+	    luminosityBlockNumber_ = nextFakeLs;
+	    thisEventLSid = nextFakeLs-1;
+	    setNewLumi();
+	    if(lumiSectionIndex_!=0)
+	      lumiSectionIndex_->value_ = luminosityBlockNumber_;
+	    resetLuminosityBlockAuxiliary();
+	    if(keepUsingPsidFromTrigger_ && 
+	       gtpFedAddr!=0 && evf::evtn::evm_board_sense(gtpFedAddr,gtpsize)){
+	      if(prescaleSetIndex_ != 0)
+		prescaleSetIndex_->value_  = (evf::evtn::getfdlpsc(gtpFedAddr) & 0xffff);
+	    }	  
+	  }
+	} 
 	else if(!fakeLSid_){ 
 
 	  if(gtpFedAddr!=0 && evf::evtn::evm_board_sense(gtpFedAddr,gtpsize)){
-	    lastLumiPrescaleIndex_->value_ = prescaleSetIndex_->value_;
+	    if (lastLumiPrescaleIndex_ != 0 && prescaleSetIndex_ != 0)
+	      lastLumiPrescaleIndex_->value_ = prescaleSetIndex_->value_;
 	    thisEventLSid = evf::evtn::getlbn(gtpFedAddr);
-	    prescaleSetIndex_->value_  = (evf::evtn::getfdlpsc(gtpFedAddr) & 0xffff);
-	    evttype =  edm::EventAuxiliary::ExperimentType(evf::evtn::getevtyp(gtpFedAddr));
+	    if (prescaleSetIndex_ != 0)
+	      prescaleSetIndex_->value_  = (evf::evtn::getfdlpsc(gtpFedAddr) & 0xffff);
+	    evttype_ =  edm::EventAuxiliary::ExperimentType(evf::evtn::getevtyp(gtpFedAddr));
 	    if(luminosityBlockNumber_ > (thisEventLSid + 1))
 	    {
 	      //late event,throw fwk exception
@@ -426,12 +480,13 @@ namespace edm {
 	    if(luminosityBlockNumber_ != (thisEventLSid + 1)){
 	      // we got here in a running process and some Ls might have been skipped so set the flag, 
 	      // increase by one, check and if appropriate set the flag then continue
-	      if(lsToBeRecovered_->value_){
+	      if(lsToBeRecovered_!=0 && lsToBeRecovered_->value_){
 		//		std::cout << getpid() << "eve::recover ls::for " << thisEventLSid << std::endl;
 		signalWaitingThreadAndBlock();
 		luminosityBlockNumber_++;
-		newLumi_ = true;
-		lumiSectionIndex_->value_ = luminosityBlockNumber_;
+		setNewLumi();
+		if (lumiSectionIndex_ !=0 )
+		  lumiSectionIndex_->value_ = luminosityBlockNumber_;
 		resetLuminosityBlockAuxiliary();
 		if(luminosityBlockNumber_ != thisEventLSid+1) alignLsToLast_ = true;
 		//		std::cout << getpid() << "eve::::alignLsToLast_ " << alignLsToLast_ << std::endl;
@@ -439,46 +494,51 @@ namespace edm {
 	      else{ // we got here because the process was restarted. just realign the ls id and proceed with this event
 		//		std::cout << getpid() << "eve::realign ls::for " << thisEventLSid << std::endl;
 		luminosityBlockNumber_ = thisEventLSid + 1;
-		newLumi_ = true;
-		lumiSectionIndex_->value_ = luminosityBlockNumber_;
+		setNewLumi();
+		if (lumiSectionIndex_ !=0)
+		  lumiSectionIndex_->value_ = luminosityBlockNumber_;
 		resetLuminosityBlockAuxiliary();
-		lsToBeRecovered_->value_ = true;
+		if (lsToBeRecovered_ !=0)
+		  lsToBeRecovered_->value_ = true;
 	      }
 	    }
 	  }
 	  else if(gtpeFedAddr!=0 && evf::evtn::gtpe_board_sense(gtpeFedAddr)){
-	    lastLumiPrescaleIndex_->value_ = prescaleSetIndex_->value_;
+	    if (lastLumiPrescaleIndex_ != 0 && prescaleSetIndex_ != 0)
+	      lastLumiPrescaleIndex_->value_ = prescaleSetIndex_->value_;
 	    thisEventLSid = evf::evtn::gtpe_getlbn(gtpeFedAddr);
-	    prescaleSetIndex_->value_ = 0; //waiting to get a PS index from gtpe
-	    evttype =  edm::EventAuxiliary::PhysicsTrigger; 
+	    if (prescaleSetIndex_ != 0)
+	      prescaleSetIndex_->value_ = 0; //waiting to get a PS index from gtpe
+	    evttype_ =  edm::EventAuxiliary::PhysicsTrigger; 
 	    if(luminosityBlockNumber_ != (thisEventLSid + 1)){
 	      if(luminosityBlockNumber_ == thisEventLSid)
 		signalWaitingThreadAndBlock();
 	      luminosityBlockNumber_ = thisEventLSid + 1;
-	      newLumi_ = true;
-	      lumiSectionIndex_->value_ = luminosityBlockNumber_;
+	      setNewLumi();
+	      if (lumiSectionIndex_ !=0 )
+	        lumiSectionIndex_->value_ = luminosityBlockNumber_;
 	      resetLuminosityBlockAuxiliary();
 	    }
 	  }
 	}
 	if(gtpFedAddr!=0 && evf::evtn::evm_board_sense(gtpFedAddr,gtpsize)){
-	  bunchCrossing =  int(evf::evtn::getfdlbx(gtpFedAddr));
-	  orbitNumber =  int(evf::evtn::getorbit(gtpFedAddr));
+	  bunchCrossing_ =  int(evf::evtn::getfdlbx(gtpFedAddr));
+	  orbitNumber_ =  int(evf::evtn::getorbit(gtpFedAddr));
 	  TimeValue_t time = evf::evtn::getgpshigh(gtpFedAddr);
 	  time = (time << 32) + evf::evtn::getgpslow(gtpFedAddr);
 	  Timestamp tstamp(time);
 	  setTimestamp(tstamp);      
 	}
 	else if(gtpeFedAddr!=0 && evf::evtn::gtpe_board_sense(gtpeFedAddr)){
-	  bunchCrossing =  int(evf::evtn::gtpe_getbx(gtpeFedAddr));
-	  orbitNumber =  int(evf::evtn::gtpe_getorbit(gtpeFedAddr));
+	  bunchCrossing_ =  int(evf::evtn::gtpe_getbx(gtpeFedAddr));
+	  orbitNumber_ =  int(evf::evtn::gtpe_getorbit(gtpeFedAddr));
 	}
       }    
           
     //    std::cout << "lumiblockaux = " << luminosityBlockAuxiliary() << std::endl;
     // If there is no luminosity block principal, make one.
     if (!luminosityBlockAuxiliary() || luminosityBlockAuxiliary()->luminosityBlock() != luminosityBlockNumber_) {
-      newLumi_ = true;
+      setNewLumi();
       setLuminosityBlockAuxiliary(new LuminosityBlockAuxiliary(
 	runNumber_, luminosityBlockNumber_, timestamp(), Timestamp::invalidTimestamp()));
       luminosityBlockAuxiliary()->setProcessHistoryID(phid_);
@@ -489,46 +549,20 @@ namespace edm {
     if(retval<0){
       //      std::cout << getpid() << " returning from getnextitem because retval < 0 - IsLumi "
       //		<< IsLumi << std::endl;
-      if(newLumi_) return IsLumi; else return getNextItemType();
+      if(newLumi()) return IsLumi; else return getNextItemType();
     }
-
-    // make a brand new event principal
-    eventId = EventID(runNumber_,thisEventLSid+1, eventId.event());
-    EventAuxiliary eventAux(eventId, processGUID(),
-			    timestamp(),
-			    true,
-			    evttype,
-			    bunchCrossing,
-			    EventAuxiliary::invalidStoreNumber,
-			    orbitNumber);
-    eventAux.setProcessHistoryID(phid_);
-    eventPrincipalCache()->fillEventPrincipal(eventAux, boost::shared_ptr<LuminosityBlockPrincipal>());
-    eventCached_ = true;
-    
-    // have fedCollection managed by a std::auto_ptr<>
-    std::auto_ptr<FEDRawDataCollection> bare_product(fedCollection);
-
-    WrapperOwningHolder edp(new Wrapper<FEDRawDataCollection>(bare_product), Wrapper<FEDRawDataCollection>::getInterface());
-    eventPrincipalCache()->put(daqProvenanceHelper_.constBranchDescription_, edp, daqProvenanceHelper_.dummyProvenance_);
-
-/*
-    Event e(*eventPrincipalCache(), md_);
-    // put the fed collection into the transient event store
-    e.put(bare_product);
-    // The commit is needed to complete the "put" transaction.
-    e.commit_();
-*/
-    if (newLumi_) {
+    if (newLumi()) {
       return IsLumi;
     }
+    setEventCached();
     return IsEvent;
   }
 
   void
   DaqSource::setRun(RunNumber_t r) {
-    assert(!eventCached_);
+    assert(!eventCached());
     reset();
-    newRun_ = newLumi_ = true;
+    setNewRun();
     runNumber_ = r;
     if (reader_) reader_->setRunNumber(runNumber_);
     noMoreEvents_ = false;
@@ -537,9 +571,9 @@ namespace edm {
 
   boost::shared_ptr<RunAuxiliary>
   DaqSource::readRunAuxiliary_() {
-    assert(newRun_);
+    assert(newRun());
     assert(!noMoreEvents_);
-    newRun_ = false;
+    resetNewRun();
     boost::shared_ptr<RunAuxiliary> ra(new RunAuxiliary(runNumber_, timestamp(), Timestamp::invalidTimestamp()));
     ra->setProcessHistoryID(phid_);
     return ra;
@@ -547,30 +581,54 @@ namespace edm {
 
   boost::shared_ptr<LuminosityBlockAuxiliary>
   DaqSource::readLuminosityBlockAuxiliary_() {
-    assert(!newRun_);
-    assert(newLumi_);
+    assert(!newRun());
+    assert(newLumi());
     assert(!noMoreEvents_);
     assert(luminosityBlockAuxiliary());
-    //assert(eventCached_); //the event may or may not be cached - rely on 
-    // the call to getNextItemType to detect that.
-    newLumi_ = false;
+    resetNewLumi();
     return luminosityBlockAuxiliary();
   }
 
   EventPrincipal*
-  DaqSource::readEvent_() {
+  DaqSource::readEvent_(EventPrincipal& eventPrincipal) {
     //    std::cout << "assert not newRun " << std::endl;
-    assert(!newRun_);
+    assert(!newRun());
     //    std::cout << "assert not newLumi " << std::endl;
-    assert(!newLumi_);
+    assert(!newLumi());
     //    std::cout << "assert not noMoreEvents " << std::endl;
     assert(!noMoreEvents_);
     //    std::cout << "assert eventCached " << std::endl;
-    assert(eventCached_);
+    assert(eventCached());
     //    std::cout << "asserts done " << std::endl;
-    eventCached_ = false;
-    eventPrincipalCache()->setLuminosityBlockPrincipal(luminosityBlockPrincipal());
-    return eventPrincipalCache();
+
+    resetEventCached();
+
+    // make a brand new event principal
+    eventID_ = EventID(runNumber_,thisEventLSid+1, eventID_.event());
+    EventAuxiliary eventAux(eventID_, processGUID(),
+			    timestamp(),
+			    true,
+			    evttype_,
+			    bunchCrossing_,
+			    EventAuxiliary::invalidStoreNumber,
+			    orbitNumber_);
+    eventAux.setProcessHistoryID(phid_);
+    eventPrincipal.fillEventPrincipal(eventAux);
+    
+    // have fedCollection managed by a std::auto_ptr<>
+    std::auto_ptr<FEDRawDataCollection> bare_product(fedCollection_);
+
+    WrapperOwningHolder edp(new Wrapper<FEDRawDataCollection>(bare_product), Wrapper<FEDRawDataCollection>::getInterface());
+    eventPrincipal.put(daqProvenanceHelper_.constBranchDescription_, edp, daqProvenanceHelper_.dummyProvenance_);
+
+/*
+    Event e(eventPrincipal, md_);
+    // put the fed collection into the transient event store
+    e.put(bare_product);
+    // The commit is needed to complete the "put" transaction.
+    e.commit_();
+*/
+    return &eventPrincipal;
   }
 
   void
@@ -628,7 +686,7 @@ namespace edm {
     ts.tv_sec += timeout_sec;
 
     int rc = pthread_cond_timedwait(&cond_, &mutex_, &ts);
-    if(rc == ETIMEDOUT) lsTimedOut_->value_ = true; 
+    if(rc == ETIMEDOUT && lsTimedOut_ != 0) lsTimedOut_->value_ = true; 
   }
   
   void DaqSource::closeBackDoor()
@@ -637,11 +695,14 @@ namespace edm {
     pthread_cond_signal(&cond_);
     pthread_mutex_unlock(&mutex_);
     pthread_mutex_lock(&signal_lock_);
-    lsTimedOut_->value_ = false; 
+    if (lsTimedOut_ != 0)
+      lsTimedOut_->value_ = false; 
   }
 
   void DaqSource::signalWaitingThreadAndBlock()
   {
+    //check if we are running offline, in which case return immediately
+    if(is_ == 0) return;
     pthread_mutex_lock(&signal_lock_);
     pthread_mutex_lock(&mutex_);
     pthread_mutex_unlock(&signal_lock_);

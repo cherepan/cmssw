@@ -1,11 +1,14 @@
-// $Id: HcalCorrPFCalculation.cc,v 1.26 2011/04/27 13:40:35 kodolova Exp $
+// $Id: HcalCorrPFCalculation.cc,v 1.30 2012/12/26 15:46:48 innocent Exp $
+
+
+#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "TrackingTools/TrackAssociator/interface/TrackDetectorAssociator.h"
 
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/HcalRecHit/interface/HcalSourcePositionData.h"
-#include "FWCore/Framework/interface/Selector.h"
 #include <DataFormats/EcalDetId/interface/EBDetId.h>
 #include <DataFormats/EcalDetId/interface/EEDetId.h>
 
@@ -102,10 +105,16 @@ class HcalCorrPFCalculation : public edm::EDAnalyzer {
   Int_t nTracks;
   Float_t genEta,genPhi, trackEta[50],trackPhi[50], trackP[50] , delRmc[50];
 
+  edm::InputTag hbheRecHitCollectionTag_;
+  edm::InputTag hfRecHitCollectionTag_;
+  edm::InputTag hoRecHitCollectionTag_;
 };
 
 
-HcalCorrPFCalculation::HcalCorrPFCalculation(edm::ParameterSet const& iConfig) {
+HcalCorrPFCalculation::HcalCorrPFCalculation(edm::ParameterSet const& iConfig) :
+  hbheRecHitCollectionTag_(iConfig.getParameter<edm::InputTag>("hbheRecHitCollectionTag")),
+  hfRecHitCollectionTag_(iConfig.getParameter<edm::InputTag>("hfRecHitCollectionTag")),
+  hoRecHitCollectionTag_(iConfig.getParameter<edm::InputTag>("hoRecHitCollectionTag")) {
 
   //  outputFile_ = iConfig.getUntrackedParameter<std::string>("outputFile", "myfile.root");
   
@@ -166,15 +175,15 @@ void HcalCorrPFCalculation::analyze(edm::Event const& ev, edm::EventSetup const&
   }
 
   edm::Handle<HBHERecHitCollection> hbhe;
-  ev.getByType(hbhe);
+  ev.getByLabel(hbheRecHitCollectionTag_, hbhe);
   const HBHERecHitCollection Hithbhe = *(hbhe.product());
   
   edm::Handle<HFRecHitCollection> hfcoll;
-  ev.getByType(hfcoll);
+  ev.getByLabel(hfRecHitCollectionTag_, hfcoll);
   const HFRecHitCollection Hithf = *(hfcoll.product());
     
   edm::Handle<HORecHitCollection> hocoll;
-  ev.getByType(hocoll);
+  ev.getByLabel(hoRecHitCollectionTag_, hocoll);
   const HORecHitCollection Hitho = *(hocoll.product());
   
   edm::Handle<EERecHitCollection> ecalEE;
@@ -301,8 +310,8 @@ void HcalCorrPFCalculation::analyze(edm::Event const& ev, edm::EventSetup const&
 
 
       if(fabs(etaParticle)<1.392) {
-	Cylinder *cylinder = new Cylinder(Surface::PositionType(0,0,0),
-					  Surface::RotationType(), 181.1);
+	Cylinder *cylinder = new Cylinder(181.1, Surface::PositionType(0,0,0),
+					  Surface::RotationType());
 	
 	TrajectoryStateOnSurface steppingHelixstateinfo_ = stepPropF->propagate(*freetrajectorystate_, (*cylinder));
 	if(steppingHelixstateinfo_.isValid() ) 

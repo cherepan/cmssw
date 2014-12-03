@@ -430,7 +430,7 @@ PFElecTkProducer::createGsfPFRecTrackRef(const edm::OrphanHandle<reco::GsfPFRecT
 // ------------- method for find the corresponding kf pfrectrack ---------------------
 int
 PFElecTkProducer::FindPfRef(const reco::PFRecTrackCollection  & PfRTkColl, 
-			    reco::GsfTrack gsftk,
+			    const reco::GsfTrack& gsftk,
 			    bool otherColl){
 
 
@@ -550,7 +550,7 @@ bool PFElecTkProducer::isFifthStep(reco::PFRecTrackRef pfKfTrack) {
 }
 // -- method to apply gsf electron selection to EcalDriven seeds
 bool 
-PFElecTkProducer::applySelection(reco::GsfTrack gsftk) {
+PFElecTkProducer::applySelection(const reco::GsfTrack& gsftk) {
   if (&(*gsftk.seedRef())==0) return false;
   ElectronSeedRef ElSeedRef=gsftk.extra()->seedRef().castTo<ElectronSeedRef>();
 
@@ -1172,7 +1172,7 @@ bool PFElecTkProducer::isInnerMostWithLostHits(const reco::GsfTrackRef& nGsfTrac
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-PFElecTkProducer::beginRun(edm::Run& run,
+PFElecTkProducer::beginRun(const edm::Run& run,
 			   const EventSetup& iSetup)
 {
   ESHandle<MagneticField> magneticField;
@@ -1211,8 +1211,12 @@ PFElecTkProducer::beginRun(edm::Run& run,
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
-PFElecTkProducer::endRun() {
+PFElecTkProducer::endRun(const edm::Run& run,
+			 const EventSetup& iSetup) {
   delete pfTransformer_;
+  pfTransformer_=nullptr;
+  delete convBremFinder_;
+  convBremFinder_=nullptr;
 }
 
 //define this as a plug-in

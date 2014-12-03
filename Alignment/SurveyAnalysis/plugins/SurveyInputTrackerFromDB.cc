@@ -17,27 +17,33 @@
 
 #include "Alignment/SurveyAnalysis/plugins/SurveyInputTrackerFromDB.h"
 
-SurveyInputTrackerFromDB::SurveyInputTrackerFromDB(const edm::ParameterSet& cfg):
-textFileName( cfg.getParameter<std::string>("textFileName") )
-{
-}
+SurveyInputTrackerFromDB::SurveyInputTrackerFromDB(const edm::ParameterSet& cfg)
+  : textFileName( cfg.getParameter<std::string>("textFileName") ),
+    theParameterSet( cfg )
+{}
 
 void SurveyInputTrackerFromDB::analyze(const edm::Event&, const edm::EventSetup& setup)
 {
+
   if (theFirstEvent) {
 
 	//  std::cout << "***************ENTERING INITIALIZATION******************" << std::endl;
 	
+	//Retrieve tracker topology from geometry
+	edm::ESHandle<TrackerTopology> tTopoHandle;
+	setup.get<IdealGeometryRecord>().get(tTopoHandle);
+	const TrackerTopology* const tTopo = tTopoHandle.product();
+
 	//Get map from textreader
 	SurveyInputTextReader dataReader;
 	dataReader.readFile( textFileName );
 	uIdMap = dataReader.UniqueIdMap();
 	
 	edm::ESHandle<GeometricDet>  geom;
-	setup.get<IdealGeometryRecord>().get(geom);	 
-	TrackerGeometry* tracker = TrackerGeomBuilderFromGeometricDet().build(&*geom);
+	setup.get<IdealGeometryRecord>().get(geom); 
+	TrackerGeometry* tracker = TrackerGeomBuilderFromGeometricDet().build(&*geom, theParameterSet);
 	
-	addComponent( new AlignableTracker( tracker ) );
+	addComponent( new AlignableTracker( tracker, tTopo ) );
 	addSurveyInfo( detector() );
 	
 	//write out to a DB ...

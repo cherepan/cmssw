@@ -8,7 +8,7 @@
  */
 
 // SiTracker Gaussian Smearing
-#include "FastSimulation/TrackingRecHitProducer/interface/SiClusterTranslator.h"
+#include "SiClusterTranslator.h"
 
 // Geometry
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
@@ -24,8 +24,8 @@
 //CPEs
 #include "RecoLocalTracker/Records/interface/TkPixelCPERecord.h"
 #include "RecoLocalTracker/Records/interface/TkStripCPERecord.h"
-#include "FastSimulation/TrackingRecHitProducer/interface/FastPixelCPE.h"
-#include "FastSimulation/TrackingRecHitProducer/interface/FastStripCPE.h"
+#include "FastPixelCPE.h"
+#include "FastStripCPE.h"
 
 // Framework
 #include "FWCore/Framework/interface/Event.h"
@@ -53,7 +53,8 @@
 #include <memory>
 #include <string>
 
-SiClusterTranslator::SiClusterTranslator(edm::ParameterSet const& conf) 
+SiClusterTranslator::SiClusterTranslator(edm::ParameterSet const& conf) :
+  fastTrackerClusterCollectionTag_(conf.getParameter<edm::InputTag>("fastTrackerClusterCollectionTag"))
 {
   produces<edmNew::DetSetVector<SiStripCluster> >();
   produces<edmNew::DetSetVector<SiPixelCluster> >();
@@ -65,7 +66,7 @@ SiClusterTranslator::SiClusterTranslator(edm::ParameterSet const& conf)
 SiClusterTranslator::~SiClusterTranslator() {}  
 
 void 
-SiClusterTranslator::beginRun(edm::Run & run, const edm::EventSetup & es) {
+SiClusterTranslator::beginRun(edm::Run const&, const edm::EventSetup & es) {
 
   // Initialize the Tracker Geometry
   edm::ESHandle<TrackerGeometry> theGeometry;
@@ -78,7 +79,7 @@ SiClusterTranslator::produce(edm::Event& e, const edm::EventSetup& es)
 {
   // Step A: Get Inputs (FastGSRecHit's)
   edm::Handle<FastTrackerClusterCollection> theFastClusters; 
-  e.getByType(theFastClusters);
+  e.getByLabel(fastTrackerClusterCollectionTag_, theFastClusters);
   
   edm::ESHandle<TrackerGeometry> tkgeom;
   es.get<TrackerDigiGeometryRecord>().get( tkgeom ); 
@@ -157,7 +158,7 @@ SiClusterTranslator::produce(edm::Event& e, const edm::EventSetup& es)
       
       const GeomDetUnit *  geoDet = tracker.idToDetUnit(det);
       const PixelGeomDetUnit * pixelDet=(const PixelGeomDetUnit*)(geoDet);
-      const PixelTopology& topol=(PixelTopology&)pixelDet->topology();
+      const PixelTopology& topol=(const PixelTopology&)pixelDet->topology();
       
       //Out of pixel is float, but input of pixel is int. Hopeful it works...
       std::pair<float,float> pixelPos_out = topol.pixel(position);
@@ -211,10 +212,10 @@ SiClusterTranslator::produce(edm::Event& e, const edm::EventSetup& es)
       
       //3 = TIB, 4 = TID, 5 = TOB, 6 = TEC
       if((subdet == 3) || (subdet == 5)) {
-	const RectangularStripTopology& topol=(RectangularStripTopology&)stripDet->type().topology();
+	const RectangularStripTopology& topol=(const RectangularStripTopology&)stripDet->type().topology();
 	strip_num = (uint16_t)topol.strip(position);
       } else if ((subdet == 4) || (subdet == 6)) {
-	const RadialStripTopology& topol=(RadialStripTopology&)stripDet->type().topology();
+	const RadialStripTopology& topol=(const RadialStripTopology&)stripDet->type().topology();
 	strip_num = (uint16_t)topol.strip(position);
       }
       

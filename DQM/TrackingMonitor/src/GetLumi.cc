@@ -1,8 +1,8 @@
 /*
  *  See header file for a description of this class.
  *
- *  $Date: 2012/08/05 12:51:52 $
- *  $Revision: 1.2 $
+ *  $Date: 2013/05/30 22:09:25 $
+ *  $Revision: 1.4 $
  *  \author:  Mia Tosi,40 3-B32,+41227671609 
  */
 
@@ -18,7 +18,7 @@ GetLumi::GetLumi(const edm::ParameterSet& iConfig)
 {
 }
 
-GetLumi::GetLumi(edm::InputTag lumiInputTag, double lumiScale)
+GetLumi::GetLumi(const edm::InputTag& lumiInputTag, double lumiScale)
   : lumiInputTag_ ( lumiInputTag )
   , lumiScale_    ( lumiScale    )
 {

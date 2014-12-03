@@ -5,7 +5,7 @@
 // 
 //
 // Original Author:  Jake Ribnik, Dmytro Kovalskyi
-// $Id: MuonSelectors.h,v 1.14.2.1 2012/09/24 21:11:53 gpetrucc Exp $
+// $Id: MuonSelectors.h,v 1.17 2012/08/21 21:28:00 mskim Exp $
 
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include "TMath.h"
@@ -46,7 +46,8 @@ namespace muon {
       // what we feel is more suggestive of the algorithm name. This will be
       // less confusing for future generations of CMS members, I hope...
       TMLastStationOptimizedBarrelLowPtLoose = 22, // combination of TMLastStation and TMOneStation but with low pT optimization in barrel only
-      TMLastStationOptimizedBarrelLowPtTight = 23  // combination of TMLastStation and TMOneStation but with low pT optimization in barrel only
+      TMLastStationOptimizedBarrelLowPtTight = 23, // combination of TMLastStation and TMOneStation but with low pT optimization in barrel only
+      RPCMuLoose = 24                              // checks isRPCMuon flag (require two well matched hits in different RPC layers)
    };
 
    /// a lightweight "map" for selection type string label and enum value
@@ -60,7 +61,7 @@ namespace muon {
    // ===========================================================================
    //                               Support functions
    // 
-   enum AlgorithmType { TMLastStation, TM2DCompatibility, TMOneStation };
+   enum AlgorithmType { TMLastStation, TM2DCompatibility, TMOneStation, RPCMu };
    
    // specialized GoodMuon functions called from main wrapper
    bool isGoodMuon( const reco::Muon& muon, 
@@ -84,10 +85,8 @@ namespace muon {
    bool isTightMuon(const reco::Muon&, const reco::Vertex&);
    bool isLooseMuon(const reco::Muon&);
    bool isSoftMuon(const reco::Muon&, const reco::Vertex&);
-   enum TunePType{defaultTuneP, improvedTuneP};
-   bool isHighPtMuon(const reco::Muon&, const reco::Vertex&, TunePType = muon::improvedTuneP);
-   reco::TrackRef improvedMuonBestTrack(const reco::Muon&, TunePType);
-
+   bool isHighPtMuon(const reco::Muon&, const reco::Vertex&);
+   
    // determine if station was crossed well withing active volume
    unsigned int RequiredStationMask( const reco::Muon& muon,
 				     double maxChamberDist,

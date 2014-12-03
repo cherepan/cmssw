@@ -1,4 +1,4 @@
-// $Id: EventStreamHandler.cc,v 1.10 2012/04/04 12:17:01 mommsen Exp $
+// $Id: EventStreamHandler.cc,v 1.12 2012/10/17 10:13:25 mommsen Exp $
 /// @file: EventStreamHandler.cc
 
 #include "EventFilter/StorageManager/interface/Configuration.h"
@@ -43,7 +43,9 @@ namespace stor {
       new EventFileHandler(initMsgView_, fileRecord, dbFileHandler_, getMaxFileSize())
     );
     fileHandlers_.push_back(newFileHandler);
-    
+        
+    streamRecord_->incrementFileCount(fileRecord->lumiSection);
+
     return newFileHandler;
   }
   

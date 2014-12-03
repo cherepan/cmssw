@@ -1,8 +1,8 @@
 /*
  *  See header file for a description of this class.
  *
- *  $Date: 2008/12/12 18:02:18 $
- *  $Revision: 1.1 $
+ *  $Date: 2012/07/16 07:14:42 $
+ *  $Revision: 1.3 $
  *  \author P. Martinez - IFCA
  */
 
@@ -45,7 +45,7 @@ SegmentToTrackAssociator::SegmentToTrackAssociator( const edm::ParameterSet& iCo
 }
 
 
-SegmentToTrackAssociator::~SegmentToTrackAssociator();
+SegmentToTrackAssociator::~SegmentToTrackAssociator() {}
 
 
 void SegmentToTrackAssociator::clear()

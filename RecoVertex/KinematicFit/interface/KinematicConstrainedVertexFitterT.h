@@ -48,14 +48,14 @@ public:
    * Without additional constraint, this will perform a simple
    * vertex fit using LMS with Lagrange multipliers method (by definition valid only if nConstraint=0)
    */  
-  RefCountedKinematicTree fit(std::vector<RefCountedKinematicParticle> part) {
+  RefCountedKinematicTree fit(const std::vector<RefCountedKinematicParticle> &part) {
     return fit(part, 0, 0);
   }
   
   /**
    * LMS with Lagrange multipliers fit of vertex constraint and user-specified constraint.
    */  
-  RefCountedKinematicTree fit(std::vector<RefCountedKinematicParticle> part,
+  RefCountedKinematicTree fit(const std::vector<RefCountedKinematicParticle> &part,
 			      MultiTrackKinematicConstraintT< nTrk, nConstraint> * cs) {
     return fit(part, cs, 0);
   };
@@ -63,7 +63,7 @@ public:
   /**
    * LMS with Lagrange multipliers fit of vertex constraint, user-specified constraint and user-specified starting point.
    */  
-  RefCountedKinematicTree fit(std::vector<RefCountedKinematicParticle> part,
+  RefCountedKinematicTree fit(const std::vector<RefCountedKinematicParticle> &part,
 			      MultiTrackKinematicConstraintT< nTrk, nConstraint> * cs,
 			      GlobalPoint * pt);
   
@@ -156,7 +156,7 @@ void KinematicConstrainedVertexFitterT< nTrk, nConstraint>::defaultParameters()
 
 template < int nTrk, int nConstraint> 
 RefCountedKinematicTree 
-KinematicConstrainedVertexFitterT< nTrk, nConstraint>::fit(std::vector<RefCountedKinematicParticle> part,
+KinematicConstrainedVertexFitterT< nTrk, nConstraint>::fit(const std::vector<RefCountedKinematicParticle> &part,
 							   MultiTrackKinematicConstraintT< nTrk, nConstraint> * cs,
 							   GlobalPoint * pt)
 {
@@ -227,7 +227,7 @@ KinematicConstrainedVertexFitterT< nTrk, nConstraint>::fit(std::vector<RefCounte
     std::vector<KinematicState> oldStates = lStates;
     GlobalVector mf = field->inInverseGeV(lPoint);
     rVtx = updator->update(inPar,refCCov,lStates,lPoint,mf,cs);
-    if (particles.size() != lStates.size()) {
+    if (particles.size() != lStates.size() || rVtx == 0) {
       LogDebug("KinematicConstrainedVertexFitter")
 	<< "updator failure\n";
       return ReferenceCountingPointer<KinematicTree>(new KinematicTree());

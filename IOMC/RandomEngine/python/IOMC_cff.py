@@ -48,20 +48,8 @@ RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
         initialSeed = cms.untracked.uint32(12345),
         engineName = cms.untracked.string('HepJamesRandom')
     ),
-    simSiStripDigis = cms.PSet(
+    simSiStripDigiSimLink = cms.PSet(
         initialSeed = cms.untracked.uint32(1234567),
-        engineName = cms.untracked.string('HepJamesRandom')
-    ),
-    simSiPixelDigis = cms.PSet(
-        initialSeed = cms.untracked.uint32(1234567),
-        engineName = cms.untracked.string('HepJamesRandom')
-    ),
-    simEcalUnsuppressedDigis = cms.PSet(
-        initialSeed = cms.untracked.uint32(1234567),
-        engineName = cms.untracked.string('HepJamesRandom')
-    ),
-    simHcalUnsuppressedDigis = cms.PSet(
-        initialSeed = cms.untracked.uint32(11223344),
         engineName = cms.untracked.string('HepJamesRandom')
     ),
     simMuonDTDigis = cms.PSet(
@@ -74,10 +62,6 @@ RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
     ),
     simMuonRPCDigis = cms.PSet(
         initialSeed = cms.untracked.uint32(1234567),
-        engineName = cms.untracked.string('HepJamesRandom')
-    ),
-    simCastorDigis = cms.PSet(
-        initialSeed = cms.untracked.uint32(12345678),
         engineName = cms.untracked.string('HepJamesRandom')
     ),
 #
@@ -107,7 +91,16 @@ RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
         engineName = cms.untracked.string('TRandom3')
     ),
     
+    mixSimCaloHits = cms.PSet(
+         initialSeed = cms.untracked.uint32(918273), 
+         engineName = cms.untracked.string('TRandom3')
+    ),     
 
+    mixRecoTracks = cms.PSet(
+         initialSeed = cms.untracked.uint32(918273), 
+         engineName = cms.untracked.string('TRandom3')
+    ),
+                                           
     famosSimHits = cms.PSet(
         initialSeed = cms.untracked.uint32(13579),
         engineName = cms.untracked.string('TRandom3')
@@ -170,7 +163,7 @@ RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
     # comment the line above and decomment the following one
     #   ,restoreFileName = cms.untracked.string('RandomEngineState.log')  
     # to reproduce events using the RandomEngineStateProducer (source excluded),
-    # comment the sourceSeed definition, decomment the following one
+    # decomment the following one
     #   ,restoreStateLabel = cms.untracked.string('randomEngineStateProducer')
 )
 

@@ -1,14 +1,13 @@
 /*----------------------------------------------------------------------
 
 ----------------------------------------------------------------------*/
+#include <cassert>
+#include <map>
 #include <ostream>
 #include "FWCore/Utilities/interface/TypeID.h"
 #include "FWCore/Utilities/interface/FriendlyName.h"
-#include "FWCore/Utilities/interface/GCCPrerequisite.h"
-#include "FWCore/Utilities/interface/EDMException.h"
 #include "FWCore/Utilities/interface/Exception.h"
 #include "FWCore/Utilities/interface/TypeDemangler.h"
-#include "Reflex/Type.h"
 #include "boost/thread/tss.hpp"
 
 namespace edm {
@@ -23,31 +22,21 @@ namespace edm {
 
 namespace {
 
+  TypeID const nullTypeID;
+
   std::string typeToClassName(std::type_info const& iType) {
-    Reflex::Type t = Reflex::Type::ByTypeInfo(iType);
-    if (!bool(t)) {
-#if GCC_PREREQUISITE(3,0,0)
-      // demangling supported for currently supported gcc compilers.
-      try {
-        std::string result;
-        typeDemangle(iType.name(), result);
-        return result;
-      } catch (cms::Exception const& e) {
-        edm::Exception theError(errors::DictionaryNotFound,"NoMatch");
-        theError << "TypeID::className: No dictionary for class " << iType.name() << '\n';
-        theError.append(e);
-        throw theError;
-      }
-#else
-      throw edm::Exception(errors::DictionaryNotFound,"NoMatch")
-       << "TypeID::className: No dictionary for class " << iType.name() << '\n';
-#endif
+    try {
+      return typeDemangle(iType.name());
+    } catch (cms::Exception const& e) {
+      cms::Exception theError("Name Demangling Error");
+      theError << "TypeID::typeToClassName: can't demangle " << iType.name() << '\n';
+      theError.append(e);
+      throw theError;
     }
-    return t.Name(Reflex::SCOPED);
   }
 }
 
-  std::string
+  std::string const&
   TypeID::className() const {
     typedef std::map<edm::TypeID, std::string> Map;
     static boost::thread_specific_ptr<Map> s_typeToName;
@@ -76,7 +65,7 @@ namespace {
   }
 
   bool
-  TypeID::stripTemplate(std::string& theName) {
+  stripTemplate(std::string& theName) {
     std::string const spec("<,>");
     char const space = ' ';
     std::string::size_type idx = theName.find_first_of(spec);
@@ -100,21 +89,39 @@ namespace {
     return true;
   }
 
-  bool
-  TypeID::stripNamespace(std::string& theName) {
-    std::string::size_type idx = theName.rfind(':');
-    bool ret = (idx != std::string::npos);
-    if (ret) {
-      ++idx;
-      theName = theName.substr(idx);
+  std::string
+  stripNamespace(std::string const& theName) {
+    // Find last colon
+    std::string::size_type colonIndex = theName.rfind(':');
+    if(colonIndex == std::string::npos) {
+      // No colons, so no namespace to strip
+      return theName;
     }
-    return ret;
+    std::string::size_type bracketIndex = theName.rfind('>');
+    if(bracketIndex == std::string::npos || bracketIndex < colonIndex) {
+      // No '>' after last colon.  Strip up to and including last colon.
+      return theName.substr(colonIndex+1);
+    }
+    // There is a '>' after the last colon.
+    int depth = 1;
+    for(size_t index = bracketIndex; index != 0; --index) {
+      char c = theName[index - 1]; 
+      if(c == '>') {
+        ++depth;
+      } else if(c == '<') {
+        --depth;
+        assert(depth >= 0);
+      } else if(depth == 0 && c == ':') {
+        return theName.substr(index);
+      }
+    }
+    return theName;
   }
 
-  bool
-  TypeID::hasDictionary() const {
-    return bool(Reflex::Type::ByTypeInfo(typeInfo()));
+  TypeID::operator bool() const {
+    return !(*this == nullTypeID);
   }
+
 
   std::ostream&
   operator<<(std::ostream& os, TypeID const& id) {

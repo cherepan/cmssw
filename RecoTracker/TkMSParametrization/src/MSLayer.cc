@@ -2,7 +2,7 @@
 #include "TrackingTools/DetLayers/interface/DetLayer.h"
 #include "TrackingTools/DetLayers/interface/BarrelDetLayer.h"
 #include "TrackingTools/DetLayers/interface/ForwardDetLayer.h"
-#include "RecoTracker/TkMSParametrization/interface/MSLayersKeeper.h"
+#include "MSLayersKeeper.h"
 
 #include<iostream>
 
@@ -31,7 +31,7 @@ ostream& operator<<( ostream& s, const MSLayer::DataX0 & d)
 //----------------------------------------------------------------------
 //MP
 MSLayer::MSLayer(const DetLayer* layer, DataX0 dataX0)
- : theFace(layer->location()), theX0Data(dataX0) 
+  : theFace(layer->location()), theSeqNum(layer->seqNum()), theX0Data(dataX0)
 {
   const BarrelDetLayer* bl; const ForwardDetLayer * fl;
   theHalfThickness = layer->surface().bounds().thickness()/2;  
@@ -57,11 +57,12 @@ MSLayer::MSLayer(const DetLayer* layer, DataX0 dataX0)
 }
 //----------------------------------------------------------------------
 MSLayer::MSLayer(Location part, float position, Range range, float halfThickness,
-    DataX0 dataX0)
+		 DataX0 dataX0)
   : theFace(part), 
     thePosition(position), 
     theRange(range), 
-    theHalfThickness(halfThickness), 
+    theHalfThickness(halfThickness),
+    theSeqNum(-1),
     theX0Data(dataX0)
   { }
 
@@ -71,69 +72,6 @@ bool MSLayer::operator== (const MSLayer &o) const
 {
   return  theFace == o.theFace && std::abs(thePosition-o.thePosition) < 1.e-3f;
 }
-
-//----------------------------------------------------------------------
-pair<PixelRecoPointRZ,bool> MSLayer::crossing( 
-    const PixelRecoLineRZ & line) const
-{ 
- const float eps = 1.e-5;
-  bool  inLayer = true;
-  if (theFace==barrel) { 
-    float value = line.zAtR(thePosition);
-    if (value > theRange.max()) { 
-      value = theRange.max()-eps;
-      inLayer = false;
-    } 
-    else if (value < theRange.min() ) { 
-      value = theRange.min()+eps;
-      inLayer = false;
-    }
-    return make_pair( PixelRecoPointRZ(thePosition, value), inLayer) ;
-  }
-  else {
-    float value = line.rAtZ(thePosition);
-    if (value > theRange.max()) { 
-      value = theRange.max()-eps;
-      inLayer = false;
-    }
-    else if (value < theRange.min() ) { 
-      value = theRange.min()+eps;
-      inLayer = false;
-    }
-    return make_pair( PixelRecoPointRZ( value, thePosition), inLayer);
-  }
-}
-//----------------------------------------------------------------------
-float MSLayer::distance(const PixelRecoPointRZ & point) const
-{
-  float dr = 0;
-  float dz = 0;
-  switch(theFace) { 
-  case barrel: 
-    dr = std::abs(point.r()-thePosition);
-    if (theRange.inside(point.z())) {
-      return (dr < theHalfThickness) ? 0.f : dr;
-    }
-    else {
-      dz = point.z() > theRange.max() ?
-          point.z()-theRange.max() : theRange.min() - point.z();
-    }
-    break;
-  case endcap:
-    dz = std::abs(point.z()-thePosition);
-    if (theRange.inside(point.r())) {
-      return (dz < theHalfThickness) ? 0. : dz;
-    }
-    else {
-      dr = point.r() > theRange.max() ?
-          point.r()-theRange.max() : theRange.min()-point.r();
-    }
-    break;
-  case invalidLoc: break; // make gcc happy
-  }
-  return std::sqrt(sqr(dr)+sqr(dz));
-}
-
 //----------------------------------------------------------------------
 bool MSLayer::operator< (const MSLayer & o) const
 {
@@ -147,16 +85,61 @@ bool MSLayer::operator< (const MSLayer & o) const
   else 
     return range().max() < o.thePosition; 
 }
+
+//----------------------------------------------------------------------
+pair<PixelRecoPointRZ,bool> MSLayer::crossing( const PixelRecoLineRZ & line) const { 
+  const float eps = 1.e-5;
+  bool  inLayer = true;
+  float value = (theFace==barrel) ? line.zAtR(thePosition) : line.rAtZ(thePosition);
+  if (value > theRange.max()) { 
+    value = theRange.max()-eps;
+    inLayer = false;
+  } else if (value < theRange.min() ) { 
+    value = theRange.min()+eps;
+    inLayer = false;
+  }
+  float z = thePosition;
+  if (theFace==barrel) std::swap(z,value); // if barrel value is z
+  return make_pair( PixelRecoPointRZ( value, z), inLayer);
+}
+pair<PixelRecoPointRZ,bool> MSLayer::crossing( const SimpleLineRZ & line) const { 
+  const float eps = 1.e-5;
+  bool  inLayer = true;
+  float value = (theFace==barrel) ? line.zAtR(thePosition) : line.rAtZ(thePosition);
+  if (value > theRange.max()) { 
+    value = theRange.max()-eps;
+    inLayer = false;
+  } else if (value < theRange.min() ) { 
+    value = theRange.min()+eps;
+    inLayer = false;
+  }
+  float z = thePosition;
+  if (theFace==barrel) std::swap(z,value); // if barrel value is z
+  return make_pair( PixelRecoPointRZ( value, z), inLayer);
+}
+
+//----------------------------------------------------------------------
+float MSLayer::distance2(const PixelRecoPointRZ & point) const
+{
+  float u = (theFace==barrel) ? point.r() : point.z();
+  float	v = (theFace==barrel) ?	point.z() : point.r();
+ 
+  float  du = std::abs(u-thePosition);
+  if (theRange.inside(v))  return (du < theHalfThickness) ? 0.f : du*du;
+
+  float dv = (v > theRange.max()) ?
+            v-theRange.max() : theRange.min() - v;
+  return sqr(du)+sqr(dv);
+}
+
+
 //----------------------------------------------------------------------
 float MSLayer::x0(float cotTheta) const
 {
-  if (theX0Data.hasX0) {
+  if likely(theX0Data.hasX0) {
     float OverSinTheta = std::sqrt(1.f+cotTheta*cotTheta);
-    switch(theFace) {
-    case barrel:  return theX0Data.x0*OverSinTheta;
-    case endcap: return theX0Data.x0*std::abs(OverSinTheta/cotTheta);
-    case invalidLoc: return 0.;// make gcc happy
-    }
+    return (theFace==barrel) ? theX0Data.x0*OverSinTheta :
+                               theX0Data.x0*OverSinTheta/std::abs(cotTheta);
   } else if (theX0Data.allLayers) {
     const MSLayer * dataLayer =
        theX0Data.allLayers->layers(cotTheta).findLayer(*this);
@@ -168,7 +151,7 @@ float MSLayer::x0(float cotTheta) const
 //----------------------------------------------------------------------
 float MSLayer::sumX0D(float cotTheta) const
 {
-if (theX0Data.hasX0) {
+if likely(theX0Data.hasX0) {
     switch(theFace) {
     case barrel:  
       return theX0Data.sumX0D

@@ -34,7 +34,10 @@ TrajectoryFactoryBase = cms.PSet(
 ReferenceTrajectoryFactory = cms.PSet(
     TrajectoryFactoryBase,
     ParticleMass = __muonMass,
-    TrajectoryFactoryName = cms.string('ReferenceTrajectoryFactory')
+    TrajectoryFactoryName = cms.string('ReferenceTrajectoryFactory'),
+    UseBzeroIfFieldOff = cms.bool(True), # if true, use BzeroReferenceTrajectory if B == 0
+    MomentumEstimateFieldOff = cms.double(10.) # used if useBzeroIfFieldOff == True
+
 )
 
 ###############################################################
@@ -46,7 +49,7 @@ BzeroReferenceTrajectoryFactory = cms.PSet(
     TrajectoryFactoryBase,
     ParticleMass = __muonMass,
     TrajectoryFactoryName = cms.string('BzeroReferenceTrajectoryFactory'),
-    MomentumEstimate = cms.double(5.0)
+    MomentumEstimate = cms.double(10.0)
 )
 
 ###############################################################
@@ -69,7 +72,7 @@ DualBzeroTrajectoryFactory = cms.PSet(
     TrajectoryFactoryBase,
     ParticleMass = __muonMass,
     TrajectoryFactoryName = cms.string('DualBzeroTrajectoryFactory'),
-    MomentumEstimate = cms.double(2.0)
+    MomentumEstimate = cms.double(10.0)
 )
 
 ###############################################################
@@ -218,18 +221,6 @@ CombinedFwdBwdDualTrajectoryFactory = cms.PSet(
     Fwd  = cms.PSet(ReferenceTrajectoryFactory),  # FIXME: better by reference?
     Bwd  = cms.PSet(BwdReferenceTrajectoryFactory), # defined above for CombinedFwdBwdTrajectoryFactory # FIXME: better by reference?
     Dual = cms.PSet(DualTrajectoryFactory) # FIXME: better by reference?
-)
-
-###############################################################
-#
-# DualKalmanFactory
-#
-###############################################################
-DualKalmanFactory = cms.PSet(
-    TrajectoryFactoryBase,
-    ParticleMass = __muonMass,
-    TrajectoryFactoryName = cms.string('DualKalmanFactory'),
-    ResidualMethod = cms.int32(0) # 0: hitErrors only, 1: unbiased residuals, 2: pulls
 )
 
 ###############################################################

@@ -9,6 +9,8 @@ configured in the user's main() function, and is set running.
 ----------------------------------------------------------------------*/
 
 #include "DataFormats/Provenance/interface/ProcessHistoryID.h"
+#include "DataFormats/Provenance/interface/RunID.h"
+#include "DataFormats/Provenance/interface/LuminosityBlockID.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/IEventProcessor.h"
@@ -22,9 +24,7 @@ configured in the user's main() function, and is set running.
 #include "FWCore/ServiceRegistry/interface/ServiceToken.h"
 
 #include "boost/shared_ptr.hpp"
-#include "boost/scoped_ptr.hpp"
 #include "boost/thread/condition.hpp"
-#include "boost/utility.hpp"
 
 #include <map>
 #include <memory>
@@ -40,6 +40,7 @@ namespace statemachine {
 namespace edm {
 
   class ActionTable;
+  class BranchIDListHelper;
   class EDLooperBase;
   class HistoryAppender;
   class ProcessDesc;
@@ -66,7 +67,7 @@ namespace edm {
     class StateSentry;
   }
 
-  class EventProcessor : public IEventProcessor, private boost::noncopyable {
+  class EventProcessor : public IEventProcessor {
   public:
 
     // The input string 'config' contains the entire contents of a  configuration file.
@@ -94,6 +95,9 @@ namespace edm {
     EventProcessor(std::string const& config, bool isPython);
 
     ~EventProcessor();
+
+    EventProcessor(EventProcessor const&) = delete; // Disallow copying and moving
+    EventProcessor& operator=(EventProcessor const&) = delete; // Disallow copying and moving
 
     /**This should be called before the first call to 'run'
        If this is not called in time, it will automatically be called
@@ -147,19 +151,9 @@ namespace edm {
 
     // -------------
 
-    // These next two functions are deprecated.  Please use
-    // RunToCompletion or RunEventCount instead.  These will
-    // be deleted as soon as we have time to clean up the code
-    // in packages outside the Framework that uses them already.
-    StatusCode run(int numberEventsToProcess, bool repeatable = true);
+    // Same as runToCompletion(false) but since it was used extensively
+    // outside of the framework (and is simpler) will keep
     StatusCode run();
-
-    // Skip the specified number of events.
-    // If numberToSkip is negative, we will back up.
-    StatusCode skip(int numberToSkip);
-
-    // Rewind to the first event
-    void rewind();
 
     /// Return a vector allowing const access to all the
     /// ModuleDescriptions for this EventProccessor.
@@ -224,30 +218,13 @@ namespace edm {
     //       3 - output maxEvents parameter limit reached
     //       4 - input maxLuminosityBlocks parameter limit reached
     //       5 - looper directs processing to end
-    // The function "runEventCount" will pause after processing the
-    // number of input events specified by the argument.  One can
-    // call it again to resume processing at the same point.  This
-    // function will also stop at the same point as "runToCompletion"
-    // if the job is complete before the requested number of events
-    // are processed.  If the requested number of events is less than
-    // 1, "runEventCount" interprets this as infinity and does not
-    // pause until the job is complete.
     //
-    // The return values from these functions are as follows:
+    // The return values from the function are as follows:
     //   epSignal - processing terminated early, SIGUSR2 encountered
     //   epCountComplete - "runEventCount" processed the number of events
     //                     requested by the argument
     //   epSuccess - all other cases
     //
-    // We expect that in most cases, processes will call
-    // "runToCompletion" once per job and not use "runEventCount".
-    //
-    // If a process used "runEventCount", then it would need to
-    // check the value returned by "runEventCount" to determine
-    // if it processed the requested number of events.  It would
-    // only make sense to call it again if it returned epCountComplete
-    // on the preceding call.
-
     // The online is an exceptional case.  Online uses the DaqSource
     // and the StreamerOutputModule, which are specially written to
     // handle multiple calls of "runToCompletion" in the same job.
@@ -260,7 +237,6 @@ namespace edm {
     // peculiarity that could be cleaned up and removed).
 
     virtual StatusCode runToCompletion(bool onlineStateTransitions);
-    virtual StatusCode runEventCount(int numberOfEventsToProcess);
 
     // The following functions are used by the code implementing our
     // boost statemachine
@@ -286,15 +262,17 @@ namespace edm {
     virtual void beginRun(statemachine::Run const& run);
     virtual void endRun(statemachine::Run const& run, bool cleaningUpAfterException);
 
-    virtual void beginLumi(ProcessHistoryID const& phid, int run, int lumi);
-    virtual void endLumi(ProcessHistoryID const& phid, int run, int lumi, bool cleaningUpAfterException);
+    virtual void beginLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi);
+    virtual void endLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi, bool cleaningUpAfterException);
 
-    virtual statemachine::Run readAndCacheRun(bool merge);
-    virtual int readAndCacheLumi(bool merge);
+    virtual statemachine::Run readAndCacheRun();
+    virtual statemachine::Run readAndMergeRun();
+    virtual int readAndCacheLumi();
+    virtual int readAndMergeLumi();
     virtual void writeRun(statemachine::Run const& run);
     virtual void deleteRunFromCache(statemachine::Run const& run);
-    virtual void writeLumi(ProcessHistoryID const& phid, int run, int lumi);
-    virtual void deleteLumiFromCache(ProcessHistoryID const& phid, int run, int lumi);
+    virtual void writeLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi);
+    virtual void deleteLumiFromCache(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi);
 
     virtual void readAndProcessEvent();
     virtual bool shouldWeStop() const;
@@ -317,8 +295,8 @@ namespace edm {
               ServiceToken const& token,
               serviceregistry::ServiceLegacy);
 
-    StatusCode runCommon(bool onlineStateTransitions, int numberOfEventsToProcess);
-    void terminateMachine();
+    void terminateMachine(std::auto_ptr<statemachine::Machine>&);
+    std::auto_ptr<statemachine::Machine> createStateMachine();
 
     StatusCode doneAsync(event_processor::Msg m);
 
@@ -336,6 +314,7 @@ namespace edm {
       return subProcess_.get() != 0;
     }
 
+    void possiblyContinueAfterForkChildFailure();
     //------------------------------------------------------------------
     //
     // Data members below.
@@ -346,16 +325,17 @@ namespace edm {
     ActivityRegistry::PreProcessEvent             preProcessEventSignal_;
     ActivityRegistry::PostProcessEvent            postProcessEventSignal_;
     boost::shared_ptr<ActivityRegistry>           actReg_;
-    boost::shared_ptr<SignallingProductRegistry>  preg_;
+    boost::shared_ptr<ProductRegistry const>      preg_;
+    boost::shared_ptr<BranchIDListHelper>         branchIDListHelper_;
     ServiceToken                                  serviceToken_;
-    boost::shared_ptr<InputSource>                input_;
-    boost::scoped_ptr<eventsetup::EventSetupsController> espController_;
+    std::unique_ptr<InputSource>                  input_;
+    std::unique_ptr<eventsetup::EventSetupsController> espController_;
     boost::shared_ptr<eventsetup::EventSetupProvider> esp_;
-    boost::shared_ptr<ActionTable const>          act_table_;
-    boost::shared_ptr<ProcessConfiguration>       processConfiguration_;
+    std::unique_ptr<ActionTable const>          act_table_;
+    boost::shared_ptr<ProcessConfiguration const>       processConfiguration_;
     std::auto_ptr<Schedule>                       schedule_;
     std::auto_ptr<SubProcess>                     subProcess_;
-    boost::scoped_ptr<HistoryAppender>            historyAppender_;
+    std::unique_ptr<HistoryAppender>            historyAppender_;
 
     volatile event_processor::State               state_;
     boost::shared_ptr<boost::thread>              event_loop_;
@@ -370,10 +350,9 @@ namespace edm {
     volatile bool                                 id_set_;
     volatile pthread_t                            event_loop_id_;
     int                                           my_sig_num_;
-    boost::shared_ptr<FileBlock>                  fb_;
+    std::unique_ptr<FileBlock>                    fb_;
     boost::shared_ptr<EDLooperBase>               looper_;
 
-    std::auto_ptr<statemachine::Machine>          machine_;
     PrincipalCache                                principalCache_;
     bool                                          shouldWeStop_;
     bool                                          stateMachineWasInErrorState_;
@@ -390,6 +369,8 @@ namespace edm {
     int                                           numberOfForkedChildren_;
     unsigned int                                  numberOfSequentialEventsPerChild_;
     bool                                          setCpuAffinity_;
+    bool                                          continueAfterChildFailure_;
+    
     typedef std::set<std::pair<std::string, std::string> > ExcludedData;
     typedef std::map<std::string, ExcludedData> ExcludedDataMap;
     ExcludedDataMap                               eventSetupDataToExcludeFromPrefetching_;
@@ -401,7 +382,7 @@ namespace edm {
   inline
   EventProcessor::StatusCode
   EventProcessor::run() {
-    return run(-1, false);
+    return runToCompletion(false);
   }
 }
 #endif

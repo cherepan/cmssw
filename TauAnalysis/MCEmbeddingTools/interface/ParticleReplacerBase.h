@@ -35,13 +35,14 @@ public:
   virtual ~ParticleReplacerBase();
 
   virtual void beginJob();
-  virtual void beginRun(edm::Run& iRun, const edm::EventSetup& iSetup);
+  virtual void beginRun(const edm::Run& iRun, const edm::EventSetup& iSetup);
   virtual void endRun();
   virtual void endJob();
 
   virtual std::auto_ptr<HepMC::GenEvent> produce(const reco::MuonCollection&, const reco::Vertex *pvtx=0, const HepMC::GenEvent *genEvt=0) = 0;
 
-  double eventWeight;
+  unsigned int tried;
+  unsigned int passed;
 
 protected:
 

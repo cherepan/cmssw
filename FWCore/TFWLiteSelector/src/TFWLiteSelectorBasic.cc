@@ -17,8 +17,8 @@
 #include "DataFormats/Common/interface/RefCoreStreamer.h"
 #include "DataFormats/Common/interface/WrapperOwningHolder.h"
 #include "DataFormats/Provenance/interface/BranchDescription.h"
+#include "DataFormats/Provenance/interface/BranchIDList.h"
 #include "DataFormats/Provenance/interface/BranchIDListHelper.h"
-#include "DataFormats/Provenance/interface/BranchIDListRegistry.h"
 #include "DataFormats/Provenance/interface/BranchListIndex.h"
 #include "DataFormats/Provenance/interface/BranchMapper.h"
 #include "DataFormats/Provenance/interface/BranchType.h"
@@ -43,6 +43,8 @@
 #include "FWCore/ParameterSet/interface/Registry.h"
 #include "FWCore/Utilities/interface/EDMException.h"
 #include "FWCore/Utilities/interface/FriendlyName.h"
+#include "FWCore/Utilities/interface/ObjectWithDict.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 #include "FWCore/Utilities/interface/WrappedClassName.h"
 
 // system include files
@@ -50,7 +52,6 @@
 #include "TChain.h"
 #include "TFile.h"
 #include "TTree.h"
-#include "Reflex/Type.h"
 
 namespace edm {
   namespace root {
@@ -88,21 +89,19 @@ namespace edm {
       }
       //find the class type
       std::string const fullName = wrappedClassName(bDesc.className());
-      Reflex::Type classType = Reflex::Type::ByName(fullName);
-      if(classType == Reflex::Type()) {
+      TypeWithDict classType = TypeWithDict::byName(fullName);
+      if(!bool(classType)) {
         throw cms::Exception("MissingDictionary")
         << "could not find dictionary for type '" << fullName << "'"
         << "\n Please make sure all the necessary libraries are available.";
       }
 
-      //use reflex to create an instance of it
-      Reflex::Object wrapperObj = classType.Construct();
-      if(0 == wrapperObj.Address()) {
+      //create an instance of it
+      void const* address  = classType.construct().address();
+      if(0 == address) {
         throw cms::Exception("FailedToCreate") << "could not create an instance of '" << fullName << "'";
       }
-      void* address  = wrapperObj.Address();
       branch->SetAddress(&address);
-
 
       branch->GetEntry(entry_);
       return WrapperOwningHolder(address, bDesc.getInterface());
@@ -112,6 +111,7 @@ namespace edm {
       TFWLiteSelectorMembers() :
       tree_(0),
       reg_(new ProductRegistry()),
+      branchIDListHelper_(new BranchIDListHelper()),
       processNames_(),
       reader_(new FWLiteDelayedReader),
       prov_(),
@@ -125,6 +125,7 @@ namespace edm {
       }
       TTree* tree_;
       boost::shared_ptr<ProductRegistry> reg_;
+      boost::shared_ptr<BranchIDListHelper> branchIDListHelper_;
       ProcessHistory processNames_;
       boost::shared_ptr<FWLiteDelayedReader> reader_;
       std::vector<EventEntryDescription> prov_;
@@ -276,17 +277,19 @@ TFWLiteSelectorBasic::Process(Long64_t iEntry) {
       }
       branchListIndexBranch->SetAddress(&pBranchListIndexes);
       branchListIndexBranch->GetEntry(iEntry);
-      edm::BranchIDListHelper::fixBranchListIndexes(*branchListIndexes_);
+      m_->branchIDListHelper_->fixBranchListIndexes(*branchListIndexes_);
 
       try {
          m_->reader_->setEntry(iEntry);
          boost::shared_ptr<edm::RunAuxiliary> runAux(new edm::RunAuxiliary(aux.run(), aux.time(), aux.time()));
-         boost::shared_ptr<edm::RunPrincipal> rp(new edm::RunPrincipal(runAux, m_->reg_, m_->pc_));
+         boost::shared_ptr<edm::RunPrincipal> rp(new edm::RunPrincipal(runAux, m_->reg_, m_->pc_, nullptr));
          boost::shared_ptr<edm::LuminosityBlockAuxiliary> lumiAux(
                 new edm::LuminosityBlockAuxiliary(rp->run(), 1, aux.time(), aux.time()));
          boost::shared_ptr<edm::LuminosityBlockPrincipal>lbp(
-            new edm::LuminosityBlockPrincipal(lumiAux, m_->reg_, m_->pc_, rp));
-         m_->ep_->fillEventPrincipal(*eaux, lbp, eventSelectionIDs_, branchListIndexes_, m_->mapper_, m_->reader_.get());
+                new edm::LuminosityBlockPrincipal(lumiAux, m_->reg_, m_->pc_, nullptr));
+         m_->ep_->fillEventPrincipal(*eaux, eventSelectionIDs_, branchListIndexes_, m_->mapper_, m_->reader_.get());
+         lbp->setRunPrincipal(rp);
+         m_->ep_->setLuminosityBlockPrincipal(lbp);
          m_->processNames_ = m_->ep_->processHistory();
 
          edm::Event event(*m_->ep_, m_->md_);
@@ -371,8 +374,8 @@ TFWLiteSelectorBasic::setupNewFile(TFile& iFile) {
      metaDataTree->SetBranchAddress(edm::poolNames::processConfigurationBranchName().c_str(), &procConfigVectorPtr);
   }
 
-  std::auto_ptr<edm::BranchIDListRegistry::collection_type> branchIDListsAPtr(new edm::BranchIDListRegistry::collection_type);
-  edm::BranchIDListRegistry::collection_type *branchIDListsPtr = branchIDListsAPtr.get();
+  boost::shared_ptr<edm::BranchIDListHelper> branchIDListsHelper(new edm::BranchIDListHelper);
+  edm::BranchIDLists const* branchIDListsPtr = &branchIDListsHelper->branchIDLists();
   if(metaDataTree->FindBranch(edm::poolNames::branchIDListBranchName().c_str()) != 0) {
     metaDataTree->SetBranchAddress(edm::poolNames::branchIDListBranchName().c_str(), &branchIDListsPtr);
   }
@@ -448,8 +451,8 @@ TFWLiteSelectorBasic::setupNewFile(TFile& iFile) {
       //m_->metaTree_->SetBranchAddress(prod.branchName().c_str(), tmp);
     }
   }
-  edm::BranchIDListHelper::updateFromInput(*branchIDListsAPtr, "");
-  m_->ep_.reset(new edm::EventPrincipal(m_->reg_, m_->pc_));
+  m_->branchIDListHelper_->updateFromInput(*branchIDListsPtr);
+  m_->ep_.reset(new edm::EventPrincipal(m_->reg_, m_->branchIDListHelper_, m_->pc_, nullptr));
   everythingOK_ = true;
 }
 

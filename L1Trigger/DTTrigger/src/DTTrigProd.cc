@@ -4,8 +4,8 @@
  *     Main EDProducer for the DTTPG
  *
  *
- *   $Date: 2011/03/28 13:47:50 $
- *   $Revision: 1.18 $
+ *   $Date: 2013/02/26 16:52:48 $
+ *   $Revision: 1.20 $
  *
  *   \author C. Battilana
  *
@@ -64,7 +64,7 @@ DTTrigProd::~DTTrigProd(){
 
 }
 
-void DTTrigProd::beginRun(edm::Run& iRun, const edm::EventSetup& iEventSetup) {
+void DTTrigProd::beginRun(edm::Run const& iRun, const edm::EventSetup& iEventSetup) {
 
   if(my_debug)
     cout << "DTTrigProd::beginRun  " << iRun.id().run() << endl;

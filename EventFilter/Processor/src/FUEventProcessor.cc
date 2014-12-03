@@ -841,7 +841,7 @@ void FUEventProcessor::actionPerformed(xdata::Event& e)
 }
 
 //______________________________________________________________________________
-void FUEventProcessor::getSlavePids(xgi::Input  *in, xgi::Output *out)
+void FUEventProcessor::getSlavePids(xgi::Input  *in, xgi::Output *out) throw (xgi::exception::Exception)
 {
   for (unsigned int i=0;i<subs_.size();i++)
   {
@@ -850,7 +850,7 @@ void FUEventProcessor::getSlavePids(xgi::Input  *in, xgi::Output *out)
   }
 }
 //______________________________________________________________________________
-void FUEventProcessor::subWeb(xgi::Input  *in, xgi::Output *out)
+void FUEventProcessor::subWeb(xgi::Input  *in, xgi::Output *out) throw (xgi::exception::Exception)
 {
   using namespace cgicc;
   pid_t pid = 0;
@@ -903,7 +903,11 @@ void FUEventProcessor::subWeb(xgi::Input  *in, xgi::Output *out)
 	if(nbytes < MAX_PIPE_BUFFER_SIZE) done = true; // this will break the while loop
 	char *buf= new char[nbytes];
 	ssize_t retval = read(anonymousPipe_[PIPE_READ],buf,nbytes);
-	if(retval!=nbytes) std::cout 
+	if(retval<0){
+	  std::cout << "Failed to read from pipe." << std::endl;
+	  continue;
+	}
+	if(static_cast<unsigned int>(retval) != nbytes) std::cout 
 	  << "CAREFUL HERE, read less bytes than expected from pipe in subWeb" << std::endl;
 	pieces.push_back(buf);
       }
@@ -2477,7 +2481,7 @@ void FUEventProcessor::stopSlavesAndAcknowledge()
 
 }
 
-void FUEventProcessor::microState(xgi::Input *in,xgi::Output *out)
+void FUEventProcessor::microState(xgi::Input *in,xgi::Output *out) throw (xgi::exception::Exception)
 {
   std::string urn = getApplicationDescriptor()->getURN();
   try{
@@ -2588,7 +2592,7 @@ void FUEventProcessor::microState(xgi::Input *in,xgi::Output *out)
 }
 
 
-void FUEventProcessor::updater(xgi::Input *in,xgi::Output *out)
+void FUEventProcessor::updater(xgi::Input *in,xgi::Output *out) throw (xgi::exception::Exception)
 {
   using namespace utils;
 
@@ -2661,7 +2665,7 @@ void FUEventProcessor::updater(xgi::Input *in,xgi::Output *out)
   cDiv(out);
 }
 
-void FUEventProcessor::procStat(xgi::Input *in, xgi::Output *out)
+void FUEventProcessor::procStat(xgi::Input *in, xgi::Output *out) throw (xgi::exception::Exception)
 {
   evf::utils::procStat(out);
 }
@@ -2676,7 +2680,7 @@ void FUEventProcessor::makeStaticInfo()
   using namespace utils;
   std::ostringstream ost;
   mDiv(&ost,"ve");
-  ost<< "$Revision: 1.161 $ (" << edm::getReleaseVersion() <<")";
+  ost<< "$Revision: 1.164 $ (" << edm::getReleaseVersion() <<")";
   cDiv(&ost);
   mDiv(&ost,"ou",outPut_.toString());
   mDiv(&ost,"sh",hasShMem_.toString());

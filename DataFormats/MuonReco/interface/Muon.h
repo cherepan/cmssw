@@ -10,7 +10,7 @@
  *
  * \author Luca Lista, Claudio Campagnari, Dmytro Kovalskyi, Jake Ribnik, Riccardo Bellan, Michalis Bachtis
  *
- * \version $Id: Muon.h,v 1.71 2012/03/28 09:52:15 dmytro Exp $
+ * \version $Id: Muon.h,v 1.77 2013/02/07 00:22:49 bachtis Exp $
  *
  */
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
@@ -59,15 +59,13 @@ namespace reco {
     virtual TrackRef pickyTrack() const { return muonTrackFromMap(Picky);}
     virtual TrackRef dytTrack()   const { return muonTrackFromMap(DYT);}
     
-    virtual const Track * bestTrack() const         {return muonTrack(muonBestTrackType()).get();}
-    virtual TrackBaseRef  bestTrackRef() const      {return reco::TrackBaseRef(muonTrack(muonBestTrackType()));}
-    virtual TrackRef      muonBestTrack() const     {return muonTrack(muonBestTrackType());}
-    virtual MuonTrackType muonBestTrackType() const {
-      if (bestTrackType_!=None) return bestTrackType_;
-      if (!innerTrack().isNull()) return InnerTrack;
-      if (!standAloneMuon().isNull()) return OuterTrack;
-      return None;
-    }
+    virtual const Track * bestTrack() const         {return muonTrack(bestTrackType_).get();}
+    virtual TrackBaseRef  bestTrackRef() const      {return reco::TrackBaseRef(muonTrack(bestTrackType_));}
+    virtual TrackRef      muonBestTrack() const     {return muonTrack(bestTrackType_);}
+    virtual MuonTrackType muonBestTrackType() const {return bestTrackType_;}
+    virtual TrackRef      tunePMuonBestTrack() const     {return muonTrack(bestTunePTrackType_);}
+    virtual MuonTrackType tunePMuonBestTrackType() const {return bestTunePTrackType_;}
+
 
 
     bool isAValidMuonTrack(const MuonTrackType& type) const;
@@ -92,6 +90,8 @@ namespace reco {
     virtual void setCombined( const TrackRef & t );
     // set reference to the Best Track
     virtual void setBestTrack(MuonTrackType muonType) {bestTrackType_ = muonType;}
+    // set reference to the Best Track by PF
+    virtual void setTunePBestTrack(MuonTrackType muonType) {bestTunePTrackType_ = muonType;}
 
     void setMuonTrack(const MuonTrackType&, const TrackRef&);
 
@@ -160,17 +160,23 @@ namespace reco {
     const MuonIsolation& isolationR05() const { return isolationR05_; }
 
     const MuonPFIsolation& pfIsolationR03() const { return pfIsolationR03_; }
+    const MuonPFIsolation& pfMeanDRIsoProfileR03() const { return pfIsoMeanDRR03_; }
+    const MuonPFIsolation& pfSumDRIsoProfileR03() const { return pfIsoSumDRR03_; }
     const MuonPFIsolation& pfIsolationR04() const { return pfIsolationR04_; }
+    const MuonPFIsolation& pfMeanDRIsoProfileR04() const { return pfIsoMeanDRR04_; }
+    const MuonPFIsolation& pfSumDRIsoProfileR04() const { return pfIsoSumDRR04_; }
+
 
     void setIsolation( const MuonIsolation& isoR03, const MuonIsolation& isoR05 );
     bool isIsolationValid() const { return isolationValid_; }
+    void setPFIsolation(const std::string& label,const reco::MuonPFIsolation& deposit);
 
-    void setPFIsolation( const MuonPFIsolation& isoR03, const MuonPFIsolation& isoR04 );
+
     bool isPFIsolationValid() const { return pfIsolationValid_; }
 
 
     /// define arbitration schemes
-    enum ArbitrationType { NoArbitration, SegmentArbitration, SegmentAndTrackArbitration, SegmentAndTrackArbitrationCleaned };
+    enum ArbitrationType { NoArbitration, SegmentArbitration, SegmentAndTrackArbitration, SegmentAndTrackArbitrationCleaned, RPCHitAndTrackArbitration };
     
     ///
     /// ====================== USEFUL METHODs ===========================
@@ -191,6 +197,8 @@ namespace reco {
     /// get bit map of stations with tracks within
     /// given distance (in cm) of chamber edges 
     /// bit assignments are same as above
+    int numberOfMatchedRPCLayers( ArbitrationType type = RPCHitAndTrackArbitration ) const;
+    unsigned int RPClayerMask( ArbitrationType type = RPCHitAndTrackArbitration ) const;
     unsigned int stationGapMaskDistance( float distanceCut = 10. ) const;
     /// same as above for given number of sigmas
     unsigned int stationGapMaskPull( float sigmaCut = 3. ) const;
@@ -228,6 +236,8 @@ namespace reco {
     MuonTrackRefMap refittedTrackMap_;
     /// reference to the Track chosen to assign the momentum value to the muon 
     MuonTrackType bestTrackType_;
+    /// reference to the Track chosen to assign the momentum value to the muon by PF 
+    MuonTrackType bestTunePTrackType_;
 
     /// energy deposition 
     MuonEnergy calEnergy_;
@@ -250,7 +260,11 @@ namespace reco {
 
     /// PF Isolation information for two cones with dR=0.3 and dR=0.4
     MuonPFIsolation pfIsolationR03_;
+    MuonPFIsolation pfIsoMeanDRR03_;
+    MuonPFIsolation pfIsoSumDRR03_;
     MuonPFIsolation pfIsolationR04_;
+    MuonPFIsolation pfIsoMeanDRR04_;
+    MuonPFIsolation pfIsoSumDRR04_;
 
     /// muon type mask
     unsigned int type_;

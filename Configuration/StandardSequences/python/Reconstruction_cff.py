@@ -30,7 +30,6 @@ from RecoParticleFlow.Configuration.RecoParticleFlow_cff import *
 # new tau configuration
 #
 from RecoTauTag.Configuration.RecoPFTauTag_cff import *
-from RecoTauTag.Configuration.RecoTauTag_cff import *
 # Also BeamSpot
 from RecoVertex.BeamSpotProducer.BeamSpot_cff import *
 
@@ -47,6 +46,7 @@ from RecoLocalCalo.Castor.Castor_cff import *
 from RecoLocalCalo.Configuration.hcalGlobalReco_cff import *
 
 globalreco = cms.Sequence(offlineBeamSpot*
+                          standalonemuontracking*
                           recopixelvertexing*
                           trackingGlobalReco*
                           hcalGlobalRecoSequence*
@@ -56,12 +56,11 @@ globalreco = cms.Sequence(offlineBeamSpot*
                           vertexreco*
                           egammaGlobalReco*
                           jetGlobalReco*
-                          muonrecoComplete*
+                          muonGlobalReco*
                           pfTrackingGlobalReco*
                           muoncosmicreco*
                           CastorFullReco)
 
-globalreco_plusRS = cms.Sequence(globalreco*rstracks)
 globalreco_plusPL= cms.Sequence(globalreco*ctfTracksPixelLess)
 
 
@@ -75,7 +74,6 @@ highlevelreco = cms.Sequence(egammaHighLevelRecoPrePF*
                              muonshighlevelreco *
                              particleFlowLinks*
                              jetHighLevelReco*
-                             tautagging*
                              metrecoPlusHCALNoise*
                              btagging*
                              recoPFMET*
@@ -87,7 +85,7 @@ highlevelreco = cms.Sequence(egammaHighLevelRecoPrePF*
 from FWCore.Modules.logErrorHarvester_cfi import *
 
 # "Export" Section
-reconstruction         = cms.Sequence(localreco        *globalreco       *highlevelreco*logErrorHarvester)
+reconstruction         = cms.Sequence(localreco*globalreco*highlevelreco*logErrorHarvester)
 
 #need a fully expanded sequence copy
 modulesToRemove = list() # copy does not work well
@@ -151,12 +149,11 @@ reconstruction_noTracking = reconstruction.copyAndExclude(noTrackingAndDependent
 
 #sequences with additional stuff
 reconstruction_withPixellessTk  = cms.Sequence(localreco        *globalreco_plusPL*highlevelreco*logErrorHarvester)
-reconstruction_withRS  = cms.Sequence(localreco        *globalreco_plusRS*highlevelreco*logErrorHarvester)
 reconstruction_HcalNZS = cms.Sequence(localreco_HcalNZS*globalreco       *highlevelreco*logErrorHarvester)
 
 #sequences without some stuffs
 #
-reconstruction_woCosmicMuons = cms.Sequence(localreco*globalreco*highlevelreco       *logErrorHarvester)
+reconstruction_woCosmicMuons = cms.Sequence(localreco*globalreco*highlevelreco*logErrorHarvester)
 
 
 # define a standard candle. please note I am picking up individual

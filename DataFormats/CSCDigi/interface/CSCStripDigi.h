@@ -5,8 +5,8 @@
  *
  * Digi for CSC Cathode Strips.
  *
- *  $Date: 2009/05/09 20:23:33 $
- *  $Revision: 1.21 $
+ *  $Date: 2013/04/22 22:39:23 $
+ *  $Revision: 1.23 $
  *
  * \author M. Schmitt, Northwestern
  *
@@ -53,7 +53,7 @@ public:
   void setStrip(int istrip) { strip = istrip; }
 
   // Set with a vector of ADC readings
-  void setADCCounts (std::vector<int> ADCCounts);
+  void setADCCounts (const std::vector<int>& ADCCounts);
 
   // Print content of digi
   void print() const;

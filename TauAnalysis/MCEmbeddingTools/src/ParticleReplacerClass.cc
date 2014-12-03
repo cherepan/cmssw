@@ -23,13 +23,12 @@ extern "C" {
 ParticleReplacerClass::ParticleReplacerClass(const edm::ParameterSet& pset, bool verbose):
   ParticleReplacerBase(pset),
   generatorMode_(pset.getParameter<std::string>("generatorMode")),
-  tauola_(pset.getParameter< edm::ParameterSet>("TauolaOptions")),
-  //tauola_(gen::TauolaInterface::getInstance()),
+  tauola_(gen::TauolaInterface::getInstance()),
   printEvent_(verbose),
   outTree(0),
   maxNumberOfAttempts_(pset.getUntrackedParameter<int>("maxNumberOfAttempts", 1000))
 {
-//	tauola_->setPSet(pset.getParameter< edm::ParameterSet>("TauolaOptions"));
+	tauola_->setPSet(pset.getParameter< edm::ParameterSet>("TauolaOptions"));
 // 	using namespace reco;
 	using namespace edm;
 	using namespace std;
@@ -151,7 +150,6 @@ ParticleReplacerClass::ParticleReplacerClass(const edm::ParameterSet& pset, bool
         decayRandomEngine = &rng->getEngine();
 
 	edm::LogInfo("Replacer") << "generatorMode = "<< generatorMode_<< "\n";
-	edm::LogInfo("Replacer") << "replacementMode = "<< replacementMode_<< "\n";
 
 	return;
 }
@@ -392,7 +390,7 @@ std::auto_ptr<HepMC::GenEvent> ParticleReplacerClass::produce(const reco::MuonCo
 		if (generatorMode_ == "Tauola")	// TAUOLA
 		{
 			conv.write_event(evt);
-			tempevt=tauola_.decay(evt);
+			tempevt=tauola_->decay(evt);
 		}
 
 		if (testEvent(tempevt))
@@ -407,13 +405,15 @@ std::auto_ptr<HepMC::GenEvent> ParticleReplacerClass::produce(const reco::MuonCo
                   delete tempevt;
                 }
 	}
-	eventWeight = (double)cntVisPt_pass / (double)cntVisPt_all;
+
+	tried = cntVisPt_all;
+	passed = cntVisPt_pass;
+
 	std::cout << /*minVisibleTransverseMomentum_ <<*/ " " << cntVisPt_pass << "\t" << cntVisPt_all << "\n";
 	if (!retevt)
 	{
 		LogError("Replacer") << "failed to create an event which satisfies the minimum visible transverse momentum cuts ";
 		attempts=-1;
-		eventWeight=0;
                 if(outTree) outTree->Fill();
 		return std::auto_ptr<HepMC::GenEvent>(0);
 	}
@@ -421,7 +421,7 @@ std::auto_ptr<HepMC::GenEvent> ParticleReplacerClass::produce(const reco::MuonCo
 	if(outTree) outTree->Fill();	
 
 	// recover the status codes
-	if (replacementMode_==0)
+	if (genEvt)
 	{
 		for (GenEvent::particle_iterator it=retevt->particles_begin();it!=retevt->particles_end();it++)
 		{
@@ -445,16 +445,16 @@ std::auto_ptr<HepMC::GenEvent> ParticleReplacerClass::produce(const reco::MuonCo
 }
 
 // ------------ method called once each job just before starting event loop  ------------
-void ParticleReplacerClass::beginRun(edm::Run& iRun,const edm::EventSetup& iSetup)
+void ParticleReplacerClass::beginRun(const edm::Run& iRun,const edm::EventSetup& iSetup)
 {
-	tauola_.init(iSetup);
+	tauola_->init(iSetup);
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
 ParticleReplacerClass::endJob()
 {
-	tauola_.statistics();
+	tauola_->statistics();
 }
 
 bool ParticleReplacerClass::testEvent(HepMC::GenEvent * evt)
@@ -608,14 +608,20 @@ void ParticleReplacerClass::repairBarcodes(HepMC::GenEvent * evt)
 
 	// repair the barcodes
 	int max_barc=0;
-	for (GenEvent::vertex_iterator it=evt->vertices_begin();it!=evt->vertices_end();it++)
+	for (GenEvent::vertex_iterator it=evt->vertices_begin(), next;it!=evt->vertices_end();it=next)
+	{
+		next=it;++next;
 		while (!(*it)->suggest_barcode(-1*(++max_barc)))
 			;
+	}
 
 	max_barc=0;
-	for (GenEvent::particle_iterator it=evt->particles_begin();it!=evt->particles_end();it++)
+	for (GenEvent::particle_iterator it=evt->particles_begin(), next;it!=evt->particles_end();it=next)
+	{
+		next=it;++next;
 		while (!(*it)->suggest_barcode(++max_barc))
 			;
+	}
 }
 
 ///	transform a muon pair into a tau pair

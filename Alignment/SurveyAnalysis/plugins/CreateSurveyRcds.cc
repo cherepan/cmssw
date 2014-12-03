@@ -26,6 +26,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 
 CreateSurveyRcds::CreateSurveyRcds(const edm::ParameterSet& cfg)
+  : theParameterSet( cfg )
 {
 	m_inputGeom = cfg.getUntrackedParameter< std::string > ("inputGeom");
 	m_inputSimpleMis = cfg.getUntrackedParameter< double > ("simpleMis");
@@ -34,10 +35,15 @@ CreateSurveyRcds::CreateSurveyRcds(const edm::ParameterSet& cfg)
 }
 
 void CreateSurveyRcds::analyze(const edm::Event& event, const edm::EventSetup& setup){
+
+	//Retrieve tracker topology from geometry
+	edm::ESHandle<TrackerTopology> tTopoHandle;
+	setup.get<IdealGeometryRecord>().get(tTopoHandle);
+	const TrackerTopology* const tTopo = tTopoHandle.product();
 	
 	edm::ESHandle<GeometricDet>  geom;
 	setup.get<IdealGeometryRecord>().get(geom);	 
-	TrackerGeometry* tracker = TrackerGeomBuilderFromGeometricDet().build(&*geom);
+	TrackerGeometry* tracker = TrackerGeomBuilderFromGeometricDet().build(&*geom, theParameterSet);
 	
 	//take geometry from DB or randomly generate geometry
 	if (m_inputGeom == "sqlite"){
@@ -55,7 +61,7 @@ void CreateSurveyRcds::analyze(const edm::Event& event, const edm::EventSetup& s
 	}
 	
 	
-	addComponent(new AlignableTracker( tracker ) );
+	addComponent(new AlignableTracker( tracker, tTopo ) );
 	
 	Alignable* ali = detector();
 	if(m_inputGeom == "generated"){

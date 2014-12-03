@@ -133,7 +133,7 @@ GamIsoDetIdCollectionProducer::produce (edm::Event& iEvent,
 		if (fabs(caloGeom->getPosition(recIt->detid()).eta() < 1.479)) 
 		  isBarrel = true;
 
-		int severityFlag = sevLevel->severityLevel(((EcalRecHit*)(&*recIt))->detid(), *recHitsH);
+		int severityFlag = sevLevel->severityLevel(recIt->detid(), *recHitsH);
 		std::vector<int>::const_iterator sit;
 		if (isBarrel) {
 		  sit = std::find(severitiesexclEB_.begin(), severitiesexclEB_.end(), severityFlag);
@@ -147,13 +147,25 @@ GamIsoDetIdCollectionProducer::produce (edm::Event& iEvent,
 
 		std::vector<int>::const_iterator vit;
 		if (isBarrel) {
-		  vit = std::find(flagsexclEB_.begin(), flagsexclEB_.end(), ((EcalRecHit*)(&*recIt))->recoFlag());
-		  if (vit != flagsexclEB_.end())
-		    continue;
+		  // new rechit flag checks
+		  //vit = std::find(flagsexclEB_.begin(), flagsexclEB_.end(), ((EcalRecHit*)(&*recIt))->recoFlag());
+		  //if (vit != flagsexclEB_.end())
+		  //  continue;
+		  if (!((EcalRecHit*)(&*recIt))->checkFlag(EcalRecHit::kGood)) {
+		    if (((EcalRecHit*)(&*recIt))->checkFlags(flagsexclEB_)) {                
+		      continue;
+		    }
+		  }
 		} else {
-		  vit = std::find(flagsexclEE_.begin(), flagsexclEE_.end(), ((EcalRecHit*)(&*recIt))->recoFlag());
-		  if (vit != flagsexclEE_.end())
-		    continue;
+		  // new rechit flag checks
+		  //vit = std::find(flagsexclEE_.begin(), flagsexclEE_.end(), ((EcalRecHit*)(&*recIt))->recoFlag());
+		  //if (vit != flagsexclEE_.end())
+		  //  continue;
+		  if (!((EcalRecHit*)(&*recIt))->checkFlag(EcalRecHit::kGood)) {
+		    if (((EcalRecHit*)(&*recIt))->checkFlags(flagsexclEE_)) {                
+		      continue;
+		    }
+		  }
 		}
 
                 if(std::find(detIdCollection->begin(),detIdCollection->end(),recIt->detid()) == detIdCollection->end()) 

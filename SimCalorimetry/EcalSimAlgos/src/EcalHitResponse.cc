@@ -15,6 +15,7 @@
 #include "CLHEP/Random/RandPoissonQ.h"
 #include "CLHEP/Random/RandGaussQ.h"
 #include "FWCore/Utilities/interface/Exception.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 
 #include "CLHEP/Units/GlobalPhysicalConstants.h"
 #include "CLHEP/Units/GlobalSystemOfUnits.h" 
@@ -37,7 +38,7 @@ EcalHitResponse::EcalHitResponse( const CaloVSimParameterMap* parameterMap ,
    m_maxBunch        (  10          ) ,
    m_phaseShift      ( 1            ) ,
    m_iTime           ( 0            ) ,
-   m_useLCcorrection ( 0            )
+   m_useLCcorrection ( 0            )  
 {
    edm::Service<edm::RandomNumberGenerator> rng ;
    if ( !rng.isAvailable() ) 
@@ -140,7 +141,7 @@ EcalHitResponse::setEventTime(const edm::TimeValue_t& iTime)
   m_iTime = iTime;
 }
 
-void
+void 
 EcalHitResponse::setLaserConstants(const EcalLaserDbService* laser, bool& useLCcorrection)
 {
   m_lasercals = laser;
@@ -161,6 +162,31 @@ EcalHitResponse::blankOutUsedSamples()  // blank out previously used elements
 }
 
 void 
+EcalHitResponse::add( const PCaloHit& hit ) 
+{
+  if (!edm::isNotFinite( hit.time() ) && ( 0 == m_hitFilter || m_hitFilter->accepts( hit ) ) ) {
+     putAnalogSignal( hit ) ;
+  }
+}
+
+bool
+EcalHitResponse::withinBunchRange(int bunchCrossing) const
+{
+   return(m_minBunch <= bunchCrossing && m_maxBunch >= bunchCrossing);
+}
+
+void
+EcalHitResponse::initializeHits()
+{
+   blankOutUsedSamples() ;
+}
+
+void
+EcalHitResponse::finalizeHits()
+{
+}
+
+void 
 EcalHitResponse::run( MixCollection<PCaloHit>& hits ) 
 {
    blankOutUsedSamples() ;
@@ -170,28 +196,29 @@ EcalHitResponse::run( MixCollection<PCaloHit>& hits )
    {
       const PCaloHit& hit ( *hitItr ) ;
       const int bunch ( hitItr.bunch() ) ;
-      if( m_minBunch <= bunch  &&
-	  m_maxBunch >= bunch  &&
-	  !isnan( hit.time() ) &&
+      if( withinBunchRange(bunch)  &&
+	  !edm::isNotFinite( hit.time() ) &&
 	  ( 0 == m_hitFilter ||
 	    m_hitFilter->accepts( hit ) ) ) putAnalogSignal( hit ) ;
    }
 }
 
 void
-EcalHitResponse::putAnalogSignal( const PCaloHit& inputHit )
+EcalHitResponse::putAnalogSignal( const PCaloHit& hit )
 {
-   PCaloHit hit ( inputHit ) ;
-
-   if( 0 != m_hitCorrection ) m_hitCorrection->correct( hit ) ;
-
    const DetId detId ( hit.id() ) ;
 
    const CaloSimParameters* parameters ( params( detId ) ) ;
 
-   const double signal ( analogSignalAmplitude( hit ) ) ;
+   const double signal ( analogSignalAmplitude( detId, hit.energy() ) ) ;
 
-   const double jitter ( hit.time() - timeOfFlight( detId ) ) ;
+   double time = hit.time();
+
+   if(m_hitCorrection) {
+     time += m_hitCorrection->delay( hit ) ;
+   }
+
+   const double jitter ( time - timeOfFlight( detId ) ) ;
 
    const double tzero = ( shape()->timeToRise()
 			  + parameters->timePhase() 
@@ -218,7 +245,6 @@ EcalHitResponse::findLaserConstant(const DetId& detId) const
   return (m_lasercals->getLaserCorrection(detId, evtTimeStamp));
 }
 
-
 EcalHitResponse::EcalSamples* 
 EcalHitResponse::findSignal( const DetId& detId )
 {
@@ -229,11 +255,9 @@ EcalHitResponse::findSignal( const DetId& detId )
 }
 
 double 
-EcalHitResponse::analogSignalAmplitude( const PCaloHit& hit ) const
+EcalHitResponse::analogSignalAmplitude( const DetId& detId, float energy ) const
 {
-   const DetId& detId ( hit.id() ) ;
-
-   const CaloSimParameters& parameters ( *params( detId ) ) ;
+  const CaloSimParameters& parameters ( *params( detId ) ) ;
 
    // OK, the "energy" in the hit could be a real energy, deposited energy,
    // or pe count.  This factor converts to photoelectrons
@@ -243,7 +267,7 @@ EcalHitResponse::analogSignalAmplitude( const PCaloHit& hit ) const
      lasercalib = findLaserConstant(detId);
    }
 
-   double npe ( hit.energy()/lasercalib*parameters.simHitToPhotoelectrons( detId ) ) ;
+   double npe ( energy/lasercalib*parameters.simHitToPhotoelectrons( detId ) ) ;
 
    // do we need to doPoisson statistics for the photoelectrons?
    if( parameters.doPhotostatistics() ) npe = ranPois()->fire( npe ) ;

@@ -18,8 +18,6 @@
 
 #include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHit.h"
 #include "DataFormats/Common/interface/OwnVector.h"
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
 #include "DataFormats/Common/interface/Ref.h"
 #include "DataFormats/Common/interface/DetSetVector.h"
@@ -392,11 +390,6 @@ void SiPixelRecHitsInputDistributionsMaker::fillBarrel(const SiPixelRecHit& recH
   float sim_ypos = 0.5*(sim_y1 + sim_y2);
   float res_y = (lp.y() - sim_ypos)*cmtomicron;
   
-  int rows = theGeomDet->specificTopology().nrows();
-  int cols = theGeomDet->specificTopology().ncolumns();
-  float pitchX = theGeomDet->specificTopology().pitch().first;
-  float pitchY = theGeomDet->specificTopology().pitch().second;
-  
   float tmp1 = theGeomDet->surface().toGlobal(Local3DPoint(0.,0.,0.)).perp();
   float tmp2 = theGeomDet->surface().toGlobal(Local3DPoint(0.,0.,1.)).perp();
   
@@ -427,9 +420,9 @@ void SiPixelRecHitsInputDistributionsMaker::fillBarrel(const SiPixelRecHit& recH
   int lastPixelInX = (*clust).maxPixelRow();
   int firstPixelInY = (*clust).minPixelCol();
   int lastPixelInY = (*clust).maxPixelCol();
-  RectangularPixelTopology rectPixelTopology(rows, cols, pitchX, pitchY);
-  bool hasBigPixelInX = rectPixelTopology.containsBigPixelInX(firstPixelInX,lastPixelInX);
-  bool hasBigPixelInY = rectPixelTopology.containsBigPixelInY(firstPixelInY,lastPixelInY);
+  const RectangularPixelTopology *rectPixelTopology = static_cast<const RectangularPixelTopology*>(&(theGeomDet->specificType().specificTopology()));
+  bool hasBigPixelInX = rectPixelTopology->containsBigPixelInX(firstPixelInX,lastPixelInX);
+  bool hasBigPixelInY = rectPixelTopology->containsBigPixelInY(firstPixelInY,lastPixelInY);
 
 #ifdef MUONSONLY
   if(abs(simHit.particleType()) == 13)
@@ -562,11 +555,6 @@ void SiPixelRecHitsInputDistributionsMaker::fillBarrel(const SiPixelRecHit& recH
 void SiPixelRecHitsInputDistributionsMaker::fillForward(const SiPixelRecHit & recHit, const PSimHit & simHit, 
                                                         DetId detId,const PixelGeomDetUnit * theGeomDet ) 
 {
-  int rows = theGeomDet->specificTopology().nrows();
-  int cols = theGeomDet->specificTopology().ncolumns();
-  float pitchX = theGeomDet->specificTopology().pitch().first;
-  float pitchY = theGeomDet->specificTopology().pitch().second;
-  
   const float cmtomicron = 10000.0;
   
   LocalPoint lp = recHit.localPosition();
@@ -603,9 +591,9 @@ void SiPixelRecHitsInputDistributionsMaker::fillForward(const SiPixelRecHit & re
   int lastPixelInX = (*clust).maxPixelRow();
   int firstPixelInY = (*clust).minPixelCol();
   int lastPixelInY = (*clust).maxPixelCol();
-  RectangularPixelTopology rectPixelTopology(rows, cols, pitchX, pitchY);
-  bool hasBigPixelInX = rectPixelTopology.containsBigPixelInX(firstPixelInX,lastPixelInX);
-  bool hasBigPixelInY = rectPixelTopology.containsBigPixelInY(firstPixelInY,lastPixelInY);
+  const RectangularPixelTopology *rectPixelTopology = static_cast<const RectangularPixelTopology*>(&(theGeomDet->specificType().specificTopology()));
+  bool hasBigPixelInX = rectPixelTopology->containsBigPixelInX(firstPixelInX,lastPixelInX);
+  bool hasBigPixelInY = rectPixelTopology->containsBigPixelInY(firstPixelInY,lastPixelInY);
 
 #ifdef MUONSONLY
   if(abs(simHit.particleType()) == 13) 

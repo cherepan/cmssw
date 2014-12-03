@@ -4,8 +4,8 @@
 /** \class TrackRefitter
  *  Refit Tracks: Produce Tracks from TrackCollection. It performs a new final fit on a TrackCollection.
  *
- *  $Date: 2009/04/16 16:13:11 $
- *  $Revision: 1.3 $
+ *  $Date: 2013/02/27 13:28:56 $
+ *  $Revision: 1.5 $
  *  \author cerati
  */
 
@@ -19,7 +19,7 @@ public:
   explicit TrackRefitter(const edm::ParameterSet& iConfig);
 
   /// Implementation of produce method
-  virtual void produce(edm::Event&, const edm::EventSetup&);
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
 
 private:
   TrackProducerAlgorithm<reco::Track> theAlgo;

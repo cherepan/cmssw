@@ -8,7 +8,7 @@
 //
 // Original Author:  Chris Jones
 //         Created:  Wed Apr  4 14:28:58 EDT 2007
-// $Id: PluginManager.cc,v 1.11 2010/10/05 16:35:12 eulisse Exp $
+// $Id: PluginManager.cc,v 1.15 2013/05/07 22:18:56 chrjones Exp $
 //
 
 // system include files
@@ -60,6 +60,7 @@ PluginManager::PluginManager(const PluginManager::Config& iConfig) :
     //read in the files
     //Since we are looping in the 'precidence' order then the lists in categoryToInfos_ will also be
     // in that order
+    bool foundAtLeastOneCacheFile = false;
     std::set<std::string> alreadySeen;
     for(SearchPath::const_iterator itPath=searchPath_.begin(), itEnd = searchPath_.end();
         itPath != itEnd;
@@ -82,9 +83,17 @@ PluginManager::PluginManager(const PluginManager::Config& iConfig) :
             throw cms::Exception("PluginMangerCacheProblem")<<"Unable to open the cache file '"<<cacheFile.string()
             <<"'. Please check permissions on file";
           }
+          foundAtLeastOneCacheFile=true;
           CacheParser::read(file, dir, categoryToInfos_);          
         }
       }
+    }
+    if(not foundAtLeastOneCacheFile) {
+      auto ex = cms::Exception("PluginManagerNoCacheFile")<<"No cache files named '"<<standard::cachefileName()<<"' were found in the directories \n";
+      for( auto const& seen : alreadySeen) {
+        ex <<" '"<<seen<<"'\n";
+      }
+      throw ex;
     }
     //Since this should not be called until after 'main' has started, we can set the value
     loadingLibraryNamed_()="<loaded by another plugin system>";
@@ -168,7 +177,7 @@ PluginManager::loadableFor_(const std::string& iCategory,
   if(range.first == range.second) {
     if(throwIfFail) {
       throw cms::Exception("PluginNotFound")<<"Unable to find plugin '"<<iPlugin
-      <<"'. Please check spelling of name.";
+      <<"' in category '"<<iCategory<<"'. Please check spelling of name.";
     } else {
       ioThrowIfFailElseSucceedStatus = false;
       static boost::filesystem::path s_path;
@@ -311,7 +320,7 @@ PluginManager::loadingLibraryNamed_()
 
 PluginManager*& PluginManager::singleton()
 {
-  static PluginManager* s_singleton;
+  static PluginManager* s_singleton=0;
   return s_singleton;
 }
 

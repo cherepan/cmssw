@@ -33,20 +33,25 @@ void SiStripApvGainsDQM::getActiveDetIds(const edm::EventSetup & eSetup){
 
 
 // -----
-void SiStripApvGainsDQM::fillModMEs(const std::vector<uint32_t> & selectedDetIds){
+void SiStripApvGainsDQM::fillModMEs(const std::vector<uint32_t> & selectedDetIds, const edm::EventSetup& es){
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  es.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
 
   ModMEs CondObj_ME;
 
   for(std::vector<uint32_t>::const_iterator detIter_ =selectedDetIds.begin();
       detIter_!=selectedDetIds.end();++detIter_){
-    fillMEsForDet(CondObj_ME,*detIter_);
+    fillMEsForDet(CondObj_ME,*detIter_,tTopo);
   }  
 }  
 
   
 // -----
-void SiStripApvGainsDQM::fillMEsForDet(ModMEs selModME_, uint32_t selDetId_){
-  
+void SiStripApvGainsDQM::fillMEsForDet(const ModMEs& _selModME_, uint32_t selDetId_, const TrackerTopology* tTopo){
+  ModMEs selModME_ = _selModME_;
   std::vector<uint32_t> DetIds;
   gainHandle_->getDetIds(DetIds);
 
@@ -54,7 +59,7 @@ void SiStripApvGainsDQM::fillMEsForDet(ModMEs selModME_, uint32_t selDetId_){
   
   int nApv =  reader->getNumberOfApvsAndStripLength(selDetId_).first;
     
-  getModMEs(selModME_,selDetId_);
+  getModMEs(selModME_,selDetId_, tTopo);
  
   for( int iapv=0;iapv<nApv;++iapv){
       if( CondObj_fillId_ =="onlyProfile" || CondObj_fillId_ =="ProfileAndCumul"){
@@ -73,11 +78,16 @@ void SiStripApvGainsDQM::fillMEsForDet(ModMEs selModME_, uint32_t selDetId_){
 }
 
 // -----
-void SiStripApvGainsDQM::fillSummaryMEs(const std::vector<uint32_t>  & selectedDetIds){
+void SiStripApvGainsDQM::fillSummaryMEs(const std::vector<uint32_t> & selectedDetIds, const edm::EventSetup& es){
   
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  es.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+
   for(std::vector<uint32_t>::const_iterator detIter_ = selectedDetIds.begin();
       detIter_!= selectedDetIds.end();detIter_++){
-    fillMEsForLayer(/*SummaryMEsMap_,*/ *detIter_);
+    fillMEsForLayer(/*SummaryMEsMap_,*/ *detIter_, tTopo);
   }
 
   for (std::map<uint32_t, ModMEs>::iterator iter=SummaryMEsMap_.begin(); iter!=SummaryMEsMap_.end(); iter++){
@@ -106,7 +116,7 @@ void SiStripApvGainsDQM::fillSummaryMEs(const std::vector<uint32_t>  & selectedD
 }  
 
 // -----
-void SiStripApvGainsDQM::fillMEsForLayer( /*std::map<uint32_t, ModMEs> selMEsMap_, */uint32_t selDetId_){
+void SiStripApvGainsDQM::fillMEsForLayer( /*std::map<uint32_t, ModMEs> selMEsMap_, */uint32_t selDetId_, const TrackerTopology* tTopo){
     
   int subdetectorId_ = ((selDetId_>>25)&0x7);
   
@@ -119,11 +129,11 @@ void SiStripApvGainsDQM::fillMEsForLayer( /*std::map<uint32_t, ModMEs> selMEsMap
   }
   // ----
          
-  std::map<uint32_t, ModMEs>::iterator selMEsMapIter_  = SummaryMEsMap_.find(getLayerNameAndId(selDetId_).second);
+  std::map<uint32_t, ModMEs>::iterator selMEsMapIter_  = SummaryMEsMap_.find(getLayerNameAndId(selDetId_,tTopo).second);
   ModMEs selME_;
   if ( selMEsMapIter_ != SummaryMEsMap_.end())
   selME_ =selMEsMapIter_->second;
-  getSummaryMEs(selME_,selDetId_);
+  getSummaryMEs(selME_,selDetId_,tTopo);
   
   SiStripApvGain::Range gainRange = gainHandle_->getRange(selDetId_);
   int nApv =  reader->getNumberOfApvsAndStripLength(selDetId_).first;
@@ -141,7 +151,7 @@ void SiStripApvGainsDQM::fillMEsForLayer( /*std::map<uint32_t, ModMEs> selMEsMap
     std::string hSummaryOfProfile_name; 
     hSummaryOfProfile_name = hidmanager.createHistoLayer(hSummaryOfProfile_description, 
 							 "layer", 
-							 getLayerNameAndId(selDetId_).first, "") ;
+							 getLayerNameAndId(selDetId_,tTopo).first, "") ;
   
     for( int iapv=0;iapv<nApv;++iapv){
     
@@ -172,7 +182,7 @@ void SiStripApvGainsDQM::fillMEsForLayer( /*std::map<uint32_t, ModMEs> selMEsMap
     std::string hSummary_name; 
     hSummary_name = hidmanager.createHistoLayer(hSummary_description, 
 						"layer", 
-						getLayerNameAndId(selDetId_).first, 
+						getLayerNameAndId(selDetId_,tTopo).first, 
 						"") ;
 
 
@@ -182,7 +192,7 @@ void SiStripApvGainsDQM::fillMEsForLayer( /*std::map<uint32_t, ModMEs> selMEsMap
   
     sameLayerDetIds_.clear();
 
-    sameLayerDetIds_=GetSameLayerDetId(activeDetIds,selDetId_);
+    sameLayerDetIds_=GetSameLayerDetId(activeDetIds,selDetId_,tTopo);
   
     unsigned int iBin=0;
     for(unsigned int i=0;i<sameLayerDetIds_.size();i++){

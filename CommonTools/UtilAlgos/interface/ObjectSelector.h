@@ -6,9 +6,9 @@
  * 
  * \author Luca Lista, INFN
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.4 $
  *
- * $Id: ObjectSelector.h,v 1.2 2009/08/21 16:25:48 wmtan Exp $
+ * $Id: ObjectSelector.h,v 1.4 2013/02/28 00:29:50 wmtan Exp $
  *
  */
 
@@ -82,3 +82,4 @@ private:
 };
 
 #endif
+

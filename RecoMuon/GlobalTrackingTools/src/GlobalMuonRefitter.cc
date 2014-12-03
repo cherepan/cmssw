@@ -4,8 +4,8 @@
  *  Description:
  *
  *
- *  $Date: 2011/11/02 02:22:16 $
- *  $Revision: 1.19 $
+ *  $Date: 2013/05/28 15:46:29 $
+ *  $Revision: 1.23 $
  *
  *  Authors :
  *  P. Traczyk, SINS Warsaw
@@ -47,12 +47,8 @@
 #include "Geometry/DTGeometry/interface/DTLayer.h"
 #include <Geometry/CSCGeometry/interface/CSCLayer.h>
 #include <DataFormats/CSCRecHit/interface/CSCRecHit2D.h>
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
-#include "DataFormats/SiStripDetId/interface/TECDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIBDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIDDetId.h"
-#include "DataFormats/SiStripDetId/interface/TOBDetId.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackExtraFwd.h"
@@ -162,7 +158,8 @@ void GlobalMuonRefitter::setServices(const EventSetup& setup) {
 // build a combined tracker-muon trajectory
 //
 vector<Trajectory> GlobalMuonRefitter::refit(const reco::Track& globalTrack, 
-					     const int theMuonHitsOption) const {
+					     const int theMuonHitsOption,
+					     const TrackerTopology *tTopo) const {
   LogTrace(theCategory) << " *** GlobalMuonRefitter *** option " << theMuonHitsOption << endl;
     
   ConstRecHitContainer allRecHitsTemp; // all muon rechits temp
@@ -181,7 +178,7 @@ vector<Trajectory> GlobalMuonRefitter::refit(const reco::Track& globalTrack,
 	allRecHitsTemp.push_back(theMuonRecHitBuilder->build(&**hit));
       }
     }  
-  vector<Trajectory> refitted = refit(globalTrack,track,allRecHitsTemp,theMuonHitsOption);
+  vector<Trajectory> refitted = refit(globalTrack,track,allRecHitsTemp,theMuonHitsOption, tTopo);
   return refitted;
 }
 
@@ -190,8 +187,9 @@ vector<Trajectory> GlobalMuonRefitter::refit(const reco::Track& globalTrack,
 //
 vector<Trajectory> GlobalMuonRefitter::refit(const reco::Track& globalTrack,
 					     const reco::TransientTrack track,
-					     TransientTrackingRecHit::ConstRecHitContainer allRecHitsTemp,
-					     const int theMuonHitsOption) const {
+					     const TransientTrackingRecHit::ConstRecHitContainer& allRecHitsTemp,
+					     const int theMuonHitsOption,
+					     const TrackerTopology *tTopo) const {
 
   // MuonHitsOption: 0 - tracker only
   //                 1 - include all muon hits
@@ -211,7 +209,7 @@ vector<Trajectory> GlobalMuonRefitter::refit(const reco::Track& globalTrack,
   LogTrace(theCategory) << " Track momentum before refit: " << globalTrack.pt() << endl;
   LogTrace(theCategory) << " Hits size before : " << allRecHitsTemp.size() << endl;
 
-  allRecHits = getRidOfSelectStationHits(allRecHitsTemp);  
+  allRecHits = getRidOfSelectStationHits(allRecHitsTemp, tTopo);  
   //    printHits(allRecHits);
   LogTrace(theCategory) << " Hits size: " << allRecHits.size() << endl;
 
@@ -243,7 +241,7 @@ vector<Trajectory> GlobalMuonRefitter::refit(const reco::Track& globalTrack,
       // here we use the single thr per subdetector (better performance can be obtained using thr as function of eta)
 	
       DynamicTruncation dytRefit(*theEvent,*theService);
-      dytRefit.setThr(theDYTthrs.at(0),theDYTthrs.at(1));                                
+      dytRefit.setThr(theDYTthrs.at(0),theDYTthrs.at(1),theDYTthrs.at(2));                                
       DYTRecHits = dytRefit.filter(globalTraj.front());
       //vector<double> est = dytRefit.getEstimators();
       if ((DYTRecHits.size() > 1) && (DYTRecHits.front()->globalPosition().mag() > DYTRecHits.back()->globalPosition().mag()))
@@ -574,8 +572,9 @@ GlobalMuonRefitter::checkRecHitsOrdering(const TransientTrackingRecHit::ConstRec
 //
 vector<Trajectory> GlobalMuonRefitter::transform(const reco::Track& newTrack,
 						 const reco::TransientTrack track,
-						 TransientTrackingRecHit::ConstRecHitContainer recHitsForReFit) const {
-
+						 const TransientTrackingRecHit::ConstRecHitContainer& urecHitsForReFit) const {
+  
+  TransientTrackingRecHit::ConstRecHitContainer recHitsForReFit = urecHitsForReFit;
   LogTrace(theCategory) << "GlobalMuonRefitter::transform: " << recHitsForReFit.size() << " hits:";
   printHits(recHitsForReFit);
 
@@ -722,7 +721,8 @@ vector<Trajectory> GlobalMuonRefitter::transform(const reco::Track& newTrack,
 //
 // Remove Selected Station Rec Hits
 //
-GlobalMuonRefitter::ConstRecHitContainer GlobalMuonRefitter::getRidOfSelectStationHits(ConstRecHitContainer hits) const
+GlobalMuonRefitter::ConstRecHitContainer GlobalMuonRefitter::getRidOfSelectStationHits(const ConstRecHitContainer& hits,
+										       const TrackerTopology *tTopo) const
 {
   ConstRecHitContainer results;
   ConstRecHitContainer::const_iterator it = hits.begin();
@@ -740,29 +740,29 @@ GlobalMuonRefitter::ConstRecHitContainer GlobalMuonRefitter::getRidOfSelectStati
 	//                              continue;  //caveat that just removes the whole system from refitting
 
 	if (theTrackerSkipSystem == PXB) {
-	  PXBDetId did(id.rawId());
-	  layer = did.layer();
+	  
+	  layer = tTopo->pxbLayer(id);
 	}
 	if (theTrackerSkipSystem == TIB) {
-	  TIBDetId did(id.rawId());
-	  layer = did.layer();
+	  
+	  layer = tTopo->tibLayer(id);
 	}
 
 	if (theTrackerSkipSystem == TOB) {
-	  TOBDetId did(id.rawId());
-	  layer = did.layer();
+	  
+	  layer = tTopo->tobLayer(id);
 	}
 	if (theTrackerSkipSystem == PXF) {
-	  PXFDetId did(id.rawId());
-	  disk = did.disk();
+	  
+	  disk = tTopo->pxfDisk(id);
 	}
 	if (theTrackerSkipSystem == TID) {
-	  TIDDetId did(id.rawId());
-	  wheel = did.wheel();
+	  
+	  wheel = tTopo->tidWheel(id);
 	}
 	if (theTrackerSkipSystem == TEC) {
-	  TECDetId did(id.rawId());
-	  wheel = did.wheel();
+	  
+	  wheel = tTopo->tecWheel(id);
 	}
 	if (theTrackerSkipSection >= 0 && layer == theTrackerSkipSection) continue;
 	if (theTrackerSkipSection >= 0 && disk == theTrackerSkipSection) continue;

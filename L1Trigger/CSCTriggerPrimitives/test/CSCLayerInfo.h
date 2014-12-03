@@ -6,8 +6,7 @@
  * \author Jason Mumford, Slava Valuev  21 August 2001
  * Porting from ORCA by S. Valuev in September 2006.
  *
- * $Date: 2006/09/12 09:00:29 $
- * $Revision: 1.1 $
+ * $Id: CSCLayerInfo.h,v 1.3 2012/12/05 21:12:53 khotilov Exp $
  *
  */
 

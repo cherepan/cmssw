@@ -1,7 +1,7 @@
 #ifndef ECALDETID_ESDETID_H
 #define ECALDETID_ESDETID_H
 
-#include <ostream>
+#include <iosfwd>
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/EcalDetId/interface/EcalSubdetector.h"
 
@@ -9,7 +9,7 @@
 
    Det id for a preshower (endcap) strip
     
-   $Id: ESDetId.h,v 1.6 2007/05/29 17:32:05 meridian Exp $
+   $Id: ESDetId.h,v 1.8 2012/11/02 13:07:52 innocent Exp $
 */
 
 class ESDetId : public DetId {

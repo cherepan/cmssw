@@ -23,10 +23,12 @@
 #include "RecoLocalCalo/HcalRecAlgos/interface/HcalADCSaturationFlag.h"
 #include "RecoLocalCalo/HcalRecAlgos/interface/HFTimingTrustFlag.h"
 
+class HcalTopology;
+
     /** \class ZdcHitReconstructor
 	
-    $Date: 2011/05/20 17:17:30 $
-    $Revision: 1.4 $
+    $Date: 2013/02/28 08:28:56 $
+    $Revision: 1.7 $
     \author E. Garcia - CSU
     ** Based on HcalSimpleReconstructor.h by J. Mans
     */
@@ -34,9 +36,9 @@
     public:
       explicit ZdcHitReconstructor(const edm::ParameterSet& ps);
       virtual ~ZdcHitReconstructor();
-      virtual void beginRun(edm::Run&r, edm::EventSetup const & es);
-      virtual void endRun(edm::Run&r, edm::EventSetup const & es);      
-      virtual void produce(edm::Event& e, const edm::EventSetup& c);
+      virtual void beginRun(edm::Run const&r, edm::EventSetup const & es) override final;
+      virtual void endRun(edm::Run const&r, edm::EventSetup const & es) override final;
+      virtual void produce(edm::Event& e, const edm::EventSetup& c) override final;
     private:      
       ZdcSimpleRecAlgo reco_;
       HcalADCSaturationFlag* saturationFlagSetter_;
@@ -65,6 +67,7 @@
       double lowGainFrac_;
       
       HcalLongRecoParams* myobject; //noiseTS and signalTS from db
+      HcalTopology *theTopology;
     };
 
 #endif

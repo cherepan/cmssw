@@ -7,17 +7,23 @@
 #include "Geometry/TrackerNumberingBuilder/interface/GeometricDet.h"
 #include "Geometry/TrackerNumberingBuilder/interface/GeometricDetExtra.h"
 
-class  TrackerGeometricDetESModule: public edm::ESProducer {
- public:
-  TrackerGeometricDetESModule(const edm::ParameterSet & p);
-  virtual ~TrackerGeometricDetESModule(); 
-  std::auto_ptr<GeometricDet>       produce(const IdealGeometryRecord &);
+namespace edm {
+  class ConfigurationDescriptions;
+}
 
- protected:
+class  TrackerGeometricDetESModule: public edm::ESProducer
+{
+public:
+  TrackerGeometricDetESModule( const edm::ParameterSet & p );
+  virtual ~TrackerGeometricDetESModule( void ); 
+  std::auto_ptr<GeometricDet>       produce( const IdealGeometryRecord & );
 
- private:
+  static void fillDescriptions(edm::ConfigurationDescriptions & descriptions);
+  
+private:
   bool fromDDD_;
-
+  unsigned int layerNumberPXB_; // default 16; 18 for SLHC
+  unsigned int totalBlade_;     // default 24; 56 for SLHC
 };
 
 

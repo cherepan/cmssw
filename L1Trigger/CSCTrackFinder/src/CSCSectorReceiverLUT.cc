@@ -153,7 +153,7 @@ lclphidat CSCSectorReceiverLUT::calcLocalPhi(const lclphiadd& theadd) const
 {
   lclphidat data;
 
-  static int maxPhiL = 1<<CSCBitWidths::kLocalPhiDataBitWidth;
+  constexpr int maxPhiL = 1<<CSCBitWidths::kLocalPhiDataBitWidth;
   double binPhiL = static_cast<double>(maxPhiL)/(2.*CSCConstants::MAX_NUM_STRIPS);
 
   memset(&data,0,sizeof(lclphidat));
@@ -275,19 +275,19 @@ gblphidat CSCSectorReceiverLUT::calcGlobalPhiME(const gblphiadd& address) const
   gblphidat result(0);
   CSCTriggerGeomManager* thegeom = CSCTriggerGeometry::get();
   CSCChamber* thechamber = NULL;
-  CSCLayer* thelayer = NULL;
-  CSCLayerGeometry* layergeom = NULL;
+  const CSCLayer* thelayer = NULL;
+  const CSCLayerGeometry* layergeom = NULL;
   int cscid = address.cscid;
   unsigned wire_group = address.wire_group;
   unsigned local_phi = address.phi_local;
   const double sectorOffset = (CSCTFConstants::SECTOR1_CENT_RAD-CSCTFConstants::SECTOR_RAD/2.) + (_sector-1)*M_PI/3.;
 
   //Number of global phi units per radian.
-  static int maxPhiG = 1<<CSCBitWidths::kGlobalPhiDataBitWidth;
+  constexpr int maxPhiG = 1<<CSCBitWidths::kGlobalPhiDataBitWidth;
   double binPhiG = static_cast<double>(maxPhiG)/CSCTFConstants::SECTOR_RAD;
 
   // We will use these to convert the local phi into radians.
-  static unsigned int maxPhiL = 1<<CSCBitWidths::kLocalPhiDataBitWidth;
+  constexpr unsigned int maxPhiL = 1<<CSCBitWidths::kLocalPhiDataBitWidth;
   const double binPhiL = static_cast<double>(maxPhiL)/(2.*CSCConstants::MAX_NUM_STRIPS);
 
   if(cscid < CSCTriggerNumbering::minTriggerCscId())
@@ -341,13 +341,13 @@ gblphidat CSCSectorReceiverLUT::calcGlobalPhiME(const gblphiadd& address) const
 	{
 	  if(isTMB07)
 	    {
-	      layergeom = const_cast<CSCLayerGeometry*>(thechamber->layer(CSCConstants::KEY_CLCT_LAYER)->geometry());
-	      thelayer = const_cast<CSCLayer*>(thechamber->layer(CSCConstants::KEY_CLCT_LAYER));
+	      layergeom = thechamber->layer(CSCConstants::KEY_CLCT_LAYER)->geometry();
+	      thelayer = thechamber->layer(CSCConstants::KEY_CLCT_LAYER);
 	    }
 	  else
 	    {
-	      layergeom = const_cast<CSCLayerGeometry*>(thechamber->layer(CSCConstants::KEY_CLCT_LAYER_PRE_TMB07)->geometry());
-	      thelayer = const_cast<CSCLayer*>(thechamber->layer(CSCConstants::KEY_CLCT_LAYER_PRE_TMB07));
+	      layergeom = thechamber->layer(CSCConstants::KEY_CLCT_LAYER_PRE_TMB07)->geometry();
+	      thelayer = thechamber->layer(CSCConstants::KEY_CLCT_LAYER_PRE_TMB07);
 	    }
 	  const int nStrips = layergeom->numberOfStrips();
 	  // PhiL is the strip number converted into some units between 0 and

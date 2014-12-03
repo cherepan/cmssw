@@ -3,7 +3,6 @@
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/Common/interface/EDCollection.h"
 #include "DataFormats/Common/interface/Handle.h"
-#include "FWCore/Framework/interface/Selector.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "CalibFormats/HcalObjects/interface/HcalCoderDb.h"
@@ -12,6 +11,7 @@
 #include "CalibFormats/HcalObjects/interface/HcalDbRecord.h"
 #include "RecoLocalCalo/HcalRecAlgos/interface/HcalSeverityLevelComputer.h"
 #include "RecoLocalCalo/HcalRecAlgos/interface/HcalSeverityLevelComputerRcd.h"
+#include "Geometry/CaloTopology/interface/HcalTopology.h"
 
 #include <iostream>
 
@@ -32,7 +32,9 @@ ZdcHitReconstructor::ZdcHitReconstructor(edm::ParameterSet const& conf):
   setSaturationFlags_(conf.getParameter<bool>("setSaturationFlags")),
   setTimingTrustFlags_(conf.getParameter<bool>("setTimingTrustFlags")),
   dropZSmarkedPassed_(conf.getParameter<bool>("dropZSmarkedPassed")),
-  AuxTSvec_(conf.getParameter<std::vector<int> >("AuxTSvec"))
+  AuxTSvec_(conf.getParameter<std::vector<int> >("AuxTSvec")),
+  myobject(0),
+  theTopology(0)
   
 { 
   std::sort(AuxTSvec_.begin(),AuxTSvec_.end()); // sort vector in ascending TS order
@@ -59,22 +61,28 @@ ZdcHitReconstructor::ZdcHitReconstructor(edm::ParameterSet const& conf):
 
 ZdcHitReconstructor::~ZdcHitReconstructor() {;
 }
-void ZdcHitReconstructor::beginRun(edm::Run&r, edm::EventSetup const & es){
+void ZdcHitReconstructor::beginRun(edm::Run const&r, edm::EventSetup const & es){
 
    edm::ESHandle<HcalLongRecoParams> p;
    es.get<HcalLongRecoParamsRcd>().get(p);
    myobject = new HcalLongRecoParams(*p.product());
+
+   edm::ESHandle<HcalTopology> htopo;
+   es.get<IdealGeometryRecord>().get(htopo);
+   theTopology=new HcalTopology(*htopo);
+   myobject->setTopo(theTopology);
+
 }
 
-void ZdcHitReconstructor::endRun(edm::Run&r, edm::EventSetup const & es){
-  if (myobject) delete myobject;
+void ZdcHitReconstructor::endRun(edm::Run const&r, edm::EventSetup const & es){
+  delete myobject; myobject=0;
+  delete theTopology; theTopology=0;
 }
 void ZdcHitReconstructor::produce(edm::Event& e, const edm::EventSetup& eventSetup)
 {
   // get conditions
   edm::ESHandle<HcalDbService> conditions;
   eventSetup.get<HcalDbRecord>().get(conditions);
-  const HcalQIEShape* shape = conditions->getHcalShape (); // this one is generic
   
   edm::ESHandle<HcalChannelQuality> p;
   eventSetup.get<HcalChannelQualityRcd>().get(p);
@@ -107,6 +115,7 @@ void ZdcHitReconstructor::produce(edm::Event& e, const edm::EventSetup& eventSet
 	  if (i->zsMarkAndPass()) continue;
 	const HcalCalibrations& calibrations=conditions->getHcalCalibrations(cell);
 	const HcalQIECoder* channelCoder = conditions->getHcalCoder (cell);
+	const HcalQIEShape* shape = conditions->getHcalShape (channelCoder);
 	HcalCoderDb coder (*channelCoder, *shape);
 
 // get db values for signalTSs and noiseTSs

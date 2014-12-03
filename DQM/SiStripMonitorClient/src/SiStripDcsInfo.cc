@@ -203,6 +203,12 @@ void SiStripDcsInfo::bookStatus() {
 // -- Read Cabling
 // 
 void SiStripDcsInfo::readCabling(edm::EventSetup const& eSetup) {
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  eSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+
   unsigned long long cacheID = eSetup.get<SiStripFedCablingRcd>().cacheIdentifier();
   if (m_cacheIDCabling_ != cacheID) {
     m_cacheIDCabling_ = cacheID;
@@ -225,7 +231,7 @@ void SiStripDcsInfo::readCabling(edm::EventSetup const& eSetup) {
       uint32_t detId = *idetid;
       if (detId == 0 || detId == 0xFFFFFFFF) continue;
       std::string subdet_tag;
-      SiStripUtility::getSubDetectorTag(detId,subdet_tag);         
+      SiStripUtility::getSubDetectorTag(detId,subdet_tag,tTopo);         
       
       std::map<std::string, SubDetMEs>::iterator iPos = SubDetMEsMap.find(subdet_tag);
       if (iPos != SubDetMEsMap.end()){    
@@ -239,6 +245,11 @@ void SiStripDcsInfo::readCabling(edm::EventSetup const& eSetup) {
 //
 void SiStripDcsInfo::readStatus(edm::EventSetup const& eSetup) {
 
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  eSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+
   eSetup.get<SiStripDetVOffRcd>().get(siStripDetVOff_);
   std::vector <uint32_t> FaultyDetIds;
   siStripDetVOff_->getDetIds(FaultyDetIds);
@@ -249,7 +260,7 @@ void SiStripDcsInfo::readStatus(edm::EventSetup const& eSetup) {
     uint32_t detId_hvoff = (*ihvoff);
     if (!detCabling_->IsConnected(detId_hvoff)) continue;    
     std::string subdet_tag;
-    SiStripUtility::getSubDetectorTag(detId_hvoff,subdet_tag);         
+    SiStripUtility::getSubDetectorTag(detId_hvoff,subdet_tag,tTopo);         
     
     std::map<std::string, SubDetMEs>::iterator iPos = SubDetMEsMap.find(subdet_tag);
     if (iPos != SubDetMEsMap.end()){  

@@ -2,6 +2,7 @@
 <use   name="SimCalorimetry/CaloSimAlgos"/>
 <use   name="SimDataFormats/CrossingFrame"/>
 <use   name="SimDataFormats/EcalTestBeam"/>
+<use   name="SimGeneral/MixingModule"/>
 <use   name="CondFormats/HcalObjects"/>
 <use   name="CalibCalorimetry/HcalAlgos"/>
 <use   name="CalibFormats/HcalObjects"/>
@@ -14,6 +15,3 @@
 <use   name="FWCore/PluginManager"/>
 <use   name="boost"/>
 <flags   EDM_PLUGIN="1"/>
-<export>
-  <lib   name="1"/>
-</export>

@@ -32,9 +32,9 @@ class TrajectorySeedProducer : public edm::EDProducer
   
   virtual ~TrajectorySeedProducer();
   
-  virtual void beginRun(edm::Run & run, const edm::EventSetup & es);
+  virtual void beginRun(edm::Run const& run, const edm::EventSetup & es) override;
   
-  virtual void produce(edm::Event& e, const edm::EventSetup& es);
+  virtual void produce(edm::Event& e, const edm::EventSetup& es) override;
   
  private:
 
@@ -70,12 +70,16 @@ class TrajectorySeedProducer : public edm::EDProducer
   unsigned int absMinRecHits;
   std::vector<std::string> seedingAlgo;
   std::vector<unsigned int> numberOfHits;
+  ///// TO BE REMOVED (AG)
   std::vector<unsigned int> firstHitSubDetectorNumber;
   std::vector<unsigned int> secondHitSubDetectorNumber;
   std::vector<unsigned int> thirdHitSubDetectorNumber;
   std::vector< std::vector<unsigned int> > firstHitSubDetectors;
   std::vector< std::vector<unsigned int> > secondHitSubDetectors;
   std::vector< std::vector<unsigned int> > thirdHitSubDetectors;
+  /////
+  bool newSyntax;
+  std::vector<std::string> layerList;
 
   std::vector<double> originRadius;
   std::vector<double> originHalfLength;
@@ -83,6 +87,8 @@ class TrajectorySeedProducer : public edm::EDProducer
 
   std::vector<edm::InputTag> primaryVertices;
   std::vector<double> zVertexConstraint;
+
+  bool selectMuons;
 
   std::vector<const reco::VertexCollection*> vertices;
   double x0, y0, z0;

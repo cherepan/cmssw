@@ -18,6 +18,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <cassert>
 
 #include "TMath.h"
 #include "TClass.h"
@@ -614,7 +615,7 @@ FWTableView::selectCollection(Int_t i_coll)
 //      m_column_expr_field->setValidator(m_validator);
      if (m_validator != 0) {
 // 	  std::cout << "setting validator to " << item->modelType()->GetName() << std::endl;
-	  m_validator->setType(Reflex::Type::ByTypeInfo(*(item->modelType()->GetTypeInfo())));
+	  m_validator->setType(edm::TypeWithDict(*(item->modelType()->GetTypeInfo())));
      } else {
 // 	  std::cout << "can't set null validator\n";
      }

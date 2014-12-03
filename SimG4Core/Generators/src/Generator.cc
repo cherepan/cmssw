@@ -37,8 +37,24 @@ Generator::Generator(const ParameterSet & p) :
   weight_(0),
   Z_lmin(0),
   Z_lmax(0),
-  Z_hector(0)
+  Z_hector(0),
+  pdgFilterSel(false) 
 {
+
+  pdgFilter.resize(0);
+  if ( p.exists("PDGselection") ) {
+
+    pdgFilterSel = (p.getParameter<edm::ParameterSet>("PDGselection")).getParameter<bool>("PDGfilterSel");
+    pdgFilter = (p.getParameter<edm::ParameterSet>("PDGselection")).getParameter<std::vector< int > >("PDGfilter");
+    for ( unsigned int ii = 0; ii < pdgFilter.size() ; ii++ ) {
+      if (pdgFilterSel) {
+        edm::LogWarning("SimG4CoreGenerator") << " *** Selecting only PDG ID = " << pdgFilter[ii];
+      } else {
+        edm::LogWarning("SimG4CoreGenerator") << " *** Filtering out PDG ID = " << pdgFilter[ii];
+      }
+    }
+  
+  }
 
   if(fEtaCuts){
     Z_lmax = theRDecLenCut*( ( 1 - exp(-2*theMaxEtaCut) ) / ( 2*exp(-theMaxEtaCut) ) );
@@ -107,7 +123,7 @@ void Generator::HepMC2G4(const HepMC::GenEvent * evt_orig, G4Event * g4evt)
       if ((*pitr)->status()==1) {
         qvtx=true;
         if ( verbose > 2 ) LogDebug("SimG4CoreGenerator") << "GenVertex barcode = " << (*vitr)->barcode() 
-                                     << " selected for GenParticle barcode = " << (*pitr)->barcode() << std::endl;
+                                                          << " selected for GenParticle barcode = " << (*pitr)->barcode() << std::endl;
         break;
       }  
       // The selection is made considering if the partcile with status = 2 have the end_vertex
@@ -184,13 +200,26 @@ void Generator::HepMC2G4(const HepMC::GenEvent * evt_orig, G4Event * g4evt)
       double zimpact = Z_hector+1.;
       if ( fabs(z1) < Z_hector && fabs(p.pt()/p.pz()) >= minTan ) { 
         // write tan(p.Theta()) as p.Pt()/p.Pz()
-         zimpact = (theRDecLenCut-sqrt(x1*x1+y1*y1))*(p.pz()/p.pt())+z1;
+        zimpact = (theRDecLenCut-sqrt(x1*x1+y1*y1))*(p.pz()/p.pt())+z1;
       }
-
+      
       if ( verbose > 2 ) LogDebug("SimG4CoreGenerator") << "Processing GenParticle barcode = " << (*vpitr)->barcode() 
                                                         << " status = " << (*vpitr)->status() 
                                                         << " zimpact = " << zimpact;
-
+      
+      // Filter on allowed particle species if required
+      
+      if ( pdgFilter.size() > 0 ) {
+        std::vector<int>::iterator it = find(pdgFilter.begin(),pdgFilter.end(),(*vpitr)->pdg_id()); 
+        if ( (it != pdgFilter.end() && !pdgFilterSel) || ( it == pdgFilter.end() && pdgFilterSel ) ) {
+          toBeAdded = false;         
+          if ( verbose > 2 ) LogDebug("SimG4CoreGenerator") << "Skip GenParticle barcode = " << (*vpitr)->barcode() 
+                                                            << " PDG Id = " << (*vpitr)->pdg_id() << std::endl;
+          continue;
+        }
+      }
+      
+      
       // Standard case: particles not decayed by the generator
       if( (*vpitr)->status() == 1 && fabs(zimpact) < Z_hector ) {
         if ( !particlePassesPrimaryCuts( p, zimpact ) ) {
@@ -224,8 +253,10 @@ void Generator::HepMC2G4(const HepMC::GenEvent * evt_orig, G4Event * g4evt)
           g4prim->SetMass( g4prim->GetG4code()->GetPDGMass() ) ;
           g4prim->SetCharge( g4prim->GetG4code()->GetPDGCharge() ) ;  
         }
-        
-        g4prim->SetWeight( 10000*(*vpitr)->barcode() ) ;
+
+	// V.I. do not use SetWeight but the same code
+        // value of the code compute inside TrackWithHistory        
+        //g4prim->SetWeight( 10000*(*vpitr)->barcode() ) ;
         setGenId( g4prim, (*vpitr)->barcode() ) ;
 
         if ( (*vpitr)->status() == 2 ) 
@@ -303,7 +334,9 @@ void Generator::particleAssignDaughters( G4PrimaryParticle* g4p, HepMC::GenParti
         g4daught->SetMass( g4daught->GetG4code()->GetPDGMass() ) ;
         g4daught->SetCharge( g4daught->GetG4code()->GetPDGCharge() ) ;  
       }
-    g4daught->SetWeight( 10000*(*vpdec)->barcode() ) ;
+    // V.I. do not use SetWeight but the same code
+    // value of the code compute inside TrackWithHistory        
+    //g4daught->SetWeight( 10000*(*vpdec)->barcode() ) ;
     setGenId( g4daught, (*vpdec)->barcode() ) ;
     if ( verbose > 1 ) LogDebug("SimG4CoreGenerator") <<"Assigning a "<<(*vpdec)->pdg_id()
                                                       <<" as daughter of a " <<vp->pdg_id() ;
@@ -385,7 +418,9 @@ void Generator::nonBeamEvent2G4(const HepMC::GenEvent * evt, G4Event * g4evt)
 	      g4p->SetMass(g4p->GetG4code()->GetPDGMass());
 	      g4p->SetCharge(g4p->GetG4code()->GetPDGCharge()) ;
 	    }
-	  g4p->SetWeight(i*10000);
+	  // V.I. do not use SetWeight but the same code
+	  // value of the code compute inside TrackWithHistory        
+	  //g4p->SetWeight(i*10000);
 	  setGenId(g4p,i);
 	  if (particlePassesPrimaryCuts(g4p)) 
 	    {

@@ -1,4 +1,4 @@
-// $Id: XmasToDQM.h,v 1.1 2008/07/01 13:22:26 ameyer Exp $
+// $Id: XmasToDQM.h,v 1.3 2012/10/25 06:07:57 davidlt Exp $
 
 /*************************************************************************
  * XDAQ Components for Distributed Data Acquisition                      *
@@ -59,7 +59,6 @@
 #include "toolbox/task/TimerFactory.h"
 
 #include <curl/curl.h>
-#include <curl/types.h>
 #include <curl/easy.h>
 #include <fstream> // for ifstream, ofstream, ios_base
 #include <iostream>

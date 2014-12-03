@@ -1,5 +1,5 @@
 //
-// $Id: PATPFParticleProducer.h,v 1.6 2009/06/25 23:49:35 gpetrucc Exp $
+// $Id: PATPFParticleProducer.h,v 1.9 2013/02/27 23:26:56 wmtan Exp $
 //
 
 #ifndef PhysicsTools_PatAlgos_PATPFParticleProducer_h
@@ -13,7 +13,7 @@
    a collection of objects of reco::PFCandidate.
 
   \author   Steven Lowette, Roger Wolf
-  \version  $Id: PATPFParticleProducer.h,v 1.6 2009/06/25 23:49:35 gpetrucc Exp $
+  \version  $Id: PATPFParticleProducer.h,v 1.9 2013/02/27 23:26:56 wmtan Exp $
 */
 
 
@@ -31,6 +31,9 @@
 #include "PhysicsTools/PatAlgos/interface/EfficiencyLoader.h"
 #include "PhysicsTools/PatAlgos/interface/KinResolutionsLoader.h"
 
+#include "DataFormats/PatCandidates/interface/UserData.h"
+#include "PhysicsTools/PatAlgos/interface/PATUserDataHelper.h"
+
 #include <string>
 
 
@@ -45,7 +48,7 @@ namespace pat {
       explicit PATPFParticleProducer(const edm::ParameterSet & iConfig);
       ~PATPFParticleProducer();
 
-      virtual void produce(edm::Event & iEvent, const edm::EventSetup & iSetup);
+      virtual void produce(edm::Event & iEvent, const edm::EventSetup& iSetup) override;
 
     private:
       void 
@@ -67,6 +70,9 @@ namespace pat {
       
       bool addResolutions_;
       pat::helper::KinResolutionsLoader resolutionLoader_;
+
+      bool useUserData_;
+      pat::PATUserDataHelper<pat::PFParticle> userDataHelper_;
 
  
   };

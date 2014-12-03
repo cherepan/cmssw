@@ -16,7 +16,7 @@
 //
 // Original Author:  Chris Jones
 //         Created:  Sat Oct 18 08:43:45 EDT 2008
-// $Id: FWItemTVirtualCollectionProxyAccessor.h,v 1.5 2010/07/23 16:02:54 eulisse Exp $
+// $Id: FWItemTVirtualCollectionProxyAccessor.h,v 1.7 2012/08/03 18:20:28 wmtan Exp $
 //
 
 // system include files
@@ -48,7 +48,7 @@ public:
    // ---------- static member functions --------------------
 
    // ---------- member functions ---------------------------
-   void setData(const Reflex::Object& );
+   void setData(const edm::ObjectWithDict& );
    void reset();
 
 private:

@@ -8,6 +8,7 @@
 #include "RecoTracker/SpecialSeedGenerators/interface/SimpleCosmicBONSeeder.h"
 #include "DataFormats/TrackerRecHit2D/interface/SiStripMatchedRecHit2D.h"
 #include "DataFormats/TrackerRecHit2D/interface/SiStripRecHit2D.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 typedef TransientTrackingRecHit::ConstRecHitPointer SeedingHit;
 
 #include <numeric>
@@ -389,10 +390,10 @@ SimpleCosmicBONSeeder::pqFromHelixFit(const GlobalPoint &inner, const GlobalPoin
                                                          const edm::EventSetup& iSetup) const {
     if (helixVerbosity_ > 0) {
         std::cout << "DEBUG PZ =====" << std::endl;
-        FastHelix helix(inner,middle,outer,iSetup);
-        GlobalVector gv=helix.stateAtVertex().parameters().momentum(); // status on inner hit
+        FastHelix helix(inner,middle,outer,magfield->nominalValue(), &*magfield);
+        GlobalVector gv=helix.stateAtVertex().momentum(); // status on inner hit
         std::cout << "FastHelix P = " << gv   << "\n";
-        std::cout << "FastHelix Q = " << helix.stateAtVertex().parameters().charge() << "\n";
+        std::cout << "FastHelix Q = " << helix.stateAtVertex().charge() << "\n";
     }
 
     // My attempt (with different approx from FastHelix)
@@ -472,7 +473,7 @@ bool SimpleCosmicBONSeeder::seeds(TrajectorySeedCollection &output, const edm::E
         float        ch = pq.second; 
         float Mom = sqrt( gv.x()*gv.x() + gv.y()*gv.y() + gv.z()*gv.z() ); 
 
-        if(Mom > 10000 || isnan(Mom))  { 
+        if(Mom > 10000 || edm::isNotFinite(Mom))  { 
             if (seedVerbosity_ > 1)
                 std::cout << "Processing triplet " << it << ": fail for momentum." << std::endl; 
             continue;

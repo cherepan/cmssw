@@ -3,7 +3,7 @@
 // Package:    TrackAssociator
 // Class:      CachedTrajectory
 // 
-// $Id: CachedTrajectory.cc,v 1.28 2011/04/21 07:02:42 innocent Exp $
+// $Id: CachedTrajectory.cc,v 1.31 2012/12/25 16:07:26 innocent Exp $
 //
 //
 
@@ -414,7 +414,7 @@ void CachedTrajectory::getTrajectory(std::vector<SteppingHelixStateInfo>& trajec
 
    if (firstPointInside != closestPointOnLeft) {
       if ( dR > 0 ) {
-	 Cylinder::CylinderPointer barrel = Cylinder::build( Cylinder::PositionType (0, 0, 0), Cylinder::RotationType (), volume.minR());
+	 Cylinder::CylinderPointer barrel = Cylinder::build( volume.minR(), Cylinder::PositionType (0, 0, 0), Cylinder::RotationType () );
 	 propagate(currentState, *barrel);
       } else {
 	 Plane::PlanePointer endcap = Plane::build( Plane::PositionType (0, 0, 
@@ -466,11 +466,11 @@ void CachedTrajectory::findPreshowerTrajectory( const FiducialVolume& volume ) {
    LogTrace("TrackAssociator") << "# of points in Preshower trajectory:" << preshowerTrajectory_.size();
 }
 
-const std::vector<SteppingHelixStateInfo>& CachedTrajectory::getEcalTrajectory() {
+const std::vector<SteppingHelixStateInfo>& CachedTrajectory::getEcalTrajectory() const{
    return ecalTrajectory_;
 }
 
-const std::vector<SteppingHelixStateInfo>& CachedTrajectory::getPreshowerTrajectory() {
+const std::vector<SteppingHelixStateInfo>& CachedTrajectory::getPreshowerTrajectory() const{
    return preshowerTrajectory_;
 }
 
@@ -480,7 +480,7 @@ void CachedTrajectory::findHcalTrajectory( const FiducialVolume& volume ) {
    LogTrace("TrackAssociator") << "# of points in HCAL trajectory:" << hcalTrajectory_.size();
 }
 
-const std::vector<SteppingHelixStateInfo>& CachedTrajectory::getHcalTrajectory() {
+const std::vector<SteppingHelixStateInfo>& CachedTrajectory::getHcalTrajectory() const{
    return hcalTrajectory_;
 }
 
@@ -490,7 +490,7 @@ void CachedTrajectory::findHOTrajectory( const FiducialVolume& volume ) {
    LogTrace("TrackAssociator") << "# of points in HO trajectory:" << hoTrajectory_.size();
 }
 
-const std::vector<SteppingHelixStateInfo>& CachedTrajectory::getHOTrajectory() {
+const std::vector<SteppingHelixStateInfo>& CachedTrajectory::getHOTrajectory() const {
    return hoTrajectory_;
 }
    

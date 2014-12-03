@@ -16,11 +16,12 @@
 //
 // Author:      
 // Created:     Sat Mar  1 15:49:28 CET 2008
-// $Id$
+// $Id: HcalRespCorrsRcd.h,v 1.2 2012/11/12 21:13:54 dlange Exp $
 //
 
-#include "FWCore/Framework/interface/EventSetupRecordImplementation.h"
+#include "FWCore/Framework/interface/DependentRecordImplementation.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 
-class HcalRespCorrsRcd : public edm::eventsetup::EventSetupRecordImplementation<HcalRespCorrsRcd> {};
+class HcalRespCorrsRcd : public edm::eventsetup::DependentRecordImplementation<HcalRespCorrsRcd, boost::mpl::vector<IdealGeometryRecord> > {};
 
 #endif

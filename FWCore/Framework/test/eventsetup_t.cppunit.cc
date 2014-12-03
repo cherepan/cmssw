@@ -19,14 +19,14 @@
 #include "FWCore/Framework/interface/EventSetupProvider.h"
 #include "FWCore/Framework/interface/IOVSyncValue.h"
 
-#include "FWCore/Framework/interface/eventSetupGetImplementation.icc"
+#include "FWCore/Framework/interface/eventSetupGetImplementation.h"
 
 #include "FWCore/Framework/test/DummyRecord.h"
 #include "FWCore/Framework/test/DummyProxyProvider.h"
 
 //class DummyRecord : public edm::eventsetup::EventSetupRecordImplementation<DummyRecord> {};
 
-#include "FWCore/Framework/interface/HCMethods.icc"
+#include "FWCore/Framework/interface/HCMethods.h"
 
 
 #include "FWCore/Framework/interface/EventSetupRecordProviderTemplate.h"
@@ -60,6 +60,8 @@ CPPUNIT_TEST(preferTest);
 
 CPPUNIT_TEST(introspectionTest);
 
+CPPUNIT_TEST(iovExtentionTest);
+
 CPPUNIT_TEST_SUITE_END();
 public:
   void setUp(){}
@@ -83,6 +85,8 @@ public:
   void preferTest();
   
   void introspectionTest();
+  
+  void iovExtentionTest();
   
 };
 
@@ -558,7 +562,7 @@ void testEventsetup::preferTest()
          //default means use all proxies
          preferInfo[ComponentDescription("DummyProxyProvider","",false)]=recordToData;
          
-         eventsetup::EventSetupProvider provider(&preferInfo);
+         eventsetup::EventSetupProvider provider(0U, &preferInfo);
          {
             edm::eventsetup::ComponentDescription description("DummyProxyProvider","bad",false);
             boost::shared_ptr<eventsetup::DataProxyProvider> dummyProv(new DummyProxyProvider(kBad));
@@ -589,7 +593,7 @@ void testEventsetup::preferTest()
          EventSetupProvider::RecordToDataMap recordToData;
          //default means use all proxies
          preferInfo[ComponentDescription("DummyProxyProvider","",false)]=recordToData;
-         eventsetup::EventSetupProvider provider(&preferInfo);
+         eventsetup::EventSetupProvider provider(0U, &preferInfo);
          {
             edm::eventsetup::ComponentDescription description("DummyProxyProvider","",true);
             boost::shared_ptr<eventsetup::DataProxyProvider> dummyProv(new DummyProxyProvider(kGood));
@@ -621,7 +625,7 @@ void testEventsetup::preferTest()
          recordToData.insert(std::make_pair(std::string("DummyRecord"),
                                             std::make_pair(std::string("DummyData"),std::string())));
          preferInfo[ComponentDescription("DummyProxyProvider","",false)]=recordToData;
-         eventsetup::EventSetupProvider provider(&preferInfo);
+         eventsetup::EventSetupProvider provider(0U, &preferInfo);
          {
             edm::eventsetup::ComponentDescription description("DummyProxyProvider","",true);
             boost::shared_ptr<eventsetup::DataProxyProvider> dummyProv(new DummyProxyProvider(kGood));
@@ -692,4 +696,42 @@ void testEventsetup::introspectionTest()
     std::cout <<"caught "<<iException.explainSelf()<<std::endl;
     throw;
   }
+}
+
+void testEventsetup::iovExtentionTest()
+{
+  DummyEventSetupProvider provider;
+  typedef eventsetup::EventSetupRecordProviderTemplate<DummyRecord> DummyRecordProvider;
+  std::auto_ptr<DummyRecordProvider > dummyRecordProvider(new DummyRecordProvider());
+  
+  boost::shared_ptr<DummyFinder> finder(new DummyFinder);
+  dummyRecordProvider->addFinder(finder);
+  
+  provider.insert(dummyRecordProvider);
+  
+  const Timestamp time_2(2);
+  finder->setInterval(ValidityInterval(IOVSyncValue{time_2}, IOVSyncValue{Timestamp{3}}));
+  {
+    EventSetup const& eventSetup = provider.eventSetupForInstance(IOVSyncValue{time_2});
+    CPPUNIT_ASSERT(2==eventSetup.get<DummyRecord>().cacheIdentifier());
+  }
+  {
+    EventSetup const& eventSetup = provider.eventSetupForInstance(IOVSyncValue{Timestamp{3}});
+    eventSetup.get<DummyRecord>();
+    CPPUNIT_ASSERT(2==eventSetup.get<DummyRecord>().cacheIdentifier());
+  }
+  //extending the IOV should not cause the cache to be reset
+  finder->setInterval(ValidityInterval(IOVSyncValue{time_2}, IOVSyncValue{Timestamp{4}}));
+  {
+    EventSetup const& eventSetup = provider.eventSetupForInstance(IOVSyncValue{Timestamp{4}});
+    CPPUNIT_ASSERT(2==eventSetup.get<DummyRecord>().cacheIdentifier());
+  }
+
+  //this is a new IOV so should get cache reset
+  finder->setInterval(ValidityInterval(IOVSyncValue{Timestamp{5}}, IOVSyncValue{Timestamp{6}}));
+  {
+    EventSetup const& eventSetup = provider.eventSetupForInstance(IOVSyncValue{Timestamp{5}});
+    CPPUNIT_ASSERT(3==eventSetup.get<DummyRecord>().cacheIdentifier());
+  }
+
 }

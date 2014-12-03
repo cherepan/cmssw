@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 process = cms.Process("photonAnalysis")
 
-process.load("Configuration.StandardSequences.Geometry_cff")
+process.load("Configuration.StandardSequences.GeometryDB_cff")
 process.load("DQMOffline.EGamma.photonAnalyzer_cfi")
 process.load("DQMOffline.EGamma.zmumugammaAnalyzer_cfi")
 process.load("DQMOffline.EGamma.photonOfflineClient_cfi")
@@ -11,14 +11,13 @@ process.load("DQMServices.Components.DQMStoreStats_cfi")
 DQMStore = cms.Service("DQMStore")
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(2)
+    input = cms.untracked.int32(-1)
 )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-'/store/relval/CMSSW_5_2_0_pre2/RelValZMM/GEN-SIM-RECO/START50_V9-v1/0214/C0CCF508-5244-E111-B211-00261894389E.root',
-'/store/relval/CMSSW_5_2_0_pre2/RelValZMM/GEN-SIM-RECO/START50_V9-v1/0217/10161C44-D444-E111-A1AC-003048679164.root',
-'/store/relval/CMSSW_5_2_0_pre2/RelValZMM/GEN-SIM-RECO/START50_V9-v1/0217/EC841A5E-A844-E111-84C1-0026189438DF.root'
+	
+'/store/relval/CMSSW_6_0_0_pre7-GR_R_53_V2_RelVal_zMu2011B/DoubleMu/RECO/v1/0000/124D426F-38BA-E111-AEC8-003048FFD75C.root'
 
 
 ))

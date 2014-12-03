@@ -18,7 +18,7 @@
  *
  * \version   May 3, 2006, F.Ratnikov, include all different
  *            energy components separately
- * \version   $Id: CaloJet.h,v 1.37 2008/05/26 11:22:12 arizzi Exp $
+ * \version   $Id: CaloJet.h,v 1.39 2013/05/01 13:53:47 srappocc Exp $
  ************************************************************/
 
 
@@ -29,6 +29,11 @@
 namespace reco {
 class CaloJet : public Jet {
  public:
+
+    typedef CaloTowerPtr ConstituentTypePtr;
+    typedef CaloTowerFwdPtr ConstituentTypeFwdPtr;
+
+
   struct Specific {
     Specific () :
       mMaxEInEmTowers (0),

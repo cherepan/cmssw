@@ -6,8 +6,8 @@
 //                 
 //                  
 //                
-//   $Date: 2008/11/24 10:24:07 $
-//   $Revision: 1.7 $ 
+//   $Date: 2013/05/30 22:25:06 $
+//   $Revision: 1.9 $ 
 //
 //   Original Author :
 //   Hannes Sakulin      HEPHY / Vienna
@@ -108,7 +108,7 @@ class L1MuBinnedScale : public L1MuScale {
   /// NBins=number of bins, Scale[NBins+1]=bin edges, idx_offset=offeset to index (if stored as signed)
   ///
 	//  L1MuBinnedScale(unsigned int nbits, bool signedPacking, int NBins, const float* Scale, int idx_offset=0) 
-	L1MuBinnedScale(unsigned int nbits, bool signedPacking, int NBins, const std::vector<double> Scale, int idx_offset=0) 
+	L1MuBinnedScale(unsigned int nbits, bool signedPacking, int NBins, const std::vector<double>& Scale, int idx_offset=0) 
       : m_nbits( nbits ),
 	m_signedPacking( signedPacking )
   {
@@ -260,7 +260,7 @@ class L1MuSymmetricBinnedScale : public L1MuScale {
   /// NBins=number of bins (in one half of the scale), Scale[NBins+1]=bin edges
   ///
 	//  L1MuSymmetricBinnedScale(int nbits, int NBins, const float* Scale) 
-	L1MuSymmetricBinnedScale(int nbits, int NBins, const std::vector<double> Scale) 
+	L1MuSymmetricBinnedScale(int nbits, int NBins, const std::vector<double>& Scale) 
     : m_packing (L1MuPseudoSignedPacking(nbits)) {
     m_NBins = NBins;
     m_Scale.reserve(m_NBins + 1);

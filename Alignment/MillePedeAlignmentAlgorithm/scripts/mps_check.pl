@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 #     R. Mankel, DESY Hamburg     09-Jul-2007
 #     A. Parenti, DESY Hamburg    24-Apr-2008
-#     $Revision: 1.27 $ by $Author: jbehr $
-#     $Date: 2012/01/20 10:19:27 $
+#     $Revision: 1.35 $ by $Author: jbehr $
+#     $Date: 2013/05/30 13:37:00 $
 #
 #  Check output from jobs that have FETCH status
 #  
@@ -17,6 +17,9 @@ unshift(@INC, dirname($0)."/mpslib");
 use Mpslib;
 
 read_db();
+
+my @cmslsoutput = `cmsLs -l $mssDir`;
+
 # loop over FETCH jobs
 for ($i=0; $i<@JOBID; ++$i) {
   $batchSuccess = 0;
@@ -50,14 +53,18 @@ for ($i=0; $i<@JOBID; ++$i) {
   $pedeLogWrnStr = "";
   $remark = "";
 
-  if (@JOBSTATUS[$i] eq "FETCH") {
+  my $disabled = "";
+  $disabled = "DISABLED" if( $JOBSTATUS[$i] =~ /DISABLED/gi);
+  if (@JOBSTATUS[$i] =~ /FETCH/) {
 
     # open the STDOUT file
     $stdOut = "jobData/@JOBDIR[$i]/STDOUT";
     open STDFILE,"$stdOut";
     # scan records in input file
     while ($line = <STDFILE>) {
-      if (($line =~ m/Unable to access quota space/) eq 1) { $quotaspace = 1;}
+      if (($line =~ m/Unable to access quota space/i) eq 1) { $quotaspace = 1;}
+      if (($line =~ m/Unable to get quota space/i) eq 1) { $quotaspace = 1;}
+      if (($line =~ m/Disk quota exceeded/i) eq 1) { $quotaspace = 1;}
       if (($line =~ m/CERN report: Job Killed/) eq 1) { $killed = 1;}
       if (($line =~ m/Job finished/) eq 1)  { $finished = 1; }
       if (($line =~ m/connection timed out/) eq 1)  { $timeout = 1; }
@@ -148,9 +155,18 @@ for ($i=0; $i<@JOBID; ++$i) {
 
     # for mille jobs checks that milleBinary file is not empty
     if ( $i < $nJobs ) { # mille job!
-      $milleOut = sprintf("milleBinary%03d.dat",$i+1);
+      my $milleOut = sprintf("milleBinary%03d.dat",$i+1);
       #$mOutSize = `nsls -l $mssDir | grep $milleOut | head -1 | awk '{print \$5}'`;
-      $mOutSize = `cmsLs -l $mssDir | grep $milleOut | head -1 | awk '{print \$2}'`;
+      #$mOutSize = `cmsLs -l $mssDir | grep $milleOut | head -1 | awk '{print \$2}'`;
+      my $mOutSize = 0;
+      foreach my $line (@cmslsoutput)
+        {
+          if($line =~ /$milleOut/)
+            {
+              my @columns = split " ", $line;
+              $mOutSize = $columns[1];
+            }
+        }
       if ( !($mOutSize>0) ) {
 	$emptyDatErr = 1;
       }
@@ -169,11 +185,30 @@ for ($i=0; $i<@JOBID; ++$i) {
 	open INFILE,"$eazeLog";
 	# scan records in input file
 	$pedeAbend = 1;
+        my $usedPedeMem = 0;
 	while ($line = <INFILE>) {
 	  # check if pede has reached its normal end
 #	  if (($line =~ m/Millepede II ending/) eq 1) { $pedeAbend = 0;}
 	  if (($line =~ m/Millepede II.* ending/) eq 1) { $pedeAbend = 0;}
+          if((my $mem) = $line =~ /Peak dynamic memory allocation: (.+) GB/i) {
+            $mem =~ s/\s//g;
+            #if $mem is a float
+            if($mem =~ m/^\d+.\d+$/) {
+              $usedPedeMem = $mem;
+            } else {
+              print "mps_check.pl: Found Pede peak memory allocation but extracted number is not a float: $mem\n";
+            }
+          }
 	}
+        if(defined $pedeMem && $pedeMem > 0.0 && $usedPedeMem) {
+          my $memoryratio = $usedPedeMem / ($pedeMem / 1024) * 100.0;
+          my $roundedMemoryRatio = sprintf("%.1f", $memoryratio);
+          
+          #print a warning if more than approx. 4 GB have been requested of which less than 75% are used by Pede
+          if($pedeMem > 4000 && $memoryratio < 75.) {
+            print "Warning: " . ($pedeMem / 1024) . " GB of memory for Pede requested but only $roundedMemoryRatio % of it has been used! Consider to request less memory in order to save resources.\n";
+          }
+        }
 	# clean up if needed FIXME if using proper perl File/Temp!
 	system "rm /tmp/pede.dump" if ($eazeLog eq "/tmp/pede.dump");
       } else {
@@ -217,6 +252,7 @@ for ($i=0; $i<@JOBID; ++$i) {
     if ($quotaspace eq 1) {
       print "@JOBDIR[$i] @JOBID[$i] had quota space problem\n";
       $okStatus = "FAIL";
+      $remark = "eos quota space problem";
     }
     if ($ioprob eq 1) {
       print "@JOBDIR[$i] @JOBID[$i] had I/O problem\n";
@@ -318,7 +354,7 @@ for ($i=0; $i<@JOBID; ++$i) {
     
     # update number of events
     @JOBNEVT[$i] = $nEvent;
-    @JOBSTATUS[$i] = $okStatus;
+    @JOBSTATUS[$i] = $disabled.$okStatus;
     # update CPU time
     @JOBRUNTIME[$i] = $cputime;
     # update host

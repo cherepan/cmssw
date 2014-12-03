@@ -12,7 +12,7 @@
 
 #include "SimDataFormats/CrossingFrame/interface/CrossingFrame.h"
 #include "SimDataFormats/CrossingFrame/interface/MixCollection.h"
-#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticleFwd.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingVertexContainer.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
@@ -89,13 +89,10 @@ void TrackingTruthValid::analyze(const edm::Event& event, const edm::EventSetup&
 
 
   event.getByLabel(src_,TruthTrackContainer );
-
   //  event.getByLabel(src_,TruthVertexContainer);
-
   //  std::cout << "Using Collection " << src_ << std::endl;
   
   const TrackingParticleCollection *tPC   = TruthTrackContainer.product();
-
   //  const TrackingVertexCollection   *tVC   = TruthVertexContainer.product();
 
   /*
@@ -105,7 +102,6 @@ void TrackingTruthValid::analyze(const edm::Event& event, const edm::EventSetup&
   const edm::HepMCProduct *mcp = hepMC.product();
   //  const HepMC::GenEvent *genEvent = mcp -> GetEvent();
   */
-
   //  cout << "Found " << tPC -> size() << " tracks and " << tVC -> size() << " vertices." <<endl;
    
 
@@ -114,23 +110,27 @@ void TrackingTruthValid::analyze(const edm::Event& event, const edm::EventSetup&
   for (TrackingParticleCollection::const_iterator t = tPC -> begin(); t != tPC -> end(); ++t) {
     //if(t -> trackerPSimHit().size() ==0) cout << " Track with 0 SimHit " << endl;
 
-
     meTPMass->Fill(t->mass());
-
     meTPCharge->Fill(t->charge() );
-
     meTPId->Fill(t->pdgId());
-
     meTPPt->Fill(sqrt(t->momentum().perp2()));
-
     meTPEta->Fill(t->momentum().eta());
-
     meTPPhi->Fill(t->momentum().Phi());
-    std::vector<PSimHit> trackerPSimHit( t->trackPSimHit(DetId::Tracker) );
-    meTPAllHits->Fill(trackerPSimHit.size());
+    //#warning "This file has been modified just to get it to compile without any regard as to whether it still functions as intended"
+    //#ifdef REMOVED_JUST_TO_GET_IT_TO_COMPILE__THIS_CODE_NEEDS_TO_BE_CHECKED
+    //    std::vector<PSimHit> trackerPSimHit( t->trackPSimHit(DetId::Tracker) );
+    //#endif
+    meTPAllHits->Fill(t->numberOfTrackerHits());
     //get the process of the first hit
-    if(trackerPSimHit.size() !=0) meTPProc->Fill( trackerPSimHit.front().processType());
-    meTPMatchedHits->Fill(t->matchedHit());
+    //#warning "This file has been modified just to get it to compile without any regard as to whether it still functions as intended"
+    //#ifdef REMOVED_JUST_TO_GET_IT_TO_COMPILE__THIS_CODE_NEEDS_TO_BE_CHECKED
+    //    if(trackerPSimHit.size() !=0) meTPProc->Fill( trackerPSimHit.front().processType());
+    //#endif
+    
+    // there is no more the PSimHits collection !!! how to deal w/ the processType ?
+    //    if(t->numberOfTrackerHits() !=0) meTPProc->Fill( trackerPSimHit.front().processType());
+
+    meTPMatchedHits->Fill(t->numberOfTrackerLayers());
     meTPVtxX->Fill(t->vx());
     meTPVtxY->Fill(t->vy());
     meTPVtxZ->Fill(t->vz());

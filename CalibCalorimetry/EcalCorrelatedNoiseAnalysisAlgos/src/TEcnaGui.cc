@@ -623,7 +623,7 @@ TEcnaGui::TEcnaGui()
   Init();
 }
 
-TEcnaGui::TEcnaGui(TEcnaObject* pObjectManager, const TString SubDet, const TGWindow *p, UInt_t w, UInt_t h):
+TEcnaGui::TEcnaGui(TEcnaObject* pObjectManager, const TString& SubDet, const TGWindow *p, UInt_t w, UInt_t h):
 TGMainFrame(p, w, h) 
 {
   // cout << "[Info Management] CLASS: TEcnaGui.           CREATE OBJECT: this = " << this << endl;
@@ -3250,7 +3250,7 @@ void TEcnaGui::DialogBox()
 //// which are in the "source" sector of the python file
   
 //  //........................... get info from the entry field
-//  char* listchain = (char*)fPyfText->GetBuffer()->GetString();  
+//  const char* listchain = fPyfText->GetBuffer()->GetString();  
 //  fKeyPyf = listchain;
   
 //  fCnaCommand++;
@@ -3263,8 +3263,7 @@ void TEcnaGui::DoButtonAna()
 {
 //Registration of the type of the analysis
 
-  char* bufferchain;
-  bufferchain = (char*)fAnaText->GetBuffer()->GetString();
+  const char *bufferchain = fAnaText->GetBuffer()->GetString();
 
   fKeyAnaType = bufferchain;
   
@@ -3279,8 +3278,7 @@ void TEcnaGui::DoButtonNors()
 {
 //Registration of the number of samples (ROOT file)
 
-  char* bufferchain;
-  bufferchain = (char*)fNorsText->GetBuffer()->GetString();
+  const char *bufferchain = fNorsText->GetBuffer()->GetString();
   fKeyNbOfSamplesString = bufferchain;
   fKeyNbOfSamples = atoi(bufferchain);
 
@@ -3322,8 +3320,7 @@ void TEcnaGui::DoButtonNbSampForCalc()
 {
 //Registration of the number of samples (ROOT file)
 
-  char* bufferchain;
-  bufferchain = (char*)fNbSampForCalcText->GetBuffer()->GetString();
+  const char *bufferchain = fNbSampForCalcText->GetBuffer()->GetString();
   fKeyNbOfSampForCalcString = bufferchain;
   fKeyNbOfSampForCalc = atoi(bufferchain);
 
@@ -3350,7 +3347,7 @@ void TEcnaGui::DoButtonRun()
 //Register run number
   
   //........................... get info from the entry field
-  char* bufferchain = (char*)fRunText->GetBuffer()->GetString();
+  const char* bufferchain = fRunText->GetBuffer()->GetString();
   fKeyRunNumberString = bufferchain;
   fKeyRunNumber = atoi(bufferchain);
   fCnaCommand++;
@@ -3364,8 +3361,7 @@ void TEcnaGui::DoButtonFev()
 {
 //Registration of the first requested event number
 
-  char* bufferchain;
-  bufferchain = (char*)fFevText->GetBuffer()->GetString();
+  const char *bufferchain = fFevText->GetBuffer()->GetString();
   fKeyFirstReqEvtNumberString = bufferchain;
   fKeyFirstReqEvtNumber = atoi(bufferchain);
 
@@ -3388,8 +3384,7 @@ void TEcnaGui::DoButtonLev()
 {
 //Registration of the last requested event number
 
-  char* bufferchain;
-  bufferchain = (char*)fLevText->GetBuffer()->GetString();
+  const char *bufferchain = fLevText->GetBuffer()->GetString();
   fKeyLastReqEvtNumberString = bufferchain;
   fKeyLastReqEvtNumber = atoi(bufferchain);
 
@@ -3412,8 +3407,7 @@ void TEcnaGui::DoButtonRev()
 {
 //Registration of the nb ofrequested events
 
-  char* bufferchain;
-  bufferchain = (char*)fRevText->GetBuffer()->GetString();
+  const char *bufferchain = fRevText->GetBuffer()->GetString();
   fKeyReqNbOfEvtsString = bufferchain;
   fKeyReqNbOfEvts = atoi(bufferchain);
 
@@ -3449,8 +3443,7 @@ void TEcnaGui::DoButtonStex()
 {
 //Registration of the Stex number
 
-  char* bufferchain;
-  bufferchain = (char*)fStexText->GetBuffer()->GetString();
+  const char *bufferchain = fStexText->GetBuffer()->GetString();
   fKeyStexNumberString = bufferchain;
   fKeyStexNumber = atoi(bufferchain);
 
@@ -3525,8 +3518,7 @@ void TEcnaGui::DoButtonVminD_NOE_ChNb()
 {
 //Registration of Ymin for number of events
 
-  char* bufferchain;
-  bufferchain = (char*)fVminD_NOE_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVminD_NOE_ChNbText->GetBuffer()->GetString();
 
   fKeyVminD_NOE_ChNb = (Double_t)atof(bufferchain);
 
@@ -3541,8 +3533,7 @@ void TEcnaGui::DoButtonVmaxD_NOE_ChNb()
 {
 //Registration of Ymax for number of events
 
-  char* bufferchain;
-  bufferchain = (char*)fVmaxD_NOE_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVmaxD_NOE_ChNbText->GetBuffer()->GetString();
 
   fKeyVmaxD_NOE_ChNb = (Double_t)atof(bufferchain);
 
@@ -3557,8 +3548,7 @@ void TEcnaGui::DoButtonVminD_Ped_ChNb()
 {
 //Registration of Ymin for pedestals
 
-  char* bufferchain;
-  bufferchain = (char*)fVminD_Ped_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVminD_Ped_ChNbText->GetBuffer()->GetString();
 
   fKeyVminD_Ped_ChNb = (Double_t)atof(bufferchain);
 
@@ -3573,8 +3563,7 @@ void TEcnaGui::DoButtonVmaxD_Ped_ChNb()
 {
 //Registration of Ymax for pedestals
 
-  char* bufferchain;
-  bufferchain = (char*)fVmaxD_Ped_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVmaxD_Ped_ChNbText->GetBuffer()->GetString();
 
   fKeyVmaxD_Ped_ChNb = (Double_t)atof(bufferchain);
 
@@ -3589,8 +3578,7 @@ void TEcnaGui::DoButtonVminD_TNo_ChNb()
 {
 //Registration of Ymin for mean sample sigmas (noise)
 
-  char* bufferchain;
-  bufferchain = (char*)fVminD_TNo_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVminD_TNo_ChNbText->GetBuffer()->GetString();
 
   fKeyVminD_TNo_ChNb = (Double_t)atof(bufferchain);
 
@@ -3605,8 +3593,7 @@ void TEcnaGui::DoButtonVmaxD_TNo_ChNb()
 {
 //Registration of Ymax for mean sample sigmas (noise)
 
-  char* bufferchain;
-  bufferchain = (char*)fVmaxD_TNo_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVmaxD_TNo_ChNbText->GetBuffer()->GetString();
 
   fKeyVmaxD_TNo_ChNb = (Double_t)atof(bufferchain);
 
@@ -3621,8 +3608,7 @@ void TEcnaGui::DoButtonVminD_MCs_ChNb()
 {
 //Registration of Ymin for mean cor(s,s')
 
-  char* bufferchain;
-  bufferchain = (char*)fVminD_MCs_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVminD_MCs_ChNbText->GetBuffer()->GetString();
 
   fKeyVminD_MCs_ChNb = (Double_t)atof(bufferchain);
 
@@ -3637,8 +3623,7 @@ void TEcnaGui::DoButtonVmaxD_MCs_ChNb()
 {
 //Registration of Ymax for mean cor(s,s')
 
-  char* bufferchain;
-  bufferchain = (char*)fVmaxD_MCs_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVmaxD_MCs_ChNbText->GetBuffer()->GetString();
 
   fKeyVmaxD_MCs_ChNb = (Double_t)atof(bufferchain);
 
@@ -3654,8 +3639,7 @@ void TEcnaGui::DoButtonVminD_LFN_ChNb()
 {
 //Registration of Ymin for sigmas of sample means
 
-  char* bufferchain;
-  bufferchain = (char*)fVminD_LFN_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVminD_LFN_ChNbText->GetBuffer()->GetString();
 
   fKeyVminD_LFN_ChNb = (Double_t)atof(bufferchain);
 
@@ -3670,8 +3654,7 @@ void TEcnaGui::DoButtonVmaxD_LFN_ChNb()
 {
 //Registration of Ymax for sigmas of sample means 
 
-  char* bufferchain;
-  bufferchain = (char*)fVmaxD_LFN_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVmaxD_LFN_ChNbText->GetBuffer()->GetString();
 
   fKeyVmaxD_LFN_ChNb = (Double_t)atof(bufferchain);
 
@@ -3686,8 +3669,7 @@ void TEcnaGui::DoButtonVminD_HFN_ChNb()
 {
 //Registration of Ymin for sigmas of sample sigmas
 
-  char* bufferchain;
-  bufferchain = (char*)fVminD_HFN_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVminD_HFN_ChNbText->GetBuffer()->GetString();
 
   fKeyVminD_HFN_ChNb = (Double_t)atof(bufferchain);
 
@@ -3702,8 +3684,7 @@ void TEcnaGui::DoButtonVmaxD_HFN_ChNb()
 {
 //Registration of Ymax for sigmas of sample sigmas
 
-  char* bufferchain;
-  bufferchain = (char*)fVmaxD_HFN_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVmaxD_HFN_ChNbText->GetBuffer()->GetString();
 
   fKeyVmaxD_HFN_ChNb = (Double_t)atof(bufferchain);
 
@@ -3718,8 +3699,7 @@ void TEcnaGui::DoButtonVminD_SCs_ChNb()
 {
 //Registration of Ymin for sigmas of cor(s,s')
 
-  char* bufferchain;
-  bufferchain = (char*)fVminD_SCs_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = fVminD_SCs_ChNbText->GetBuffer()->GetString();
 
   fKeyVminD_SCs_ChNb = (Double_t)atof(bufferchain);
 
@@ -3734,8 +3714,7 @@ void TEcnaGui::DoButtonVmaxD_SCs_ChNb()
 {
 //Registration of Ymax for sigmas of cor(s,s')
 
-  char* bufferchain;
-  bufferchain = (char*)fVmaxD_SCs_ChNbText->GetBuffer()->GetString();
+  const char *bufferchain = (char*)fVmaxD_SCs_ChNbText->GetBuffer()->GetString();
 
   fKeyVmaxD_SCs_ChNb = (Double_t)atof(bufferchain);
 
@@ -3750,8 +3729,7 @@ void TEcnaGui::DoButtonVminLFccMos()
 {
 //Registration of Ymin for LF Mean Cor(c,c')
 
-  char* bufferchain;
-  bufferchain = (char*)fVminLFccMosText->GetBuffer()->GetString();
+  const char *bufferchain = fVminLFccMosText->GetBuffer()->GetString();
 
   fKeyVminLFccMos = (Double_t)atof(bufferchain);
 
@@ -3766,8 +3744,7 @@ void TEcnaGui::DoButtonVmaxLFccMos()
 {
 //Registration of Ymax for LF Mean Cor(c,c')
 
-  char* bufferchain;
-  bufferchain = (char*)fVmaxLFccMosText->GetBuffer()->GetString();
+  const char *bufferchain = fVmaxLFccMosText->GetBuffer()->GetString();
 
   fKeyVmaxLFccMos = (Double_t)atof(bufferchain);
 
@@ -3782,8 +3759,7 @@ void TEcnaGui::DoButtonVminHFccMos()
 {
 //Registration of Ymin for HF Mean Cor(c,c')
 
-  char* bufferchain;
-  bufferchain = (char*)fVminHFccMosText->GetBuffer()->GetString();
+  const char *bufferchain = fVminHFccMosText->GetBuffer()->GetString();
 
   fKeyVminHFccMos = (Double_t)atof(bufferchain);
 
@@ -3798,8 +3774,7 @@ void TEcnaGui::DoButtonVmaxHFccMos()
 {
 //Registration of Ymax for HF Mean Cor(c,c')
 
-  char* bufferchain;
-  bufferchain = (char*)fVmaxHFccMosText->GetBuffer()->GetString();
+  const char *bufferchain = fVmaxHFccMosText->GetBuffer()->GetString();
 
   fKeyVmaxHFccMos = (Double_t)atof(bufferchain);
 
@@ -3815,8 +3790,7 @@ void TEcnaGui::DoButtonVminLHFcc()
 {
 //Registration of Ymin for cov(c,c') in Stins
 
-  char* bufferchain;
-  bufferchain = (char*)fVminLHFccText->GetBuffer()->GetString();
+  const char *bufferchain = fVminLHFccText->GetBuffer()->GetString();
 
   fKeyVminLHFcc = (Double_t)atof(bufferchain);
 
@@ -3831,8 +3805,7 @@ void TEcnaGui::DoButtonVmaxLHFcc()
 {
 //Registration of Ymax for cov(c,c') in Stins
 
-  char* bufferchain;
-  bufferchain = (char*)fVmaxLHFccText->GetBuffer()->GetString();
+  const char *bufferchain = fVmaxLHFccText->GetBuffer()->GetString();
 
   fKeyVmaxLHFcc = (Double_t)atof(bufferchain);
 
@@ -3853,8 +3826,7 @@ void TEcnaGui::DoButtonStinA()
 {
 //Registration of the Stin A number (A = X coordinate for cor(c,c') plots)
 
-  char* bufferchain;
-  bufferchain = (char*)fStinAText->GetBuffer()->GetString();
+  const char *bufferchain = (char*)fStinAText->GetBuffer()->GetString();
 
   Int_t xReadStinANumberForCons = atoi(bufferchain);
 
@@ -3916,8 +3888,7 @@ void TEcnaGui::DoButtonStinB()
 {
 //Registration of the Stin B number (B = Y coordinate for cor(c,c') plots)
 
-  char* bufferchain;
-  bufferchain = (char*)fStinBText->GetBuffer()->GetString();
+  const char *bufferchain = fStinBText->GetBuffer()->GetString();
 
   Int_t xReadStinBNumberForCons = atoi(bufferchain);
 
@@ -3980,8 +3951,7 @@ void TEcnaGui::DoButtonChan()
 {
 //Registration of the channel number
 
-  char* bufferchain;
-  bufferchain = (char*)fChanText->GetBuffer()->GetString();
+  const char *bufferchain = fChanText->GetBuffer()->GetString();
   Int_t xReadNumber = atoi(bufferchain);
 
   Int_t Choffset = -1;
@@ -4011,8 +3981,7 @@ void TEcnaGui::DoButtonSamp()
 {
 //Registration of the sample number
 
-  char* bufferchain;
-  bufferchain = (char*)fSampText->GetBuffer()->GetString();
+  const char *bufferchain = fSampText->GetBuffer()->GetString();
   Int_t xKeySampNumber = atoi(bufferchain);
 
   fCnaCommand++;
@@ -4630,7 +4599,7 @@ void TEcnaGui::HandleMenu(Int_t id)
 //             SubmitOnBatchSystem()   M E T H O D 
 //
 //==========================================================================
-void TEcnaGui::SubmitOnBatchSystem(const TString QueueCode)
+void TEcnaGui::SubmitOnBatchSystem(const TString& QueueCode)
 {
   //Submit job in batch mode
   
@@ -4871,7 +4840,7 @@ void TEcnaGui::SubmitOnBatchSystem(const TString QueueCode)
 //             CleanBatchFiles()   M E T H O D 
 //
 //==========================================================================
-void TEcnaGui::CleanBatchFiles(const TString clean_code)
+void TEcnaGui::CleanBatchFiles(const TString& clean_code)
 {
   //Clean python files, submission scripts,...
 
@@ -5017,7 +4986,7 @@ void TEcnaGui::CleanBatchFiles(const TString clean_code)
 //             Calculations()   M E T H O D 
 //
 //==========================================================================
-void TEcnaGui::Calculations(const TString calc_code)
+void TEcnaGui::Calculations(const TString& calc_code)
 {
   //Calculations of quantities (Pedestals, correlations, ... )
 
@@ -5218,7 +5187,7 @@ void TEcnaGui::Calculations(const TString calc_code)
 //==========================================================================
 //---------- common messages
 
-void TEcnaGui::MessageCnaCommandReplyA(const TString first_same_plot)
+void TEcnaGui::MessageCnaCommandReplyA(const TString& first_same_plot)
 {
   // reply message of the Cna command
 
@@ -5233,7 +5202,7 @@ void TEcnaGui::MessageCnaCommandReplyA(const TString first_same_plot)
     }
 }
 
-void TEcnaGui::MessageCnaCommandReplyB(const TString first_same_plot)
+void TEcnaGui::MessageCnaCommandReplyB(const TString& first_same_plot)
 {
   // reply message of the Cna command
 
@@ -5263,7 +5232,7 @@ void TEcnaGui::MessageCnaCommandReplyB(const TString first_same_plot)
 //
 //==========================================================================
 //---------------------------- Cortt
-void TEcnaGui::ViewMatrixLowFrequencyMeanCorrelationsBetweenStins(const TString option_plot)
+void TEcnaGui::ViewMatrixLowFrequencyMeanCorrelationsBetweenStins(const TString& option_plot)
 {
   // Plot of Low Frequency Mean Cor(c,c') for each pair of Stins
 
@@ -5285,7 +5254,7 @@ void TEcnaGui::ViewMatrixLowFrequencyMeanCorrelationsBetweenStins(const TString 
 
   MessageCnaCommandReplyB(option_plot);
 }
-void TEcnaGui::ViewMatrixHighFrequencyMeanCorrelationsBetweenStins(const TString option_plot)
+void TEcnaGui::ViewMatrixHighFrequencyMeanCorrelationsBetweenStins(const TString& option_plot)
 {
   // Plot of Low Frequency Mean Cor(c,c') for each pair of Stins
 
@@ -5310,7 +5279,7 @@ void TEcnaGui::ViewMatrixHighFrequencyMeanCorrelationsBetweenStins(const TString
 //---------------------------------------------- Corcc
 void TEcnaGui::ViewMatrixLowFrequencyCorrelationsBetweenChannels(const Int_t&  cStexStin_A,
 								 const Int_t&  cStexStin_B,
-								 const TString option_plot)
+								 const TString& option_plot)
 {
   // Low Frequency Correlation matrix (crystal of Stin X, crystal of Stin X) for each Stin
 
@@ -5334,7 +5303,7 @@ void TEcnaGui::ViewMatrixLowFrequencyCorrelationsBetweenChannels(const Int_t&  c
 }
 
 void TEcnaGui::ViewMatrixHighFrequencyCorrelationsBetweenChannels(const Int_t&  cStexStin_A, const Int_t& cStexStin_B,
-								  const TString option_plot)
+								  const TString& option_plot)
 {
 // High Frequency Correlation matrix (crystal of Stin X, crystal of Stin X) for each Stin
 
@@ -5406,7 +5375,7 @@ void TEcnaGui::ViewStexHighFrequencyCorcc()
 
 //---------------------------- Corss, Covss
 void TEcnaGui::ViewMatrixCorrelationSamples(const Int_t&  cStexStin_A, const Int_t& i0StinEcha,
-					   const TString option_plot)
+					   const TString& option_plot)
 {
 // Plot of correlation matrix between samples for a given channel
 
@@ -5434,7 +5403,7 @@ void TEcnaGui::ViewMatrixCorrelationSamples(const Int_t&  cStexStin_A, const Int
 }
 
 void TEcnaGui::ViewMatrixCovarianceSamples(const Int_t&  cStexStin_A, const Int_t& i0StinEcha,
-					  const TString option_plot)
+					  const TString& option_plot)
 {
 // Plot of covariance matrix between samples for a given channel
 
@@ -5829,7 +5798,7 @@ void TEcnaGui::ViewStexStinNumbering()
 //
 //===============================================================================
 //......................... Nb of evts
-void TEcnaGui::ViewHistoSorSNumberOfEventsOfCrystals(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSNumberOfEventsOfCrystals(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the number of events (found in the data)
 // as a function of crystals (grouped by Stins)
@@ -5853,7 +5822,7 @@ void TEcnaGui::ViewHistoSorSNumberOfEventsOfCrystals(const TString first_same_pl
   MessageCnaCommandReplyB(first_same_plot);
 }
 
-void TEcnaGui::ViewHistoSorSNumberOfEventsDistribution(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSNumberOfEventsDistribution(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the number of events distribution for a Stex
 
@@ -5877,7 +5846,7 @@ void TEcnaGui::ViewHistoSorSNumberOfEventsDistribution(const TString first_same_
 }
 
 //........................... Pedestals
-void TEcnaGui::ViewHistoSorSPedestalsOfCrystals(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSPedestalsOfCrystals(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the pedestals as a function of crystals (grouped by Stins)
 
@@ -5900,7 +5869,7 @@ void TEcnaGui::ViewHistoSorSPedestalsOfCrystals(const TString first_same_plot)
   MessageCnaCommandReplyB(first_same_plot);
 }
 
-void TEcnaGui::ViewHistoSorSPedestalsDistribution(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSPedestalsDistribution(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the pedestals distribution for a Stex
 
@@ -5924,7 +5893,7 @@ void TEcnaGui::ViewHistoSorSPedestalsDistribution(const TString first_same_plot)
 }
 
 //............................... Total noise
-void TEcnaGui::ViewHistoSorSTotalNoiseOfCrystals(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSTotalNoiseOfCrystals(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the mean sample sigmas as a function of crystals (grouped by Stins)
 
@@ -5947,7 +5916,7 @@ void TEcnaGui::ViewHistoSorSTotalNoiseOfCrystals(const TString first_same_plot)
   MessageCnaCommandReplyB(first_same_plot);
 }
 
-void TEcnaGui::ViewHistoSorSTotalNoiseDistribution(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSTotalNoiseDistribution(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the mean sample sigmas distribution for a Stex
 
@@ -5972,7 +5941,7 @@ void TEcnaGui::ViewHistoSorSTotalNoiseDistribution(const TString first_same_plot
 
 
 //............................ Low frequency noise
-void TEcnaGui::ViewHistoSorSLowFrequencyNoiseOfCrystals(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSLowFrequencyNoiseOfCrystals(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the pedestals as a function of crystals (grouped by Stins)
 
@@ -5995,7 +5964,7 @@ void TEcnaGui::ViewHistoSorSLowFrequencyNoiseOfCrystals(const TString first_same
   MessageCnaCommandReplyB(first_same_plot);
 }
 
-void TEcnaGui::ViewHistoSorSLowFrequencyNoiseDistribution(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSLowFrequencyNoiseDistribution(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the pedestals distribution for a Stex
 
@@ -6019,7 +5988,7 @@ void TEcnaGui::ViewHistoSorSLowFrequencyNoiseDistribution(const TString first_sa
 }
 
 //............................ High frequency noise
-void TEcnaGui::ViewHistoSorSHighFrequencyNoiseOfCrystals(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSHighFrequencyNoiseOfCrystals(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the mean sample sigmas as a function of crystals (grouped by Stins)
 
@@ -6042,7 +6011,7 @@ void TEcnaGui::ViewHistoSorSHighFrequencyNoiseOfCrystals(const TString first_sam
   MessageCnaCommandReplyB(first_same_plot);
 }
 
-void TEcnaGui::ViewHistoSorSHighFrequencyNoiseDistribution(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSHighFrequencyNoiseDistribution(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the mean sample sigmas distribution for a Stex
 
@@ -6066,7 +6035,7 @@ void TEcnaGui::ViewHistoSorSHighFrequencyNoiseDistribution(const TString first_s
 }
 
 //............................ Correlations between samples
-void TEcnaGui::ViewHistoSorSMeanCorssOfCrystals(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSMeanCorssOfCrystals(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the mean cor(s,s') as a function of crystals (grouped by Stins)
 
@@ -6089,7 +6058,7 @@ void TEcnaGui::ViewHistoSorSMeanCorssOfCrystals(const TString first_same_plot)
   MessageCnaCommandReplyB(first_same_plot);
 }
 
-void TEcnaGui::ViewHistoSorSMeanCorssDistribution(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSMeanCorssDistribution(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the mean cor(s,s') sigmas distribution for a Stex
 
@@ -6112,7 +6081,7 @@ void TEcnaGui::ViewHistoSorSMeanCorssDistribution(const TString first_same_plot)
   MessageCnaCommandReplyB(first_same_plot);
 }
 
-void TEcnaGui::ViewHistoSorSSigmaOfCorssOfCrystals(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSSigmaOfCorssOfCrystals(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the mean cor(s,s') as a function of crystals (grouped by Stins)
 
@@ -6135,7 +6104,7 @@ void TEcnaGui::ViewHistoSorSSigmaOfCorssOfCrystals(const TString first_same_plot
   MessageCnaCommandReplyB(first_same_plot);
 }
 
-void TEcnaGui::ViewHistoSorSSigmaOfCorssDistribution(const TString first_same_plot)
+void TEcnaGui::ViewHistoSorSSigmaOfCorssDistribution(const TString& first_same_plot)
 {
 // Plot the 1D histogram of the mean cor(s,s') sigmas distribution for a Stex
 
@@ -6160,7 +6129,7 @@ void TEcnaGui::ViewHistoSorSSigmaOfCorssDistribution(const TString first_same_pl
 
 //........................................................................................................
 void TEcnaGui::ViewHistoCrystalSampleMeans(const Int_t&  cStexStin_A, const Int_t& crystal,
-					   const TString first_same_plot)
+					   const TString& first_same_plot)
 {
 // Plot the 1D histogram of the mean sample ADC for a crystal
 
@@ -6186,7 +6155,7 @@ void TEcnaGui::ViewHistoCrystalSampleMeans(const Int_t&  cStexStin_A, const Int_
 
 //........................................................................................................
 void TEcnaGui::ViewHistoCrystalSampleMeansDistribution(const Int_t&  cStexStin_A, const Int_t& crystal,
-						       const TString first_same_plot)
+						       const TString& first_same_plot)
 {
 // Plot the 1D histogram distribution of the mean sample ADC for a crystal
 
@@ -6211,7 +6180,7 @@ void TEcnaGui::ViewHistoCrystalSampleMeansDistribution(const Int_t&  cStexStin_A
 }
 
 void TEcnaGui::ViewHistoCrystalSampleSigmas(const Int_t&  cStexStin_A, const Int_t& crystal,
-					    const TString first_same_plot)
+					    const TString& first_same_plot)
 {
 // Plot the 1D histogram of the sigmas of the sample ADC for a crystal
 
@@ -6236,7 +6205,7 @@ void TEcnaGui::ViewHistoCrystalSampleSigmas(const Int_t&  cStexStin_A, const Int
 }
 
 void TEcnaGui::ViewHistoCrystalSampleSigmasDistribution(const Int_t&  cStexStin_A, const Int_t& crystal,
-							const TString first_same_plot)
+							const TString& first_same_plot)
 {
 // Plot the 1D histogram distribution of the sigmas of the sample ADC for a crystal
 
@@ -6262,7 +6231,7 @@ void TEcnaGui::ViewHistoCrystalSampleSigmasDistribution(const Int_t&  cStexStin_
 
 //............................ Sample values
 void TEcnaGui::ViewHistoCrystalSampleValues(const Int_t& cStexStin_A, const Int_t& crystal,
-					    const Int_t& sample,     const TString first_same_plot)
+					    const Int_t& sample,     const TString& first_same_plot)
 {
 // Plot the 1D histogram of the pedestals as a function of the event number for a crystal
 
@@ -6288,7 +6257,7 @@ void TEcnaGui::ViewHistoCrystalSampleValues(const Int_t& cStexStin_A, const Int_
 }
 
 void TEcnaGui::ViewHistoSampleEventDistribution(const Int_t& cStexStin_A, const Int_t& crystal,
-						const Int_t& sample,      const TString first_same_plot)
+						const Int_t& sample,      const TString& first_same_plot)
 {
 // Plot the 1D histogram of the ADC event distribution for a sample
 
@@ -6314,9 +6283,9 @@ void TEcnaGui::ViewHistoSampleEventDistribution(const Int_t& cStexStin_A, const 
 }
 
 //------------------------------------------------------- Evolution in time (as a function of run date)
-void TEcnaGui::ViewHistimeCrystalPedestals(const TString  run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalPedestals(const TString&  run_par_file_name,
 					   const Int_t&   cStexStin_A, const Int_t& i0StinEcha,
-					   const TString  first_same_plot)
+					   const TString&  first_same_plot)
 {
 // Plot the graph of Pedestals evolution for a given channel
 
@@ -6339,9 +6308,9 @@ void TEcnaGui::ViewHistimeCrystalPedestals(const TString  run_par_file_name,
   fHistos->PlotHistory("Time", "Ped", run_par_file_name, cStexStin_A, i0StinEcha, first_same_plot);
 }
 
-void TEcnaGui::ViewHistimeCrystalPedestalsRuns(const TString  run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalPedestalsRuns(const TString&  run_par_file_name,
 					       const Int_t&   cStexStin_A, const Int_t& i0StinEcha,
-					       const TString  first_same_plot)
+					       const TString&  first_same_plot)
 {
 // Plot the graph of Pedestals evolution for a given channel
 
@@ -6365,9 +6334,9 @@ void TEcnaGui::ViewHistimeCrystalPedestalsRuns(const TString  run_par_file_name,
 }
 
 //....................................................................................................
-void TEcnaGui::ViewHistimeCrystalTotalNoise(const TString  run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalTotalNoise(const TString&  run_par_file_name,
 					    const Int_t&   cStexStin_A,    const Int_t&  i0StinEcha,
-					    const TString  first_same_plot)
+					    const TString&  first_same_plot)
 {
 // Plot the graph of total noise evolution for a given channel
   
@@ -6390,9 +6359,9 @@ void TEcnaGui::ViewHistimeCrystalTotalNoise(const TString  run_par_file_name,
   fHistos->PlotHistory("Time", "TNo", run_par_file_name, cStexStin_A, i0StinEcha, first_same_plot);
 }
 
-void TEcnaGui::ViewHistimeCrystalTotalNoiseRuns(const TString  run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalTotalNoiseRuns(const TString&  run_par_file_name,
 						const Int_t&   cStexStin_A,    const Int_t&  i0StinEcha,
-						const TString  first_same_plot)
+						const TString&  first_same_plot)
 {
 // Plot the graph of total noise evolution for a given channel
   
@@ -6415,9 +6384,9 @@ void TEcnaGui::ViewHistimeCrystalTotalNoiseRuns(const TString  run_par_file_name
   fHistos->PlotHistory("TNo", "NOR", run_par_file_name, cStexStin_A, i0StinEcha, first_same_plot);
 }
 //....................................................................................................
-void TEcnaGui::ViewHistimeCrystalLowFrequencyNoise(const TString  run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalLowFrequencyNoise(const TString&  run_par_file_name,
 						   const Int_t&   cStexStin_A,    const Int_t&  i0StinEcha,
-						   const TString  first_same_plot)
+						   const TString&  first_same_plot)
 {
 // Plot the graph of Low Frequency Noise evolution for a given channel
   
@@ -6440,9 +6409,9 @@ void TEcnaGui::ViewHistimeCrystalLowFrequencyNoise(const TString  run_par_file_n
   fHistos->PlotHistory("Time", "LFN", run_par_file_name, cStexStin_A, i0StinEcha, first_same_plot);
 }
 
-void TEcnaGui::ViewHistimeCrystalLowFrequencyNoiseRuns(const TString  run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalLowFrequencyNoiseRuns(const TString&  run_par_file_name,
 						       const Int_t&   cStexStin_A,    const Int_t&  i0StinEcha,
-						       const TString  first_same_plot)
+						       const TString&  first_same_plot)
 {
 // Plot the graph of Low Frequency Noise evolution for a given channel
   
@@ -6465,9 +6434,9 @@ void TEcnaGui::ViewHistimeCrystalLowFrequencyNoiseRuns(const TString  run_par_fi
   fHistos->PlotHistory("LFN", "NOR", run_par_file_name, cStexStin_A, i0StinEcha, first_same_plot);
 }
 //....................................................................................................
-void TEcnaGui::ViewHistimeCrystalHighFrequencyNoise(const TString  run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalHighFrequencyNoise(const TString&  run_par_file_name,
 						    const Int_t&   cStexStin_A,    const Int_t&  i0StinEcha,
-						    const TString  first_same_plot)
+						    const TString&  first_same_plot)
 {
 // Plot the graph of High Frequency Noise evolution for a given channel
   
@@ -6490,9 +6459,9 @@ void TEcnaGui::ViewHistimeCrystalHighFrequencyNoise(const TString  run_par_file_
   fHistos->PlotHistory("Time", "HFN", run_par_file_name, cStexStin_A, i0StinEcha, first_same_plot);
 }
 
-void TEcnaGui::ViewHistimeCrystalHighFrequencyNoiseRuns(const TString  run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalHighFrequencyNoiseRuns(const TString&  run_par_file_name,
 							const Int_t&   cStexStin_A,    const Int_t&  i0StinEcha,
-							const TString  first_same_plot)
+							const TString&  first_same_plot)
 {
 // Plot the graph of High Frequency Noise evolution for a given channel
   
@@ -6515,9 +6484,9 @@ void TEcnaGui::ViewHistimeCrystalHighFrequencyNoiseRuns(const TString  run_par_f
   fHistos->PlotHistory("HFN", "NOR", run_par_file_name, cStexStin_A, i0StinEcha, first_same_plot);
 }
 //....................................................................................................
-void TEcnaGui::ViewHistimeCrystalMeanCorss(const TString  run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalMeanCorss(const TString&  run_par_file_name,
 					   const Int_t&   cStexStin_A,    const Int_t& i0StinEcha,
-					   const TString  first_same_plot)
+					   const TString&  first_same_plot)
 {
 // Plot the graph for Mean Corss evolution for a given channel
 
@@ -6540,9 +6509,9 @@ void TEcnaGui::ViewHistimeCrystalMeanCorss(const TString  run_par_file_name,
   fHistos->PlotHistory("Time", "MCs", run_par_file_name, cStexStin_A, i0StinEcha, first_same_plot);
 }
 
-void TEcnaGui::ViewHistimeCrystalMeanCorssRuns(const TString  run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalMeanCorssRuns(const TString&  run_par_file_name,
 					       const Int_t&   cStexStin_A,    const Int_t& i0StinEcha,
-					       const TString  first_same_plot)
+					       const TString&  first_same_plot)
 {
 // Plot the graph for Mean Corss evolution for a given channel
 
@@ -6565,9 +6534,9 @@ void TEcnaGui::ViewHistimeCrystalMeanCorssRuns(const TString  run_par_file_name,
   fHistos->PlotHistory("MCs", "NOR", run_par_file_name, cStexStin_A, i0StinEcha, first_same_plot);
 }
 //....................................................................................................
-void TEcnaGui::ViewHistimeCrystalSigmaOfCorss(const TString run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalSigmaOfCorss(const TString& run_par_file_name,
 					      const Int_t&  cStexStin_A, const Int_t& i0StinEcha,
-					      const TString first_same_plot)
+					      const TString& first_same_plot)
 {
 // Plot the graph of Mean Corss evolution for a given channel
 
@@ -6590,9 +6559,9 @@ void TEcnaGui::ViewHistimeCrystalSigmaOfCorss(const TString run_par_file_name,
   fHistos->PlotHistory("Time", "SCs", run_par_file_name, cStexStin_A, i0StinEcha, first_same_plot);
 }
 
-void TEcnaGui::ViewHistimeCrystalSigmaOfCorssRuns(const TString run_par_file_name,
+void TEcnaGui::ViewHistimeCrystalSigmaOfCorssRuns(const TString& run_par_file_name,
 						  const Int_t&  cStexStin_A, const Int_t& i0StinEcha,
-						  const TString first_same_plot)
+						  const TString& first_same_plot)
 {
 // Plot the graph of Mean Corss evolution for a given channel
 
@@ -6725,7 +6694,7 @@ void  TEcnaGui::DisplayInEntryField(TGTextEntry* StringOfField, Double_t& value)
   StringOfField->SetText(f_in);
   delete [] f_in;                     fCdelete++;
 }
-void  TEcnaGui::DisplayInEntryField(TGTextEntry* StringOfField, const TString value)
+void  TEcnaGui::DisplayInEntryField(TGTextEntry* StringOfField, const TString& value)
 {
   //StringOfField->Insert(value);
   StringOfField->SetText(value);

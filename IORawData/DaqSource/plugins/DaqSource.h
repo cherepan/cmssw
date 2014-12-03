@@ -5,13 +5,15 @@
  *  An input service for raw data. 
  *  The actual source can be the real DAQ, a file, a random generator, etc.
  *
- *  $Date: 2012/04/17 14:39:30 $
- *  $Revision: 1.20.2.1 $
+ *  $Date: 2012/11/29 01:34:39 $
+ *  $Revision: 1.25 $
  *  \author N. Amapane - S. Argiro'
  */
 
 #include <memory>
 #include "boost/shared_ptr.hpp"
+#include "DataFormats/Provenance/interface/EventAuxiliary.h"
+#include "DataFormats/Provenance/interface/EventID.h"
 #include "DataFormats/Provenance/interface/ProcessHistoryID.h"
 #include "FWCore/Framework/interface/InputSource.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -24,6 +26,7 @@
 #include <pthread.h>
 
 class DaqBaseReader;
+class FEDRawDataCollection;
 
 namespace edm {
   class ParameterSet;
@@ -44,7 +47,7 @@ namespace edm {
    private:
 
     void defaultWebPage(xgi::Input *in, xgi::Output *out); 
-    virtual EventPrincipal* readEvent_();
+    virtual EventPrincipal* readEvent_(EventPrincipal& eventPrincipal);
     virtual boost::shared_ptr<LuminosityBlockAuxiliary> readLuminosityBlockAuxiliary_();
     virtual boost::shared_ptr<RunAuxiliary> readRunAuxiliary_();
     virtual EventPrincipal* readIt(EventID const& eventID);
@@ -65,7 +68,9 @@ namespace edm {
 
     DaqBaseReader*  reader_;
     unsigned int    lumiSegmentSizeInEvents_; //temporary kludge, LS# will come from L1 Global record
+    unsigned int    lumiSegmentSizeInSeconds_; //temporary kludge, LS# will come from L1 Global record
     bool            useEventCounter_;
+    bool            useTimer_;
     unsigned int    eventCounter_;
     bool            keepUsingPsidFromTrigger_;
     bool            fakeLSid_;
@@ -75,9 +80,6 @@ namespace edm {
     DaqProvenanceHelper daqProvenanceHelper_;
     ProcessHistoryID phid_;
     bool noMoreEvents_;
-    bool newRun_;
-    bool newLumi_;
-    bool eventCached_;
     bool alignLsToLast_;
     
     pthread_mutex_t mutex_;
@@ -94,11 +96,17 @@ namespace edm {
     int                              count;
     unsigned int                     thisEventLSid;
     bool                             goToStopping;
+    struct timeval                   startOfLastLumi; 
     bool                             immediateStop;
     evf::moduleweb::ForkInfoObj      *forkInfo_;
     bool                             runFork_;
     timeval                          tvStat_;
     bool                             beginRunTiming_;
+    int                              bunchCrossing_;
+    int                              orbitNumber_;
+    EventAuxiliary::ExperimentType   evttype_; 
+    EventID                          eventID_;
+    FEDRawDataCollection*            fedCollection_;
   };
   
 }

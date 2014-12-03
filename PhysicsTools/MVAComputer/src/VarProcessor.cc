@@ -10,7 +10,7 @@
 //
 // Author:      Christophe Saout
 // Created:     Sat Apr 24 15:18 CEST 2007
-// $Id: VarProcessor.cc,v 1.9 2011/04/15 17:07:13 wmtan Exp $
+// $Id: VarProcessor.cc,v 1.13 2013/05/23 17:02:16 gartung Exp $
 //
 
 #include "FWCore/Utilities/interface/Exception.h"
@@ -27,10 +27,11 @@
 // #define DEBUG_DERIV
 
 #ifdef DEBUG_DERIV
-#	include <Reflex/Tools.h>
+#include "FWCore/Utilities/interface/TypeDemangler.h"
 #endif
 
-EDM_REGISTER_PLUGINFACTORY(PhysicsTools::VarProcessor::PluginFactory,
+typedef edmplugin::PluginFactory<PhysicsTools::VarProcessor::PluginFunctionPrototype> VPPluginFactory;
+EDM_REGISTER_PLUGINFACTORY(VPPluginFactory,
                            "PhysicsToolsMVAComputer");
 
 namespace PhysicsTools {
@@ -75,7 +76,7 @@ void VarProcessor::configure(ConfigCtx &config)
 		config.loop = this;
 }
 
-VarProcessor::ConfigCtx::ConfigCtx(std::vector<Variable::Flags> flags) :
+VarProcessor::ConfigCtx::ConfigCtx(const std::vector<Variable::Flags>& flags) :
 	loop(0), ctx(0)
 {
 	for(std::vector<Variable::Flags>::const_iterator iter = flags.begin();
@@ -100,7 +101,7 @@ VarProcessor *ProcessRegistry<VarProcessor, Calibration::VarProcessor,
 	if (!result) {
 		// try to load the shared library and retry
 		try {
-			delete VarProcessor::PluginFactory::get()->create(
+			delete VPPluginFactory::get()->create(
 					std::string("VarProcessor/") + name);
 			result = ProcessRegistry::create(name, calib, parent);
 		} catch(const cms::Exception &e) {
@@ -146,9 +147,9 @@ void VarProcessor::deriv(double *input, int *conf, double *output,
 
 #ifdef DEBUG_DERIV
 	if (!matrix.empty()) {
-		std::cout << "---------------- "
-		          << ROOT::Reflex::Tools::Demangle(typeid(*this))
-		          << std::endl;
+                std::string demangledName;
+                edm::typeDemangle(typeid(*this).name(), demangledName);
+                std::cout << demangledName << std::endl;
 		for(unsigned int i = 0; i < out; i++) {
 			for(unsigned int j = 0; j < size; j++)
 				std::cout << matrix.at(i*size+j) << "\t";

@@ -5,6 +5,7 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 
 #include "DataFormats/Common/interface/OwnVector.h"
 #include "DataFormats/TrackCandidate/interface/TrackCandidateCollection.h"
@@ -69,17 +70,6 @@ namespace cms{
       if ( conf.exists("maxSeedsBeforeCleaning") ) 
 	   maxSeedsBeforeCleaning_=conf.getParameter<unsigned int>("maxSeedsBeforeCleaning");
 
-  }
-
-  
-  // Virtual destructor needed.
-  CkfTrackCandidateMakerBase::~CkfTrackCandidateMakerBase() {
-    delete theInitialState;  
-    if (theSeedCleaner) delete theSeedCleaner;
-  }  
-
-  void CkfTrackCandidateMakerBase::beginRunBase (edm::Run & r, EventSetup const & es)
-  {
     std::string cleaner = conf_.getParameter<std::string>("RedundantSeedCleaner");
     if (cleaner == "SeedCleanerByHitPosition") {
         theSeedCleaner = new SeedCleanerByHitPosition();
@@ -98,6 +88,20 @@ namespace cms{
     } else {
         throw cms::Exception("RedundantSeedCleaner not found", cleaner);
     }
+
+
+  }
+
+  
+  // Virtual destructor needed.
+  CkfTrackCandidateMakerBase::~CkfTrackCandidateMakerBase() {
+    delete theInitialState;  
+    if (theSeedCleaner) delete theSeedCleaner;
+  }  
+
+  void CkfTrackCandidateMakerBase::beginRunBase (edm::Run const & r, EventSetup const & es)
+  {
+    /* no op*/
   }
 
   void CkfTrackCandidateMakerBase::setEventSetup( const edm::EventSetup& es ) {
@@ -126,8 +130,8 @@ namespace cms{
     // set the TrajectoryBuilder
     edm::ESHandle<TrajectoryBuilder> theTrajectoryBuilderHandle;
     es.get<CkfComponentsRecord>().get(theTrajectoryBuilderName,theTrajectoryBuilderHandle);
-    theTrajectoryBuilder = theTrajectoryBuilderHandle.product();    
-       
+    theTrajectoryBuilder = dynamic_cast<const BaseCkfTrajectoryBuilder*>(theTrajectoryBuilderHandle.product());    
+    assert(theTrajectoryBuilder);
   }
 
   // Functions that gets called by framework every event
@@ -193,7 +197,7 @@ namespace cms{
 
 	// Build trajectory from seed outwards
         theTmpTrajectories.clear();
-	theTrajectoryBuilder->trajectories( (*collseed)[j], theTmpTrajectories );
+	auto const & startTraj = theTrajectoryBuilder->buildTrajectories( (*collseed)[j], theTmpTrajectories, nullptr );
 	
        
 	LogDebug("CkfPattern") << "======== In-out trajectory building found " << theTmpTrajectories.size()
@@ -214,7 +218,7 @@ namespace cms{
 	// seed and if possible further inwards.
 	
 	if (doSeedingRegionRebuilding) {
-	  theTrajectoryBuilder->rebuildSeedingRegion((*collseed)[j],theTmpTrajectories);      
+	  theTrajectoryBuilder->rebuildTrajectories(startTraj,(*collseed)[j],theTmpTrajectories);      
 
   	  LogDebug("CkfPattern") << "======== Out-in trajectory building found " << theTmpTrajectories.size()
   			              << " valid/invalid trajectories from seed " << j << " ========"<<endl
@@ -344,7 +348,7 @@ namespace cms{
 	   theInitialState->innerState( *it , doBackFit);
 
 	 // temporary protection againt invalid initial states
-	 if (! initState.first.isValid() || initState.second == 0 || std::isnan(initState.first.globalPosition().x())) {
+	 if (! initState.first.isValid() || initState.second == 0 || edm::isNotFinite(initState.first.globalPosition().x())) {
 	   //cout << "invalid innerState, will not make TrackCandidate" << endl;
 	   continue;
 	 }

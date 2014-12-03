@@ -9,7 +9,7 @@
 //
 // Original Author:  Frederic Ronga
 //         Created:  March 16, 2006
-//         $Id$
+//         $Id: TestTrackerHierarchy.cpp,v 1.7 2013/01/07 19:44:30 wmtan Exp $
 
 
 // system include files
@@ -62,11 +62,15 @@ private:
 void
 TestTrackerHierarchy::analyze( const edm::Event&, const edm::EventSetup& setup )
 {
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  setup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
 
   edm::LogInfo("TrackerHierarchy") << "Starting!";
   edm::ESHandle<TrackerGeometry> trackerGeometry;	 
   setup.get<TrackerDigiGeometryRecord>().get( trackerGeometry );
-  AlignableTracker theAlignableTracker(&(*trackerGeometry));
+  AlignableTracker theAlignableTracker(&(*trackerGeometry), tTopo);
 
   leaders_ = "";
   blank_ = "   ";  // These two...
@@ -114,13 +118,11 @@ void TestTrackerHierarchy::dumpAlignable( const Alignable* alignable,
 void TestTrackerHierarchy::printInfo( const Alignable* alignable,
                                       unsigned int idau )
 {
-  
-  static AlignableObjectId converter;
   int width = kLEAD_WIDTH-leaders_.length();
 
   std::ostringstream name,pos,rot;
 
-  name << converter.typeToName( alignable->alignableObjectId() ) << idau;
+  name << AlignableObjectId::idToString( alignable->alignableObjectId() ) << idau;
 
   // Position
   pos.setf(std::ios::fixed);

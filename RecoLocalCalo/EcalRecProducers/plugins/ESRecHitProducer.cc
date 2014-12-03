@@ -8,7 +8,6 @@
 #include "DataFormats/Common/interface/EDCollection.h"
 #include "DataFormats/Common/interface/Handle.h"
 
-#include "FWCore/Framework/interface/Selector.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
@@ -51,7 +50,7 @@ void ESRecHitProducer::produce(edm::Event& e, const edm::EventSetup& es) {
     // run the algorithm
     for (ESDigiCollection::const_iterator i (digi->begin());
 	 i!=digi->end(); i++) {    
-      worker_->run( e, i, *rec );
+      worker_->run( i, *rec );
     }
   }
   

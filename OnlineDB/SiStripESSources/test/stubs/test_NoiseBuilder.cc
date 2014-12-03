@@ -1,6 +1,6 @@
-// Last commit: $Id: test_NoiseBuilder.cc,v 1.3 2008/05/26 13:37:26 giordano Exp $
-// Latest tag:  $Name: HEAD $
-// Location:    $Source: /cvs_server/repositories/CMSSW/CMSSW/OnlineDB/SiStripESSources/test/stubs/test_NoiseBuilder.cc,v $
+// Last commit: $Id: test_NoiseBuilder.cc,v 1.5 2013/05/30 21:52:09 gartung Exp $
+// Latest tag:  $Name: CMSSW_6_2_0 $
+// Location:    $Source: /local/reps/CMSSW/CMSSW/OnlineDB/SiStripESSources/test/stubs/test_NoiseBuilder.cc,v $
 
 #include "OnlineDB/SiStripESSources/test/stubs/test_NoiseBuilder.h"
 #include "FWCore/Framework/interface/ESHandle.h"

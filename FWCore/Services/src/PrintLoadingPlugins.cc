@@ -8,7 +8,7 @@
 //
 // Original Author:  
 //         Created:  Thu Dec 13 15:00:49 EST 2007
-// $Id: PrintLoadingPlugins.cc,v 1.4 2010/07/20 22:13:22 chrjones Exp $
+// $Id: PrintLoadingPlugins.cc,v 1.6 2013/01/20 17:01:21 chrjones Exp $
 //
 
 // system include files
@@ -23,7 +23,7 @@
 
 #include "boost/bind.hpp"
 #include "boost/mem_fn.hpp"
-#include "sigc++/signal.h"
+#include "FWCore/Utilities/interface/Signal.h"
 
 #include <algorithm>
 #include <iostream>

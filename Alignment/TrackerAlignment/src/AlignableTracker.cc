@@ -21,8 +21,8 @@
 #include "CondFormats/Alignment/interface/AlignmentSorter.h"
 
 //__________________________________________________________________________________________________
-AlignableTracker::AlignableTracker( const TrackerGeometry* tkGeom ):
-  AlignableComposite( 0, align::Tracker, RotationType() ) // id not yet known
+AlignableTracker::AlignableTracker( const TrackerGeometry* tkGeom, const TrackerTopology* tTopo ):
+  AlignableComposite( 0, align::Tracker, RotationType() ), tTopo_(tTopo) // id not yet known
 {
 
   // Get levels from geometry
@@ -134,14 +134,12 @@ void AlignableTracker::detsToAlignables( const TrackingGeometry::DetContainer& d
 //__________________________________________________________________________________________________
 void AlignableTracker::buildBarrel(const std::string& subDet)
 {
-  AlignableObjectId objId;
-
   align::Alignables& halfBarrels = alignableLists_.find(subDet + "HalfBarrel");
 
   const std::string barrelName(subDet + "Barrel");
   align::Alignables &barrel = alignableLists_.get(barrelName);
   barrel.reserve(1);
-  barrel.push_back(new AlignableComposite(halfBarrels[0]->id(), objId.nameToType(barrelName),
+  barrel.push_back(new AlignableComposite(halfBarrels[0]->id(),AlignableObjectId::stringToId(barrelName),
 					  RotationType()));
   barrel[0]->addComponent(halfBarrels[0]);
   barrel[0]->addComponent(halfBarrels[1]);
@@ -150,7 +148,7 @@ void AlignableTracker::buildBarrel(const std::string& subDet)
 //__________________________________________________________________________________________________
 void AlignableTracker::buildTPB()
 {
-  AlignableBuilder builder(align::TPBModule, tkCounters_ );
+  AlignableBuilder builder(align::TPBModule, tkCounters_, tTopo_);
 
   builder.addLevelInfo(align::TPBLadder    , true, 22); // max 22 ladders per layer
   builder.addLevelInfo(align::TPBLayer     , false, 3); // 3 layers per half barrel
@@ -163,7 +161,7 @@ void AlignableTracker::buildTPB()
 //__________________________________________________________________________________________________
 void AlignableTracker::buildTPE()
 {
-  AlignableBuilder builder(align::TPEModule, tkCounters_);
+  AlignableBuilder builder(align::TPEModule, tkCounters_, tTopo_);
 
   builder.addLevelInfo(align::TPEPanel       , true,  2); // 2 panels per blade
   builder.addLevelInfo(align::TPEBlade       , true, 12); // 12 blades per half disk
@@ -176,7 +174,7 @@ void AlignableTracker::buildTPE()
 //__________________________________________________________________________________________________
 void AlignableTracker::buildTIB()
 {
-  AlignableBuilder builder(align::TIBModule, tkCounters_);
+  AlignableBuilder builder(align::TIBModule, tkCounters_, tTopo_);
 
   builder.addLevelInfo(align::TIBString    , true, 28); // max 22 strings per surface
   builder.addLevelInfo(align::TIBSurface   , false, 2); // 2 surfaces per half shell
@@ -191,7 +189,7 @@ void AlignableTracker::buildTIB()
 //__________________________________________________________________________________________________
 void AlignableTracker::buildTID()
 {
-  AlignableBuilder builder(align::TIDModule, tkCounters_);
+  AlignableBuilder builder(align::TIDModule, tkCounters_, tTopo_);
 
   builder.addLevelInfo(align::TIDSide  , false, 2); // 2 sides per ring
   builder.addLevelInfo(align::TIDRing  , false, 3); // 3 rings per disk
@@ -203,7 +201,7 @@ void AlignableTracker::buildTID()
 //__________________________________________________________________________________________________
 void AlignableTracker::buildTOB()
 {
-  AlignableBuilder builder(align::TOBModule, tkCounters_);
+  AlignableBuilder builder(align::TOBModule, tkCounters_, tTopo_);
 
   builder.addLevelInfo(align::TOBRod       , true, 74); // max 74 rods per layer
   builder.addLevelInfo(align::TOBLayer     , false, 6); // 6 layers per half barrel
@@ -216,7 +214,7 @@ void AlignableTracker::buildTOB()
 //__________________________________________________________________________________________________
 void AlignableTracker::buildTEC()
 {
-  AlignableBuilder builder(align::TECModule, tkCounters_);
+  AlignableBuilder builder(align::TECModule, tkCounters_, tTopo_);
 
   builder.addLevelInfo(align::TECRing  , true,  7); // max 7 rings per petal
   builder.addLevelInfo(align::TECPetal , true,  8); // 8 petals per side

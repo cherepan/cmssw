@@ -6,8 +6,6 @@
 
 #include "CalibFormats/HcalObjects/interface/HcalDbService.h"
 #include "CalibFormats/HcalObjects/interface/HcalCoderDb.h"
-#include "CalibFormats/HcalObjects/interface/QieShape.h"
-
 #include "CalibFormats/HcalObjects/interface/HcalCalibrations.h"
 #include "CalibFormats/HcalObjects/interface/HcalCalibrationWidths.h"
 
@@ -28,6 +26,15 @@ HcalDbService::HcalDbService (const edm::ParameterSet& cfg):
   mLutMetadata(0),
   mUpdateCalibrations (true), mUpdateCalibWidths(true)
  {}
+
+const HcalTopology* HcalDbService::getTopologyUsed() const {
+  if (mPedestals && mPedestals->topo()) return mPedestals->topo();
+  if (mGains && mGains->topo()) return mGains->topo();
+  if (mRespCorrs && mRespCorrs->topo()) return mRespCorrs->topo();
+  if (mL1TriggerObjects && mL1TriggerObjects->topo()) return mL1TriggerObjects->topo();
+  if (mLutMetadata && mLutMetadata->topo()) return mLutMetadata->topo();
+  return 0;
+}
 
 
 const HcalCalibrations& HcalDbService::getHcalCalibrations(const HcalGenericDetId& fId) const 
@@ -103,8 +110,8 @@ bool HcalDbService::makeHcalCalibration (const HcalGenericDetId& fId, HcalCalibr
     const HcalLUTCorr* lutcorr = getHcalLUTCorr (fId);
 
     if (pedestalInADC) {
-      const HcalQIEShape* shape=getHcalShape();
       const HcalQIECoder* coder=getHcalCoder(fId);
+      const HcalQIEShape* shape=getHcalShape(coder);
       if (pedestal && gain && shape && coder && respcorr && timecorr && lutcorr) {
 	float pedTrue[4];
 	for (int i=0; i<4; i++) {
@@ -135,8 +142,8 @@ bool HcalDbService::makeHcalCalibrationWidth (const HcalGenericDetId& fId,
     const HcalPedestalWidth* pedestalwidth = getPedestalWidth (fId);
     const HcalGainWidth* gainwidth = getGainWidth (fId);
     if (pedestalInADC) {
-      const HcalQIEShape* shape=getHcalShape();
       const HcalQIECoder* coder=getHcalCoder(fId);
+      const HcalQIEShape* shape=getHcalShape(coder);
       if (pedestalwidth && gainwidth && shape && coder) {
 	float pedTrueWidth[4];
 	for (int i=0; i<4; i++) {
@@ -205,12 +212,20 @@ const HcalQIECoder* HcalDbService::getHcalCoder (const HcalGenericDetId& fId) co
   return 0;
 }
 
-const HcalQIEShape* HcalDbService::getHcalShape () const {
+const HcalQIEShape* HcalDbService::getHcalShape (const HcalGenericDetId& fId) const {
   if (mQIEData) {
-    return &mQIEData->getShape ();
+    return &mQIEData->getShape (fId);
   }
   return 0;
 }
+
+const HcalQIEShape* HcalDbService::getHcalShape (const HcalQIECoder *coder) const {
+  if (mQIEData) {
+    return &mQIEData->getShape(coder);
+  }
+  return 0;
+}
+
 
 const HcalElectronicsMap* HcalDbService::getHcalMapping () const {
   return mElectronicsMap;

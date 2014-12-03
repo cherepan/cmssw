@@ -17,7 +17,7 @@
 // part of the code was inspired by http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/UserCode/YGao/LhcTrackAnalyzer/
 // part of the code was inspired by 
 // other inputs from Andrea Giammanco, Gaelle Boudoul, Andrea Venturi, Steven Lowette, Gavril Giurgiu
-// $Id: TrackerDpgAnalysis.cc,v 1.11 2011/05/20 18:43:38 wmtan Exp $
+// $Id: TrackerDpgAnalysis.cc,v 1.15 2013/05/17 11:48:53 delaer Exp $
 //
 //
 
@@ -68,10 +68,8 @@
 #include "DataFormats/SiStripCommon/interface/SiStripEventSummary.h"
 #include <DataFormats/TrackerRecHit2D/interface/SiPixelRecHit.h>
 #include <DataFormats/SiStripDetId/interface/SiStripDetId.h>
-#include <DataFormats/SiStripDetId/interface/TIBDetId.h>
-#include <DataFormats/SiStripDetId/interface/TIDDetId.h>
-#include <DataFormats/SiStripDetId/interface/TOBDetId.h>
-#include <DataFormats/SiStripDetId/interface/TECDetId.h>
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 #include <DataFormats/SiPixelCluster/interface/SiPixelCluster.h>
 #include <DataFormats/TrackReco/interface/TrackFwd.h>
 #include <DataFormats/TrackReco/interface/Track.h>
@@ -123,15 +121,15 @@ class TrackerDpgAnalysis : public edm::EDAnalyzer {
       void insertMeasurement(std::multimap<const uint32_t,std::pair<LocalPoint,std::pair<double,double> > >&, const TransientTrackingRecHit*,double,double);
       std::vector<int> onTrack(edm::Handle<edmNew::DetSetVector<SiPixelCluster> >&,const reco::TrackCollection&, uint32_t );
       void insertMeasurement(std::multimap<const uint32_t,std::pair<std::pair<float, float>,int> >&, const TrackingRecHit*,int);
-      std::string toStringName(uint32_t);
+      std::string toStringName(uint32_t, const TrackerTopology*);
       std::string toStringId(uint32_t);
       double sumPtSquared(const reco::Vertex&);
       float delay(const SiStripEventSummary&);
       std::map<uint32_t,float> delay(const std::vector<std::string>&);
 
    private:
-      virtual void beginRun(const edm::Run&, const edm::EventSetup&);
-      virtual void analyze(const edm::Event&, const edm::EventSetup&);
+      virtual void beginRun(const edm::Run&, const edm::EventSetup&) override;
+      virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
       virtual void endJob() ;
 
       // ----------member data ---------------------------
@@ -598,9 +596,9 @@ TrackerDpgAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
    Handle<ValueMap<DeDxData> > dEdx1Handle;
    Handle<ValueMap<DeDxData> > dEdx2Handle;
    Handle<ValueMap<DeDxData> > dEdx3Handle;
-   try {iEvent.getByLabel(dedx1Label_, dEdx1Handle);} catch (...) {;}
-   try {iEvent.getByLabel(dedx2Label_, dEdx2Handle);} catch (...) {;}
-   try {iEvent.getByLabel(dedx3Label_, dEdx3Handle);} catch (...) {;}
+   try {iEvent.getByLabel(dedx1Label_, dEdx1Handle);} catch ( cms::Exception& ) {;}
+   try {iEvent.getByLabel(dedx2Label_, dEdx2Handle);} catch ( cms::Exception& ) {;}
+   try {iEvent.getByLabel(dedx3Label_, dEdx3Handle);} catch ( cms::Exception& ) {;}
    const ValueMap<DeDxData> dEdxTrack1 = *dEdx1Handle.product();
    const ValueMap<DeDxData> dEdxTrack2 = *dEdx2Handle.product();
    const ValueMap<DeDxData> dEdxTrack3 = *dEdx3Handle.product();
@@ -611,7 +609,7 @@ TrackerDpgAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
    trackCollectionHandle.resize(trackLabel_.size());
    size_t index = 0;
    for(std::vector<edm::InputTag>::const_iterator label = trackLabel_.begin();label!=trackLabel_.end();++label,++index) {
-     try {iEvent.getByLabel(*label,trackCollectionHandle[index]);} catch (...) {;}
+     try {iEvent.getByLabel(*label,trackCollectionHandle[index]);} catch ( cms::Exception& ) {;}
      trackCollection.push_back(*trackCollectionHandle[index].product());
      ntracks_[index] = trackCollection[index].size();
    }
@@ -622,7 +620,7 @@ TrackerDpgAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
    trajectoryCollectionHandle.resize(trackLabel_.size());
    index = 0;
    for(std::vector<edm::InputTag>::const_iterator label = trackLabel_.begin();label!=trackLabel_.end();++label,++index) {
-     try {iEvent.getByLabel(*label,trajectoryCollectionHandle[index]);} catch (...) {;}
+     try {iEvent.getByLabel(*label,trajectoryCollectionHandle[index]);} catch ( cms::Exception& ) {;}
      trajectoryCollection.push_back(*trajectoryCollectionHandle[index].product());
      ntrajs_[index] = trajectoryCollection[index].size();
    }
@@ -631,7 +629,7 @@ TrackerDpgAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
    std::vector<TrajTrackAssociationCollection> TrajToTrackMap;
    Handle<TrajTrackAssociationCollection> trajTrackAssociationHandle;
    for(std::vector<edm::InputTag>::const_iterator label = trackLabel_.begin();label!=trackLabel_.end();++label) {
-     try {iEvent.getByLabel(*label,trajTrackAssociationHandle);} catch (...) {;}
+     try {iEvent.getByLabel(*label,trajTrackAssociationHandle);} catch ( cms::Exception& ) {;}
      TrajToTrackMap.push_back(*trajTrackAssociationHandle.product());
    }
      
@@ -727,7 +725,7 @@ TrackerDpgAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
          dedx1_ = dEdxTrack1[itTrack].dEdx();
          dedx2_ = dEdxTrack2[itTrack].dEdx();
          dedx3_ = dEdxTrack3[itTrack].dEdx();
-       } catch (...) {
+       } catch ( cms::Exception& ) {
          dedxNoM_ = 0;
 	 dedx1_ = 0.;
 	 dedx2_ = 0.;
@@ -764,7 +762,7 @@ TrackerDpgAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
            trkWeightpvtx_ =  vertexColl.begin()->trackWeight(itTrack);
          } else
 	   trkWeightpvtx_ = 0.;
-       } catch (...) {
+       } catch ( cms::Exception& ) {
          trkWeightpvtx_ = 0.;
        }
        globaltrackid_[coll]++;
@@ -940,6 +938,11 @@ void
 TrackerDpgAnalysis::beginRun(const edm::Run& iRun, const edm::EventSetup& iSetup)
 {
 
+   //Retrieve tracker topology from geometry
+   edm::ESHandle<TrackerTopology> tTopoHandle;
+   iSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+   const TrackerTopology* const tTopo = tTopoHandle.product();
+ 
    //geometry
    iSetup.get<TrackerDigiGeometryRecord>().get(tracker_);
 
@@ -972,7 +975,7 @@ TrackerDpgAnalysis::beginRun(const edm::Run& iRun, const edm::EventSetup& iSetup
        // Fill the standalone tree (once for all)
        if(conn->isConnected()) {
          detid_ = conn->detId();
-         strncpy(moduleName_,toStringName(detid_).c_str(),256);
+         strncpy(moduleName_,toStringName(detid_,tTopo).c_str(),256);
          strncpy(moduleId_,toStringId(detid_).c_str(),256);
          lldChannel_ = conn->lldChannel();
          dcuId_ = conn->dcuId();
@@ -1257,7 +1260,7 @@ void TrackerDpgAnalysis::insertMeasurement(std::multimap<const uint32_t,std::pai
 	}
 }
 
-std::string TrackerDpgAnalysis::toStringName(uint32_t rawid) {
+std::string TrackerDpgAnalysis::toStringName(uint32_t rawid, const TrackerTopology* tTopo) {
    SiStripDetId detid(rawid);
    std::string out;
    std::stringstream output;
@@ -1265,76 +1268,76 @@ std::string TrackerDpgAnalysis::toStringName(uint32_t rawid) {
      case 3:
      {
        output << "TIB";
-       TIBDetId tib(rawid);
-       output << (tib.isZPlusSide() ? "+" : "-");
+       
+       output << (tTopo->tibIsZPlusSide(rawid) ? "+" : "-");
        output << " layer ";
-       output << tib.layerNumber();
+       output << tTopo->tibLayer(rawid);
        output << ", string ";
-       output << tib.stringNumber();
-       output << (tib.isExternalString() ? " external" : " internal");
+       output << tTopo->tibString(rawid);
+       output << (tTopo->tibIsExternalString(rawid) ? " external" : " internal");
        output << ", module ";
-       output << tib.moduleNumber();
-       if(tib.isDoubleSide()) {
+       output << tTopo->tibModule(rawid);
+       if(tTopo->tibIsDoubleSide(rawid)) {
          output << " (double)";
        } else {
-         output << (tib.isRPhi() ? " (rphi)" : " (stereo)");
+         output << (tTopo->tibIsRPhi(rawid) ? " (rphi)" : " (stereo)");
        }
        break;
      }
      case 4:
      {
        output << "TID";
-       TIDDetId tid(rawid);
-       output << (tid.isZPlusSide() ? "+" : "-");
+       
+       output << (tTopo->tidIsZPlusSide(rawid) ? "+" : "-");
        output << " disk ";
-       output << tid.diskNumber();
+       output << tTopo->tidWheel(rawid);
        output << ", ring ";
-       output << tid.ringNumber();
-       output << (tid.isFrontRing() ? " front" : " back");
+       output << tTopo->tidRing(rawid);
+       output << (tTopo->tidIsFrontRing(rawid) ? " front" : " back");
        output << ", module ";
-       output << tid.moduleNumber();
-       if(tid.isDoubleSide()) {
+       output << tTopo->tidModule(rawid);
+       if(tTopo->tidIsDoubleSide(rawid)) {
          output << " (double)";
        } else {
-         output << (tid.isRPhi() ? " (rphi)" : " (stereo)");
+         output << (tTopo->tidIsRPhi(rawid) ? " (rphi)" : " (stereo)");
        }
        break;
      }
      case 5:
      {
        output << "TOB";
-       TOBDetId tob(rawid);
-       output << (tob.isZPlusSide() ? "+" : "-");
+       
+       output << (tTopo->tobIsZPlusSide(rawid) ? "+" : "-");
        output << " layer ";
-       output << tob.layerNumber();
+       output << tTopo->tobLayer(rawid);
        output << ", rod ";
-       output << tob.rodNumber();
+       output << tTopo->tobRod(rawid);
        output << ", module ";
-       output << tob.moduleNumber();
-       if(tob.isDoubleSide()) {
+       output << tTopo->tobModule(rawid);
+       if(tTopo->tobIsDoubleSide(rawid)) {
          output << " (double)";
        } else {
-         output << (tob.isRPhi() ? " (rphi)" : " (stereo)");
+         output << (tTopo->tobIsRPhi(rawid) ? " (rphi)" : " (stereo)");
        }
        break;
      }
      case 6:
      {
        output << "TEC";
-       TECDetId tec(rawid);
-       output << (tec.isZPlusSide() ? "+" : "-");
+       
+       output << (tTopo->tecIsZPlusSide(rawid) ? "+" : "-");
        output << " disk ";
-       output << tec.wheelNumber();
+       output << tTopo->tecWheel(rawid);
        output << " sector ";
-       output << tec.petalNumber();
-       output << (tec.isFrontPetal() ? " Front Petal" : " Back Petal");
+       output << tTopo->tecPetalNumber(rawid);
+       output << (tTopo->tecIsFrontPetal(rawid) ? " Front Petal" : " Back Petal");
        output << ", module ";
-       output << tec.ringNumber();
-       output << tec.moduleNumber();
-       if(tec.isDoubleSide()) {
+       output << tTopo->tecRing(rawid);
+       output << tTopo->tecModule(rawid);
+       if(tTopo->tecIsDoubleSide(rawid)) {
          output << " (double)";
        } else {
-         output << (tec.isRPhi() ? " (rphi)" : " (stereo)");
+         output << (tTopo->tecIsRPhi(rawid) ? " (rphi)" : " (stereo)");
        }
        break;
      }

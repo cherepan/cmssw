@@ -1,4 +1,4 @@
-// $Id: TTUConfiguration.h,v 1.2 2009/07/01 22:52:06 aosorio Exp $
+// $Id: TTUConfiguration.h,v 1.4 2012/05/15 08:06:25 eulisse Exp $
 #ifndef INTERFACE_TTUCONFIGURATION_H 
 #define INTERFACE_TTUCONFIGURATION_H 1
 
@@ -20,7 +20,7 @@
 
 class TTUConfiguration {
 public: 
-
+  virtual ~TTUConfiguration() {}
   virtual bool initialise( int , int )=0;
   
   virtual void preprocess(TTUInput &)=0;

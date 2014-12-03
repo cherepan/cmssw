@@ -1,4 +1,4 @@
-// $Id: SMPSWebPageHelper.h,v 1.2 2011/03/07 15:41:54 mommsen Exp $
+// $Id: SMPSWebPageHelper.h,v 1.4 2012/08/14 11:55:44 davidlt Exp $
 /// @file: SMPSWebPageHelper.h
 
 #ifndef EventFilter_SMProxyServer_SMPSWebPageHelper_h
@@ -15,9 +15,9 @@ namespace smproxy {
   /**
    * Helper class to handle SM proxy server web page requests
    *
-   * $Author: mommsen $
-   * $Revision: 1.2 $
-   * $Date: 2011/03/07 15:41:54 $
+   * $Author: davidlt $
+   * $Revision: 1.4 $
+   * $Date: 2012/08/14 11:55:44 $
    */
   
   class SMPSWebPageHelper : public stor::WebPageHelper<SMPSWebPageHelper>
@@ -29,6 +29,8 @@ namespace smproxy {
       xdaq::ApplicationDescriptor*,
       StateMachinePtr
     );
+
+    virtual ~SMPSWebPageHelper() {};
     
     /**
        Generates the default web page

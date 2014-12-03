@@ -3,11 +3,14 @@ import FWCore.ParameterSet.Config as cms
 #Global fast calorimetry parameters
 from FastSimulation.Calorimetry.HcalResponse_cfi import *
 from FastSimulation.Calorimetry.HSParameters_cfi import *
+from FastSimulation.Configuration.CommonInputs_cff import *
 FamosCalorimetryBlock = cms.PSet(
     Calorimetry = cms.PSet(
         HSParameterBlock,
         HCALResponseBlock,
         ECAL = cms.PSet(
+            # See FastSimulation/CaloRecHitsProducer/python/CaloRecHits_cff.py 
+            Digitizer = cms.untracked.bool(False),
             # If set to true the simulation in ECAL would be done 1X0 by 1X0
             # this is slow but more adapted to detailed studies.
             # Otherwise roughty 5 steps are used.
@@ -49,12 +52,26 @@ FamosCalorimetryBlock = cms.PSet(
             PreshowerLayer1_mipsPerGeV = cms.double(17.85),  # 50% decrease in mipsperGeV 
             PreshowerLayer2_mipsPerGeV = cms.double(59.5),
             ECALBarrel_LightCollection = cms.double(0.03),
-            HCAL_Sampling = cms.double(0.0035),
-            # Watch out ! The following two values are defined wrt the electron shower simulation
-            # There are not directly related to the detector properties
-            HCAL_PiOverE = cms.double(0.2),
-            # HCAL_PiOverE = cms.double(0.4)
-
+            HadronicCalorimeterProperties= cms.PSet(
+                  HCAL_Sampling = cms.double(0.0035),
+                  # Watch out ! The following two values are defined wrt the electron shower simulation
+                  # There are not directly related to the detector properties
+                  HCAL_PiOverE = cms.double(0.2),
+                  # HCAL_PiOverE = cms.double(0.4)
+                  HCALAeff= cms.double(63.546),
+                  HCALZeff= cms.double(29.),
+                  HCALrho= cms.double(8.960),
+                  
+                  HCALradiationLengthIncm= cms.double(1.43),
+                  HCALradLenIngcm2= cms.double(12.86),
+                  HCALmoliereRadius= cms.double(1.712),
+                  HCALcriticalEnergy= cms.double(18.63E-3),
+                  HCALinteractionLength= cms.double(15.05),
+                  
+                  HCALetatow=cms.vdouble( 0.000, 0.087, 0.174, 0.261, 0.348, 0.435, 0.522, 0.609, 0.696, 0.783, 0.870,    0.957, 1.044, 1.131, 1.218, 1.305, 1.392, 1.479, 1.566, 1.653, 1.740, 1.830,    1.930, 2.043, 2.172, 2.322, 2.500, 2.650, 2.853, 3.000, 3.139, 3.314, 3.489,    3.664, 3.839, 4.013, 4.191, 4.363, 4.538, 4.716, 4.889, 5.191),
+                  HCALDepthLam=cms.vdouble( 8.930, 9.001, 9.132, 8.912, 8.104, 8.571, 8.852, 9.230, 9.732, 10.29,          10.95, 11.68, 12.49, 12.57, 12.63,  6.449, 5.806, 8.973, 8.934,  8.823,          8.727, 8.641, 8.565, 8.496, 8.436, 8.383, 8.346, 8.307, 8.298,  8.281,          9.442, 9.437, 9.432, 9.429, 9.432, 9.433, 9.430, 9.437, 9.442, 9.446, 9.435)
+                  ),
+            
             BarrelCalorimeterProperties = cms.PSet(
 
                  #======  Geometrical material properties ========
@@ -104,6 +121,12 @@ FamosCalorimetryBlock = cms.PSet(
                  # a rough estimate of ECAL resolution sigma/E = resE/sqrt(E)
                  # it is used to generate Nspots in radial profiles.
                  resE = cms.double(1.),
+
+                 # the width in cm of the active layer
+                 da = cms.double(0.2),
+
+                 # the width in cm of the passive layer
+                 dp = cms.double(0.8),
 
                  # Is a homogenious detector?
                  bHom = cms.bool(True),
@@ -164,6 +187,12 @@ FamosCalorimetryBlock = cms.PSet(
                  # it is used to generate Nspots in radial profiles.
                  resE = cms.double(1.),
 
+                 # the width in cm of the active layer
+                 da = cms.double(0.2),
+
+                 # the width in cm of the passive layer
+                 dp = cms.double(0.8),
+
                  # Is a homogenious detector?
                  bHom = cms.bool(True),
 
@@ -173,7 +202,6 @@ FamosCalorimetryBlock = cms.PSet(
             )
 
         ),
-        UnfoldedMode = cms.untracked.bool(False),
         Debug = cms.untracked.bool(False),
         useDQM = cms.untracked.bool(False),
 #        EvtsToDebug = cms.untracked.vuint32(487),
@@ -181,9 +209,31 @@ FamosCalorimetryBlock = cms.PSet(
             SimMethod = cms.int32(0), ## 0 - use HDShower, 1 - use HDRShower, 2 - GFLASH
             GridSize = cms.int32(7),
             #-- 0 - simple response, 1 - parametrized response + showering, 2 - tabulated response + showering
-            SimOption = cms.int32(2)
-        )
-    ),
+            SimOption = cms.int32(2),
+            Digitizer = cms.untracked.bool(False),
+                            
+            samplingHBHE = cms.vdouble(125.44, 125.54, 125.32, 125.13, 124.46,
+                                       125.01, 125.22, 125.48, 124.45, 125.90,
+                                       125.83, 127.01, 126.82, 129.73, 131.83,
+                                       143.52, # HB
+                                       210.55, 197.93, 186.12, 189.64, 189.63,
+                                       190.28, 189.61, 189.60, 190.12, 191.22,
+                                       190.90, 193.06, 188.42, 188.42), #HE
+            samplingHF   = cms.vdouble(0.383, 0.368),
+            samplingHO   = cms.vdouble(231.0, 231.0, 231.0, 231.0, 360.0, 
+                                       360.0, 360.0, 360.0, 360.0, 360.0,
+                                       360.0, 360.0, 360.0, 360.0, 360.0),
+
+            ietaShiftHB = cms.int32(1),
+            timeShiftHB = cms.vdouble(6.9, 6.9, 7.1, 7.1, 7.3, 7.5, 7.9, 8.3, 8.7, 9.1, 9.5, 10.3, 10.9, 11.5, 12.3, 14.1),
+            ietaShiftHE = cms.int32(16),
+            timeShiftHE = cms.vdouble(16.9, 15.7, 15.3, 15.3, 15.1, 14.9, 14.7, 14.7, 14.5, 14.5, 14.3, 14.3, 14.5, 13.9),
+            ietaShiftHO = cms.int32(1),
+            timeShiftHO = cms.vdouble(13.7, 13.7, 13.9, 14.1, 15.1, 15.7, 16.5, 17.3, 18.1, 19.1, 20.3, 21.9, 23.3, 25.5, 26.1),
+            ietaShiftHF = cms.int32(29),
+            timeShiftHF = cms.vdouble(50.7, 52.5, 52.9, 53.9, 54.5, 55.1, 55.1, 55.7, 55.9, 56.1, 56.1, 56.1, 56.5),
+            )
+        ),
     GFlash = cms.PSet(
       GflashExportToFastSim = cms.bool(True),
       GflashHadronPhysics = cms.string('QGSP_BERT'),
@@ -199,3 +249,12 @@ FamosCalorimetryBlock = cms.PSet(
     )
 )
 
+if(CaloMode == 1 ):
+    FamosCalorimetryBlock.Calorimetry.ECAL.Digitizer = True
+    
+if(CaloMode == 2 ):
+    FamosCalorimetryBlock.Calorimetry.HCAL.Digitizer = True
+
+if(CaloMode == 3 ):
+    FamosCalorimetryBlock.Calorimetry.ECAL.Digitizer = True
+    FamosCalorimetryBlock.Calorimetry.HCAL.Digitizer = True

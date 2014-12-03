@@ -1,10 +1,11 @@
 
+
 /** \file MEtoEDMConverter.cc
  *  
  *  See header file for description of class
  *
- *  $Date: 2010/09/14 09:12:54 $
- *  $Revision: 1.31 $
+ *  $Date: 2013/06/05 15:22:15 $
+ *  $Revision: 1.35 $
  *  \author M. Strang SUNY-Buffalo
  */
 
@@ -249,7 +250,7 @@ MEtoEDMConverter::endJob(void)
 }
 
 void
-MEtoEDMConverter::beginRun(edm::Run& iRun, const edm::EventSetup& iSetup)
+MEtoEDMConverter::beginRun(edm::Run const& iRun, const edm::EventSetup& iSetup)
 {
   std::string MsgLoggerCat = "MEtoEDMConverter_beginRun";
     
@@ -333,20 +334,20 @@ MEtoEDMConverter::beginRun(edm::Run& iRun, const edm::EventSetup& iSetup)
 
   } // end loop through monitor elements
 }
+void
+MEtoEDMConverter::endRun(edm::Run const& iRun, const edm::EventSetup& iSetup)
+{
+}
 
 void
-MEtoEDMConverter::endRun(edm::Run& iRun, const edm::EventSetup& iSetup)
+MEtoEDMConverter::endRunProduce(edm::Run& iRun, const edm::EventSetup& iSetup)
 {
+  dbe->scaleElements();
   putData(iRun, false);
 }
 
 void
-MEtoEDMConverter::beginLuminosityBlock(edm::LuminosityBlock& iLumi, const edm::EventSetup& iSetup)
-{
-}
-
-void
-MEtoEDMConverter::endLuminosityBlock(edm::LuminosityBlock& iLumi, const edm::EventSetup& iSetup)
+MEtoEDMConverter::endLuminosityBlockProduce(edm::LuminosityBlock& iLumi, const edm::EventSetup& iSetup)
 {
   putData(iLumi, true);
 }
@@ -381,8 +382,10 @@ MEtoEDMConverter::putData(T& iPutTo, bool iLumiOnly)
 
     MonitorElement *me = *mmi;
 
-    // store only flagged ME
+    // store only flagged ME at endLumi transition, and Run-based
+    // histo at endRun transition
     if (iLumiOnly && !me->getLumiFlag()) continue;
+    if (!iLumiOnly && me->getLumiFlag()) continue;
 
     switch (me->kind())
     {
@@ -460,8 +463,10 @@ MEtoEDMConverter::putData(T& iPutTo, bool iLumiOnly)
 
     MonitorElement *me = *mmi;
 
-    // store only flagged ME
+    // store only flagged ME at endLumi transition, and Run-based
+    // histo at endRun transition
     if (iLumiOnly && !me->getLumiFlag()) continue;
+    if (!iLumiOnly && me->getLumiFlag()) continue;
 
     // get monitor elements
     switch (me->kind())

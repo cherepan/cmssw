@@ -16,7 +16,7 @@
 //
 // Original Author:  Chris Jones
 //         Created:  Thu Sep  8 14:35:45 EDT 2005
-// $Id: Tracer.h,v 1.11 2008/10/20 19:38:22 wmtan Exp $
+// $Id: Tracer.h,v 1.13 2012/11/29 02:05:58 bbockelm Exp $
 //
 
 // system include files
@@ -96,7 +96,7 @@ public:
          void preOpenFile();
          void postOpenFile();
          
-         void preCloseFile();
+         void preCloseFile(std::string const& lfn, bool primary);
          void postCloseFile();
          
          void prePathBeginRun(std::string const& s);

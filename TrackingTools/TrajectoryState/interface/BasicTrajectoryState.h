@@ -25,11 +25,10 @@
 #include "DataFormats/GeometrySurface/interface/Surface.h"
 #include "TrackingTools/TrajectoryParametrization/interface/TrajectoryStateExceptions.h"
 
-#include "FWCore/Utilities/interface/Visibility.h"
-#include "FWCore/Utilities/interface/Likely.h"
+#include "FWCore/Utilities/interface/GCC11Compatibility.h"
 
 /// vvv DEBUG
-#include <iostream>
+// #include <iostream>
 
 //class MagneticField;
 #include "MagneticField/Engine/interface/MagneticField.h"
@@ -39,19 +38,52 @@
 class TrajectoryStateOnSurface;
 
 
+#ifdef DO_BTSCount
+class BTSCount {
+public:
+  BTSCount(){}
+  virtual ~BTSCount();
+  BTSCount(BTSCount const &){} 
+
+  static unsigned int  maxReferences;
+  static unsigned long long  aveReferences;
+  static unsigned long long  toteReferences;
+
+  void addReference() const { ++referenceCount_ ; referenceMax_ = std::max(referenceMax_, referenceCount_); }
+  void removeReference() const { 
+    if( 0 == --referenceCount_ ) {
+      delete const_cast<BTSCount*>(this);
+    }
+  }
+  
+  unsigned int references() const {return referenceCount_;}
+private :
+#ifdef CMS_NOCXX11
+  mutable unsigned int referenceCount_;
+  mutable unsigned int referenceMax_;
+#else
+  mutable unsigned int referenceCount_=0;
+  mutable unsigned int referenceMax_ =0;
+#endif
+};
+#else
+typedef ReferenceCountedInEvent  BTSCount;
+#endif
+
 /** No so Abstract (anyore) base class for TrajectoryState.
  *  It is ReferenceCounted.
  *
  * VI 8/12/2011   content of BasicSingleTrajectoryState moved here....
  * fully devirtualized
  */
-class BasicTrajectoryState : public ReferenceCountedInEvent  {
-public:
+class BasicTrajectoryState : public BTSCount {
+  public:
 
   typedef BasicTrajectoryState                              BTSOS;
   typedef ProxyBase< BTSOS, CopyUsingClone<BTSOS> >         Proxy;
   typedef ReferenceCountingPointer<BasicTrajectoryState>    RCPtr;
   typedef SurfaceSideDefinition::SurfaceSide SurfaceSide;
+  typedef Surface SurfaceType;
 
 private:
   friend class ProxyBase< BTSOS, CopyUsingClone<BTSOS> >;
@@ -59,10 +91,10 @@ private:
 public:
 
   // default constructor : to make root happy
-  BasicTrajectoryState(){}
+  BasicTrajectoryState() : theValid(false), theWeight(0){}
 
  /// construct invalid trajectory state (without parameters)
-  explicit BasicTrajectoryState(const Surface& aSurface);
+  explicit BasicTrajectoryState(const SurfaceType& aSurface);
 
   virtual ~BasicTrajectoryState();
 
@@ -70,20 +102,20 @@ public:
    *  the side of the surface should be specified explicitely.
    */
   BasicTrajectoryState( const FreeTrajectoryState& fts,
-			      const Surface& aSurface,
+			      const SurfaceType& aSurface,
 			      const SurfaceSide side = SurfaceSideDefinition::atCenterOfSurface);
   /** Constructor from global parameters and surface. For surfaces with material
    *  the side of the surface should be specified explicitely.
    */
   BasicTrajectoryState( const GlobalTrajectoryParameters& par,
-			      const Surface& aSurface,
+			      const SurfaceType& aSurface,
 			      const SurfaceSide side = SurfaceSideDefinition::atCenterOfSurface);
   /** Constructor from global parameters, errors and surface. For surfaces 
    *  with material the side of the surface should be specified explicitely.
    */
   BasicTrajectoryState( const GlobalTrajectoryParameters& par,
 			      const CartesianTrajectoryError& err,
-			      const Surface& aSurface,
+			      const SurfaceType& aSurface,
 			      const SurfaceSide side = SurfaceSideDefinition::atCenterOfSurface);
 
   /** Constructor from global parameters, errors and surface. For surfaces 
@@ -92,7 +124,7 @@ public:
    */
   BasicTrajectoryState( const GlobalTrajectoryParameters& par,
 			      const CurvilinearTrajectoryError& err,
-			      const Surface& aSurface,
+			      const SurfaceType& aSurface,
 			      const SurfaceSide side = SurfaceSideDefinition::atCenterOfSurface,
 			      double weight = 1.);
   /** Constructor from global parameters, errors and surface. For multi-states the
@@ -101,13 +133,13 @@ public:
    */
   BasicTrajectoryState( const GlobalTrajectoryParameters& par,
 			      const CurvilinearTrajectoryError& err,
-			      const Surface& aSurface,
+			      const SurfaceType& aSurface,
 			      double weight);
   /** Constructor from local parameters, errors and surface. For surfaces 
    *  with material the side of the surface should be specified explicitely.
    */
   BasicTrajectoryState( const LocalTrajectoryParameters& par,
-			      const Surface& aSurface,
+			      const SurfaceType& aSurface,
 			      const MagneticField* field,
 			      const SurfaceSide side = SurfaceSideDefinition::atCenterOfSurface);
   /** Constructor from local parameters, errors and surface. For surfaces 
@@ -116,7 +148,7 @@ public:
    */
   BasicTrajectoryState( const LocalTrajectoryParameters& par,
 			      const LocalTrajectoryError& err,
-			      const Surface& aSurface,
+			      const SurfaceType& aSurface,
 			      const MagneticField* field,
 			      const SurfaceSide side = SurfaceSideDefinition::atCenterOfSurface,
 			      double weight = 1.);
@@ -126,37 +158,34 @@ public:
    */
   BasicTrajectoryState( const LocalTrajectoryParameters& par,
 			      const LocalTrajectoryError& err,
-			      const Surface& aSurface,
+			      const SurfaceType& aSurface,
 			      const MagneticField* field,
 			      double weight);
 
- 
-  bool isValid() const {
-    return theFreeState || theLocalParametersValid;
-  }
+  bool isValid() const { return theValid; }
 
 
 // access global parameters/errors
   const GlobalTrajectoryParameters& globalParameters() const {
-    return freeTrajectoryState(false)->parameters();
+    return theFreeState.parameters();
   }
   GlobalPoint globalPosition() const {
-    return freeTrajectoryState(false)->position();
+    return theFreeState.position();
   }
   GlobalVector globalMomentum() const {
-    return freeTrajectoryState(false)->momentum();
+    return theFreeState.momentum();
   }
   GlobalVector globalDirection() const {
-    return freeTrajectoryState(false)->momentum().unit();
+    return theFreeState.momentum().unit();
   }  
   TrackCharge charge() const {
-    return freeTrajectoryState(false)->charge();
+    return theFreeState.charge();
   }
   double signedInverseMomentum() const {
-    return freeTrajectoryState(false)->signedInverseMomentum();
+    return theFreeState.signedInverseMomentum();
   }
   double transverseCurvature() const {
-    return freeTrajectoryState(false)->transverseCurvature();
+    return theFreeState.transverseCurvature();
   }
 
   const CartesianTrajectoryError cartesianError() const {
@@ -164,7 +193,7 @@ public:
 	missingError(" accesing cartesian error.");
 	return CartesianTrajectoryError();
       }
-    return freeTrajectoryState()->cartesianError();
+    return freeTrajectoryState(true)->cartesianError();
   }
   const CurvilinearTrajectoryError& curvilinearError() const {
     if unlikely(!hasError()) {
@@ -172,13 +201,21 @@ public:
 	static CurvilinearTrajectoryError crap;
 	return crap;
       }
-    return freeTrajectoryState()->curvilinearError();
+    return freeTrajectoryState(true)->curvilinearError();
   }
 
 
-  FreeTrajectoryState* freeTrajectoryState(bool withErrors = true) const;
+
+  FreeTrajectoryState* freeTrajectoryState(bool withErrors=true) const {
+    if unlikely(!isValid()) notValid();
+    if(withErrors && hasError()) { // this is the right thing
+      checkCurvilinError();
+    }
+    return &theFreeState;
+  }
+
   
-  const MagneticField *magneticField() const { return theField; }
+  const MagneticField *magneticField() const { return &theFreeState.parameters().magneticField(); }
 
 // access local parameters/errors
   const LocalTrajectoryParameters& localParameters() const {
@@ -206,11 +243,11 @@ public:
     return theLocalError;
   }
 
-  const Surface& surface() const {
+  const SurfaceType& surface() const {
     return *theSurfaceP;
   }
 
-  virtual double weight() const {return theWeight;} 
+  double weight() const {return theWeight;} 
 
   void rescaleError(double factor);
 
@@ -222,7 +259,7 @@ public:
   }
 
   bool hasError() const {
-    return (theFreeState && theFreeState->hasError()) || theLocalError.valid();
+    return theFreeState.hasError() || theLocalError.valid();
   }
 
 
@@ -231,13 +268,13 @@ public:
   virtual bool canUpdateLocalParameters() const { return true; }
 
   virtual void update( const LocalTrajectoryParameters& p,
-                       const Surface& aSurface,
+                       const SurfaceType& aSurface,
                        const MagneticField* field,
                        const SurfaceSide side ) ;
 
   virtual void update( const LocalTrajectoryParameters& p,
                        const LocalTrajectoryError& err,
-                       const Surface& aSurface,
+                       const SurfaceType& aSurface,
                        const MagneticField* field,
                        const SurfaceSide side,
                        double weight ) ;
@@ -252,32 +289,30 @@ private:
   
   void missingError(char const * where) const; // dso_internal;
 
-// create global parameters and errors from local
-  void checkGlobalParameters() const dso_internal;
-  void checkCurvilinError() const  dso_internal;
-
-// create local parameters and errors from global
+  // create global errors from local
+  void checkCurvilinError() const; //  dso_internal;
+  
+  // create local parameters and errors from global
   void createLocalParameters() const;
   // create local errors from global
   void createLocalError() const;
   void createLocalErrorFromCurvilinearError() const  dso_internal;
-
+  
 private:
 
-  mutable DeepCopyPointer<FreeTrajectoryState> theFreeState;
+  mutable FreeTrajectoryState theFreeState;
 
   mutable LocalTrajectoryError      theLocalError;
   mutable LocalTrajectoryParameters theLocalParameters;
 
   mutable bool theLocalParametersValid;
-  mutable bool theGlobalParamsUp2Date;
+  mutable bool theValid;
 
  
   SurfaceSide theSurfaceSide;
-  ConstReferenceCountingPointer<Surface> theSurfaceP;
+  ConstReferenceCountingPointer<SurfaceType> theSurfaceP;
 
   double theWeight;
-  const MagneticField* theField;
 
 };
 

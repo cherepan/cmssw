@@ -13,6 +13,11 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 
+#include "DataFormats/Provenance/interface/ProductRegistry.h"
+
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "FWCore/Framework/interface/ConstProductRegistry.h"
+
 namespace edm {
   EDAnalyzer::~EDAnalyzer() {
   }
@@ -22,6 +27,7 @@ namespace edm {
 			CurrentProcessingContext const* cpc) {
     detail::CPCSentry sentry(current_context_, cpc);
     Event e(const_cast<EventPrincipal&>(ep), moduleDescription_);
+    e.setConsumer(this);
     this->analyze(e, c);
     return true;
   }
@@ -41,6 +47,7 @@ namespace edm {
 			CurrentProcessingContext const* cpc) {
     detail::CPCSentry sentry(current_context_, cpc);
     Run r(const_cast<RunPrincipal&>(rp), moduleDescription_);
+    r.setConsumer(this);
     this->beginRun(r, c);
     return true;
   }
@@ -50,6 +57,7 @@ namespace edm {
 			CurrentProcessingContext const* cpc) {
     detail::CPCSentry sentry(current_context_, cpc);
     Run r(const_cast<RunPrincipal&>(rp), moduleDescription_);
+    r.setConsumer(this);
     this->endRun(r, c);
     return true;
   }
@@ -59,6 +67,7 @@ namespace edm {
 			CurrentProcessingContext const* cpc) {
     detail::CPCSentry sentry(current_context_, cpc);
     LuminosityBlock lb(const_cast<LuminosityBlockPrincipal&>(lbp), moduleDescription_);
+    lb.setConsumer(this);
     this->beginLuminosityBlock(lb, c);
     return true;
   }
@@ -68,6 +77,7 @@ namespace edm {
 			CurrentProcessingContext const* cpc) {
     detail::CPCSentry sentry(current_context_, cpc);
     LuminosityBlock lb(const_cast<LuminosityBlockPrincipal&>(lbp), moduleDescription_);
+    lb.setConsumer(this);
     this->endLuminosityBlock(lb, c);
     return true;
   }
@@ -108,6 +118,11 @@ namespace edm {
   }
 
   void
+  EDAnalyzer::callWhenNewProductsRegistered(std::function<void(BranchDescription const&)> const& func) {
+    callWhenNewProductsRegistered_ = func;
+  }
+
+  void
   EDAnalyzer::fillDescriptions(ConfigurationDescriptions& descriptions) {
     ParameterSetDescription desc;
     desc.setUnknown();
@@ -118,8 +133,18 @@ namespace edm {
   EDAnalyzer::prevalidate(ConfigurationDescriptions& iConfig) {
     edmodule_mightGet_config(iConfig);
   }
-  
 
+  void
+  EDAnalyzer::registerProductsAndCallbacks(EDAnalyzer const*, ProductRegistry* reg) {
+
+    if (callWhenNewProductsRegistered_) {
+
+       reg->callForEachBranch(callWhenNewProductsRegistered_);
+
+       Service<ConstProductRegistry> regService;
+       regService->watchProductAdditions(callWhenNewProductsRegistered_);
+    }
+  }
 
   static const std::string kBaseType("EDAnalyzer");
   const std::string&

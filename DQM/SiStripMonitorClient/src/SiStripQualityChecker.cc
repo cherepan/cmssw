@@ -9,10 +9,8 @@
 #include "CalibTracker/SiStripCommon/interface/TkDetMap.h"
 
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
-#include "DataFormats/SiStripDetId/interface/TECDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIBDetId.h"
-#include "DataFormats/SiStripDetId/interface/TOBDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIDDetId.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 
 #include "DQM/SiStripCommon/interface/SiStripFolderOrganizer.h"
 #include "DQM/SiStripMonitorClient/interface/SiStripUtility.h"
@@ -20,8 +18,8 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
+
 #include <iomanip>
-//#include <sstream>
 //
 // -- Constructor
 // 
@@ -287,7 +285,7 @@ void SiStripQualityChecker::resetStatus() {
 //
 // -- Fill Status
 //
-void SiStripQualityChecker::fillStatus(DQMStore* dqm_store, const edm::ESHandle< SiStripDetCabling >& cabling) {
+void SiStripQualityChecker::fillStatus(DQMStore* dqm_store, const edm::ESHandle< SiStripDetCabling >& cabling, const edm::EventSetup& eSetup) {
   if (!bookedStripStatus_ || !bookedTrackingStatus_) bookStatus(dqm_store);
 
   fillDummyStatus();
@@ -295,7 +293,7 @@ void SiStripQualityChecker::fillStatus(DQMStore* dqm_store, const edm::ESHandle<
   fillTrackingStatus(dqm_store);
 
   int faulty_moduleflag  = pSet_.getUntrackedParameter<bool>("PrintFaultyModuleList", false);
-  if (faulty_moduleflag) fillFaultyModuleStatus(dqm_store);   
+  if (faulty_moduleflag) fillFaultyModuleStatus(dqm_store, eSetup);   
 }
 //
 // Fill Detector Status
@@ -522,25 +520,25 @@ void SiStripQualityChecker::getModuleStatus(DQMStore* dqm_store, std::vector<Mon
 	SiStripUtility::setBadModuleFlag(name,flag);            
 	iPos->second = flag;
       } else {
-	//
-	//if not in the local bad module list, check the BadModuleList dir
-	//
-	std::ostringstream detid_str;
-	detid_str << detId;
-	//now in the layer/wheel dir
-	std::string currentdir = dqm_store->pwd();
-	std::string thisMEpath = currentdir.substr( 0 , currentdir.rfind( "/" ) ) + "/BadModuleList/" + detid_str.str() ;
-
-	MonitorElement *meBadModule = dqm_store->get ( thisMEpath );
-	if ( meBadModule )
-	  {
-	    std::string val_str;
-	    SiStripUtility::getMEValue ( meBadModule , val_str );
-	    flag = atoi ( val_str.c_str() );
-	  }
+        //  
+	//if not in the local bad module list, check the BadModuleList dir  
+	//  
+	std::ostringstream detid_str;  
+	detid_str << detId;  
+	//now in the layer/wheel dir  
+	std::string currentdir = dqm_store->pwd();  
+	std::string thisMEpath = currentdir.substr( 0 , currentdir.rfind( "/" ) ) + "/BadModuleList/" + detid_str.str() ;  
+	
+	MonitorElement *meBadModule = dqm_store->get ( thisMEpath );  
+	if ( meBadModule )  
+	  {  
+	    std::string val_str;  
+	    SiStripUtility::getMEValue ( meBadModule , val_str );  
+	    flag = atoi ( val_str.c_str() );  
+	  }  
 	else
 	  flag = 0;
-
+	
 	SiStripUtility::setBadModuleFlag(name,flag);              
 	bad_modules.insert(std::pair<uint32_t,uint16_t>(detId,flag));
       }
@@ -571,8 +569,14 @@ void SiStripQualityChecker::getModuleStatus(DQMStore* dqm_store, std::vector<Mon
 //
 // -- Create Monitor Elements for Modules
 //
-void SiStripQualityChecker::fillFaultyModuleStatus(DQMStore* dqm_store) {
+void SiStripQualityChecker::fillFaultyModuleStatus(DQMStore* dqm_store, const edm::EventSetup& eSetup) {
   if (badModuleList.size() == 0) return;
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  eSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+
   dqm_store->cd();
   std::string mdir = "MechanicalView";
   if (!SiStripUtility::goToDir(dqm_store, mdir)) return;
@@ -582,7 +586,7 @@ void SiStripQualityChecker::fillFaultyModuleStatus(DQMStore* dqm_store) {
   for (std::map<uint32_t,uint16_t>::const_iterator it =  badModuleList.begin() ; it != badModuleList.end(); it++) {
     uint32_t detId =  it->first;
     std::string subdet_folder ;
-    folder_organizer.getSubDetFolder(detId,subdet_folder);
+    folder_organizer.getSubDetFolder(detId,tTopo,subdet_folder);
     if (!dqm_store->dirExists(subdet_folder)) {
       subdet_folder = mechanical_dir + subdet_folder.substr(subdet_folder.find("MechanicalView")+14);
       if (!dqm_store->dirExists(subdet_folder)) continue;

@@ -45,9 +45,12 @@ AnalyticalCurvilinearJacobian::AnalyticalCurvilinearJacobian
   //dbg::dbg_trace(1,"ACJ2", globalParameters.vector(),x,p,s,theJacobian);
 }
 
-// #ifdef TRPRFN_SSE
+
 #if defined(USE_SSEVECT) && !defined(TRPRFN_SCALAR)
 #include "AnalyticalCurvilinearJacobianSSE.icc"
+#elif defined(USE_EXTVECT) && !defined(TRPRFN_SCALAR)
+#include "AnalyticalCurvilinearJacobianEXT.icc"
+
 #else
 
 void

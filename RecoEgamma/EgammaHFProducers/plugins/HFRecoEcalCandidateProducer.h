@@ -18,15 +18,22 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/ESHandle.h"
-#include "RecoEgamma/EgammaHFProducers/interface/HFRecoEcalCandidateAlgo.h"
-//#include "MagneticField/Engine/interface/MagneticField.h"
+#include "HFRecoEcalCandidateAlgo.h"
+#include "HFValueStruct.h"
 
 class HFRecoEcalCandidateProducer : public edm::EDProducer {
-public:
+ public:
   explicit HFRecoEcalCandidateProducer(edm::ParameterSet const& conf);
   virtual void produce(edm::Event& e, edm::EventSetup const& iSetup);
-private:
-  edm::InputTag hfclusters_;
+ private:
+  std::vector<double> defaultDB_; 
+  edm::InputTag hfclusters_,vertices_;
+  int HFDBversion_;
+  std::vector<double> HFDBvector_;
+  bool doPU_; 
+  double Cut2D_;
+  double defaultSlope2D_;
+  reco::HFValueStruct hfvars_;
   HFRecoEcalCandidateAlgo algo_;
 };
 

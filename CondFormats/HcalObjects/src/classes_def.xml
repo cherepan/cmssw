@@ -1,4 +1,10 @@
 <lcgdict>
+    <class name="HcalCondObjectContainerBase">
+      <field name="topo_" transient="true" />
+      <field name="packedIndexVersion_" transient="true"/>
+  </class>
+
+
  <class name="HcalPedestal"/>
  <class name="std::vector<HcalPedestal>"/>
  <class name="std::pair<std::string, std::vector<HcalPedestal> >"/>
@@ -63,7 +69,10 @@
  </class>
  <class name="HcalGainWidths"/>
 
- <class name="HcalQIECoder"/>
+ <class name="HcalQIECoder">
+   <field name="mQIEIndex" transient="true"/>
+ </class>
+
  <class name="std::vector<HcalQIECoder>"/>
  <class name="std::pair<std::string, std::vector<HcalQIECoder> >"/>
  <class name="std::vector<std::pair<std::string, std::vector<HcalQIECoder> > >"/>
@@ -77,7 +86,10 @@
   <field name="CALIBcontainer" mapping="blob" />
   <field name="CASTORcontainer" mapping="blob" />
  </class>
- <class name="HcalQIEData"/>
+
+ <class name="HcalQIEData">
+   <field name="mShape" transient="true"/>
+ </class>
 
  <class name="HcalCalibrationQIECoder"/>
  <class name="std::vector<HcalCalibrationQIECoder>"/>
@@ -270,11 +282,11 @@
  <class name="HcalLutMetadata::NonChannelData"/>
 
  <class name="HcalDcsValue">
-  <field name="mHBsorted" transient="true"/>
-  <field name="mHEsorted" transient="true"/>
-  <field name="mHO0sorted" transient="true"/>
-  <field name="mHO12sorted" transient="true"/>
-  <field name="mHFsorted" transient="true"/>
+  <!-- <field name="mHBsorted" transient="true"/> -->
+  <!-- <field name="mHEsorted" transient="true"/> -->
+  <!-- <field name="mHO0sorted" transient="true"/> -->
+  <!-- <field name="mHO12sorted" transient="true"/> -->
+  <!-- <field name="mHFsorted" transient="true"/> -->
  </class>
  <class name="std::vector<HcalDcsValue>"/>
  <class name="HcalDcsValues"/>

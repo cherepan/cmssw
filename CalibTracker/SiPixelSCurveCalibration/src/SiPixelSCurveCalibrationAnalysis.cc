@@ -66,7 +66,9 @@ void SiPixelSCurveCalibrationAnalysis::makeThresholdSummary(void){
 	  //        const sipixelobjects::PixelFEDLink * link = theFed->link(cabling.link);
 	  //        const sipixelobjects::PixelROC *theRoc = link->roc(cabling.roc);
 	  sipixelobjects::LocalPixel locpixel(loc);
-	  sipixelobjects::CablingPathToDetUnit path = {realfedID, cabling.link, cabling.roc};  
+	  sipixelobjects::CablingPathToDetUnit path = {static_cast<unsigned int>(realfedID),
+                                                       static_cast<unsigned int>(cabling.link),
+                                                       static_cast<unsigned int>(cabling.roc)};
 	  const sipixelobjects::PixelROC *theRoc = theCablingMap_->findItem(path);
 	  // END of FIX
 	  int newrow= locpixel.rocRow();
@@ -311,8 +313,8 @@ bool SiPixelSCurveCalibrationAnalysis::doFits(uint32_t detid, std::vector<SiPixe
    } 
 
    //estimate the S-Curve parameters
-   float thresholdGuess;
-   float sigmaGuess;
+   float thresholdGuess = -1.0;
+   float sigmaGuess = -1.0;
    errorFlag = estimateSCurveParameters(efficiencies_, thresholdGuess, sigmaGuess);
 
    // these -1.0 default values will only be filled if the curve is all zeroes, or doesn't turn on, WHICH INDICATES A SERIOUS PROBLEM

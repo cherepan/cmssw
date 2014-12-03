@@ -11,6 +11,22 @@
 <bin   file="ProjectMatrix_t.cpp" name="DataFormatsProjectMatrix_t">
 </bin>
 <bin   file="FastMath_t.cpp" name="DataFormatsFastMath_t">
+  <flags CXXFLAGS="-std=gnu++11 -Wno-error=format -Wno-format"/>
+  <flags REM_CXXFLAGS="-Wformat -ansi"/>
+</bin>
+<bin   file="testApproximations.cpp" name="testMathApproximations">
+  <flags CXXFLAGS="-std=gnu++11 -Wno-error=format -Wno-format"/>
+  <flags REM_CXXFLAGS="-std=c++%"/>
+  <flags REM_CXXFLAGS="-Wformat"/>
+  <flags REM_CXXFLAGS="-ansi"/>
+</bin>
+<bin   file="testApproxMath.cpp" name="testMathApproxMath">
+  <flags CXXFLAGS="-std=gnu++11 -Wno-error=format -Wno-format"/>
+  <flags REM_CXXFLAGS="-std=c++%"/>
+  <flags REM_CXXFLAGS="-Wformat"/>
+  <flags REM_CXXFLAGS="-ansi"/>
+</bin>
+<bin   file="ExtVec_t.cpp" name="DataFormatsExtVec_t">
 </bin>
 <bin   file="SSEVec_t.cpp" name="DataFormatsSSEVec_t">
 </bin>
@@ -20,10 +36,13 @@
 </bin>
 <bin   file="eta_t.cpp" name="DataFormatsEta_t">
 </bin>
+<bin   file="deltaR_t.cpp" name="DataFormatsDeltaR_t">
+  <flags CXXFLAGS="-std=gnu++11 -Wno-error=format -Wno-format"/>
+  <flags REM_CXXFLAGS="-std=c++%"/>
+  <flags REM_CXXFLAGS="-Wformat"/>
+  <flags REM_CXXFLAGS="-ansi"/>
+</bin>
 <bin   file="Similarity_t.cpp" name="DataFormatsSimilarity_t">
 </bin>
-<bin   file="Vdt_timings_t.cpp" name="DataFormatsVdt_timings_t">
-  <flags CXXFLAGS="-fopenmp"/>
-</bin>
-<bin   file="Vdt_sanity_t.cpp" name="DataFormatsVdt_sanity_t">
+<bin   file="MulSymMatrix_t.cpp" name="DataFormatsMulSymMatrix_t">
 </bin>

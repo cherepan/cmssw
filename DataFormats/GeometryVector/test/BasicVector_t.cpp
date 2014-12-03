@@ -65,19 +65,68 @@ T normV(Basic2DVector<T> const & a) {
 }
 
 
+long aligned(void * p) {
+  return long(p)&0xf;
+
+}
+
+volatile int * vi=0;
+
+template<typename T> 
+void verifyAlign() {
+  int sum=0;
+  int nota=0;
+  for (int i=0; i!=100; ++i) {
+    auto p= new int(3);
+    sum +=(*p);
+    auto t = new T;
+    sum +=(*t)[0];
+    if (aligned(t)!=0) ++nota;
+    delete p;
+    delete t;
+    t = new T;
+    sum +=(*t)[0];
+    if (aligned(t)!=0) ++nota;
+    delete t;
+    vi = new int[3];
+    auto vt = new T[3];
+    if (aligned(vt)!=0) ++nota;
+    sum +=vt[1][1];
+    delete [] vi;
+    delete [] vt;
+  }
+
+  std::cout << "sum " << sum << std::endl;
+  std::cout << "not aligned " << nota << std::endl;
+
+}
+
 int main() {
-#if defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ > 4)
+#if defined(__GNUC__)
   std::cout << "gcc " << __GNUC__ << "." << __GNUC_MINOR__ << std::endl;
 #endif
 #ifdef USE_SSEVECT
   std::cout << "sse vector enabled in cmssw" << std::endl;
 #endif
+#ifdef USE_EXTVECT
+  std::cout << "extended vector notation enabled in cmssw" << std::endl;
+#endif
+
+
+  std::cout << "biggest alignment " << __BIGGEST_ALIGNMENT__ << std::endl;
+
+
+
 
   std::cout << sizeof(Basic2DVectorF) << std::endl;
   std::cout << sizeof(Basic2DVectorD) << std::endl;
   std::cout << sizeof(Basic3DVectorF) << std::endl;
   std::cout << sizeof(Basic3DVectorD) << std::endl;
   std::cout << sizeof(Basic3DVectorLD) << std::endl;
+
+  verifyAlign<Basic3DVectorF>();
+  verifyAlign<Basic3DVectorD>();
+
 
   Basic3DVectorF  x(2.0f,4.0f,5.0f);
   Basic3DVectorF  y(-3.0f,2.0f,-5.0f);
@@ -97,8 +146,8 @@ int main() {
     std::cout << dotV(x,y) << std::endl; 
     std::cout << normV(x) << std::endl; 
     std::cout << norm(x) << std::endl; 
-    std::cout << min(x.mathVector(),y.mathVector()) << std::endl;
-    std::cout << max(x.mathVector(),y.mathVector()) << std::endl;
+    // std::cout << std::min(x.mathVector(),y.mathVector()) << std::endl;
+    // std::cout << std::max(x.mathVector(),y.mathVector()) << std::endl;
 
     std::cout << dotV(x,yd) << std::endl; 
     std::cout << dotV(xd,y) << std::endl; 
@@ -142,8 +191,8 @@ int main() {
     std::cout << dotV(x2,y2) << std::endl; 
     std::cout << normV(x2) << std::endl; 
     std::cout << norm(x2) << std::endl; 
-    std::cout << min(x2.mathVector(),y2.mathVector()) << std::endl;
-    std::cout << max(x2.mathVector(),y2.mathVector()) << std::endl;
+    // std::cout << std::min(x2.mathVector(),y2.mathVector()) << std::endl;
+    // std::cout << std::max(x2.mathVector(),y2.mathVector()) << std::endl;
 
     std::cout << dotV(x2,yd2) << std::endl; 
     std::cout << dotV(xd2,y2) << std::endl; 
@@ -163,10 +212,8 @@ int main() {
     std::cout << xd2.cross(y2)<< std::endl;
     std::cout << xd2.cross(yd2)<< std::endl;
     
-#if defined( __GXX_EXPERIMENTAL_CXX0X__)
     auto s2 = x2+xd2 - 3.1*z2;
     std::cout << s2 << std::endl;
-#endif
   }
 
 

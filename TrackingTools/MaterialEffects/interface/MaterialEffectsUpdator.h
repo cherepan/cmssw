@@ -7,19 +7,58 @@
  *  in this class.
  *  Ported from ORCA.
  *
- *  $Date: 2010/04/22 16:58:45 $
- *  $Revision: 1.12 $
- *  \author todorov, cerati
+ *  Moved "state" into an independent struct "Effect"
+ *
  */
 
 #include "DataFormats/GeometrySurface/interface/Surface.h"
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
 #include "DataFormats/TrajectorySeed/interface/PropagationDirection.h"
-#include "FWCore/Utilities/interface/Visibility.h"
 
-class MaterialEffectsUpdator
-{  
+#include "FWCore/Utilities/interface/GCC11Compatibility.h"
+
+namespace materialEffect {
+  enum CovIndex { elos=0, msxx=1, msxy=2, msyy=3};
+  class Covariance {
+  public:
+    float operator[](CovIndex i) const { return data[i];}
+    float & operator[](CovIndex i) { return data[i];}
+    void add(AlgebraicSymMatrix55 & cov) const {
+      cov(0,0) += data[elos];
+      cov(1,1) += data[msxx];
+      cov(1,2) += data[msxy];
+      cov(2,2) += data[msyy];
+
+    }
+    Covariance & operator+=(Covariance const & cov) {
+      for(int i=0;i!=4;++i) data[i]+=cov.data[i];
+      return *this;
+    }
+  private:
+    float data[4]={0};
+  };
+
+  struct Effect {
+    float weight=1.f;
+    // Change in |p| from material effects.
+    float deltaP=0;
+    // Contribution to covariance matrix (in local co-ordinates) from material effects.
+    Covariance deltaCov;
+    void combine(Effect const & e1,Effect const & e2) {
+      weight *= e1.weight*e2.weight;
+      deltaP+=e1.deltaP+e2.deltaP;
+      deltaCov+=e1.deltaCov; deltaCov+=e2.deltaCov;
+    } 
+  };
+
+}
+
+class MaterialEffectsUpdator {  
 public:
+  typedef materialEffect::Covariance Covariance;
+  typedef materialEffect::Effect Effect;
+  typedef  materialEffect::CovIndex CovIndex;
+
   /** Constructor with explicit mass hypothesis
    */
   MaterialEffectsUpdator ( double mass );
@@ -40,16 +79,7 @@ public:
   virtual bool updateStateInPlace (TrajectoryStateOnSurface& TSoS, 
 				   const PropagationDirection propDir) const;
 
- 
-  /** Change in |p| from material effects.
-   */
-  virtual double deltaP (const TrajectoryStateOnSurface& TSoS, const PropagationDirection propDir) const;
 
-
-  /** Contribution to covariance matrix (in local co-ordinates) from material effects.
-   */
-  virtual const AlgebraicSymMatrix55 &deltaLocalError (const TrajectoryStateOnSurface& TSoS, 
-						       const PropagationDirection propDir) const;
 
   /** Particle mass assigned at construction.
    */
@@ -59,27 +89,12 @@ public:
 
   virtual MaterialEffectsUpdator* clone()  const = 0;
 
- private:
   // here comes the actual computation of the values
-  virtual void compute (const TrajectoryStateOnSurface&, const PropagationDirection) const dso_internal = 0;
-
-  // check of arguments for use with cached values
-  bool newArguments (const TrajectoryStateOnSurface & TSoS, PropagationDirection  propDir) const dso_internal;
-  
+  virtual void compute (const TrajectoryStateOnSurface&, const PropagationDirection, Effect & effect) const = 0;
+ 
  private:
   double theMass;
 
-  // chache previous call state
-  mutable double theLastOverP;
-  mutable double theLastDxdz;
-  mutable float  theLastRL;
-  mutable PropagationDirection theLastPropDir;
-
-
-protected:  
-  mutable double theDeltaP;
-  mutable AlgebraicSymMatrix55 theDeltaCov;
-  static  AlgebraicSymMatrix55  theNullMatrix;
 };
 
 #endif

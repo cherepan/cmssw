@@ -12,21 +12,21 @@
 #include "TBufferFile.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/InputSource.h"
+#include "FWCore/Sources/interface/RawInputSource.h"
 
 #include "DataFormats/Streamer/interface/StreamedProducts.h"
 #include "DataFormats/Common/interface/EDProductGetter.h"
 
-#include "boost/shared_ptr.hpp"
-
+#include <memory>
 #include <vector>
 
 class InitMsgView;
 class EventMsgView;
 
 namespace edm {
+  class BranchIDListHelper;
   class ParameterSetDescription;
-  class StreamerInputSource : public InputSource {
+  class StreamerInputSource : public RawInputSource {
   public:  
     explicit StreamerInputSource(ParameterSet const& pset,
                  InputSourceDescription const& desc);
@@ -38,10 +38,10 @@ namespace edm {
 
     void deserializeAndMergeWithRegistry(InitMsgView const& initView, bool subsequent = false);
 
-    EventPrincipal* deserializeEvent(EventMsgView const& eventView);
+    void deserializeEvent(EventMsgView const& eventView);
 
     static
-    void mergeIntoRegistry(SendJobHeader const& header, ProductRegistry&, bool subsequent);
+    void mergeIntoRegistry(SendJobHeader const& header, ProductRegistry&, BranchIDListHelper&, bool subsequent);
 
     /**
      * Uncompresses the data in the specified input buffer into the
@@ -58,10 +58,7 @@ namespace edm {
   protected:
     static void declareStreamers(SendDescs const& descs);
     static void buildClassCache(SendDescs const& descs);
-    void setEndRun() {runEndingFlag_ = true;}
     void resetAfterEndRun();
-
-    bool inputFileTransitionsEachEvent_;
 
   private:
 
@@ -79,30 +76,18 @@ namespace edm {
       EventPrincipal const* eventPrincipal_;
     };
 
-    virtual EventPrincipal* read() = 0;
-
-    virtual boost::shared_ptr<RunAuxiliary> readRunAuxiliary_();
-
-    virtual boost::shared_ptr<LuminosityBlockAuxiliary> readLuminosityBlockAuxiliary_();
-
-    virtual EventPrincipal*
-    readEvent_();
-
-    virtual ItemType getNextItemType();
+    virtual EventPrincipal* read(EventPrincipal& eventPrincipal);
 
     virtual void setRun(RunNumber_t r);
 
-    virtual boost::shared_ptr<FileBlock> readFile_();
-
-    bool newRun_;
-    bool newLumi_;
-    bool eventCached_;
+    virtual std::unique_ptr<FileBlock> readFile_();
 
     TClass* tc_;
     std::vector<unsigned char> dest_;
     TBufferFile xbuf_;
-    bool runEndingFlag_;
+    std::unique_ptr<SendEvent> sendEvent_;
     ProductGetter productGetter_;
+    bool adjustEventToNewProductRegistry_;
 
     //Do not like these to be static, but no choice as deserializeRegistry() that sets it is a static memeber 
     static std::string processName_;

@@ -1,5 +1,6 @@
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include "DataFormats/MuonDetId/interface/MuonSubdetId.h"
+#include "DataFormats/MuonDetId/interface/RPCDetId.h"
 
 using namespace reco;
 
@@ -12,6 +13,7 @@ Muon::Muon(  Charge q, const LorentzVector & p4, const Point & vtx ) :
      qualityValid_ = false;
      caloCompatibility_ = -9999.;
      type_ = 0;
+     bestTunePTrackType_ = reco::Muon::None;
      bestTrackType_ = reco::Muon::None;
 }
 
@@ -24,6 +26,8 @@ Muon::Muon() {
    caloCompatibility_ = -9999.;
    type_ = 0;
    bestTrackType_ = reco::Muon::None;
+   bestTunePTrackType_ = reco::Muon::None;
+
 }
 
 bool Muon::overlap( const Candidate & c ) const {
@@ -59,6 +63,12 @@ int Muon::numberOfMatches( ArbitrationType type ) const
    for( std::vector<MuonChamberMatch>::const_iterator chamberMatch = muMatches_.begin();
          chamberMatch != muMatches_.end(); chamberMatch++ )
    {
+      if(type == RPCHitAndTrackArbitration) {
+         if(chamberMatch->rpcMatches.empty()) continue;
+         matches += chamberMatch->rpcMatches.size();
+         continue;
+      }
+
       if(chamberMatch->segmentMatches.empty()) continue;
       if(type == NoArbitration) {
          matches++;
@@ -114,9 +124,29 @@ unsigned int Muon::stationMask( ArbitrationType type ) const
 {
    unsigned int totMask(0);
    unsigned int curMask(0);
+
    for( std::vector<MuonChamberMatch>::const_iterator chamberMatch = muMatches_.begin();
          chamberMatch != muMatches_.end(); chamberMatch++ )
    {
+      if(type == RPCHitAndTrackArbitration) {
+	 if(chamberMatch->rpcMatches.empty()) continue;
+
+	 RPCDetId rollId = chamberMatch->id.rawId();
+	 const int region    = rollId.region();
+	 int rpcIndex = 1; if (region!=0) rpcIndex = 2;
+
+         for( std::vector<MuonRPCHitMatch>::const_iterator rpcMatch = chamberMatch->rpcMatches.begin();
+               rpcMatch != chamberMatch->rpcMatches.end(); rpcMatch++ )
+         {
+            curMask = 1<<( (chamberMatch->station()-1)+4*(rpcIndex-1) );
+
+            // do not double count
+            if(!(totMask & curMask))
+               totMask += curMask;
+         }
+         continue;
+      }
+
       if(chamberMatch->segmentMatches.empty()) continue;
       if(type == NoArbitration) {
          curMask = 1<<( (chamberMatch->station()-1)+4*(chamberMatch->detector()-1) );
@@ -168,6 +198,53 @@ unsigned int Muon::stationMask( ArbitrationType type ) const
    }
 
    return totMask;
+}
+
+int Muon::numberOfMatchedRPCLayers( ArbitrationType type ) const
+{
+   int layers(0);
+
+   unsigned int theRPCLayerMask = RPClayerMask(type);
+   // maximum ten layers because of 6 layers in barrel and 3 (4) layers in each endcap before (after) upscope
+   for(int it = 0; it < 10; ++it)
+     if (theRPCLayerMask & 1<<it)
+       ++layers;
+
+   return layers;
+}
+
+unsigned int Muon::RPClayerMask( ArbitrationType type ) const
+{
+   unsigned int totMask(0);
+   unsigned int curMask(0);
+   for( std::vector<MuonChamberMatch>::const_iterator chamberMatch = muMatches_.begin();
+	 chamberMatch != muMatches_.end(); chamberMatch++ )
+   {
+      if(chamberMatch->rpcMatches.empty()) continue;
+	 
+      RPCDetId rollId = chamberMatch->id.rawId();
+      const int region = rollId.region();
+
+      const int layer  = rollId.layer();
+      int rpcLayer = chamberMatch->station();
+      if (region==0) {
+	 rpcLayer = chamberMatch->station()-1 + chamberMatch->station()*layer;
+	 if ((chamberMatch->station()==2 && layer==2) || (chamberMatch->station()==4 && layer==1)) rpcLayer -= 1;
+      } else rpcLayer += 6;
+	 
+      for( std::vector<MuonRPCHitMatch>::const_iterator rpcMatch = chamberMatch->rpcMatches.begin();
+	    rpcMatch != chamberMatch->rpcMatches.end(); rpcMatch++ )
+      {
+	 curMask = 1<<(rpcLayer-1);
+
+	 // do not double count
+	 if(!(totMask & curMask))
+	    totMask += curMask;
+      }
+   }
+   
+   return totMask;
+
 }
 
 unsigned int Muon::stationGapMaskDistance( float distanceCut ) const
@@ -733,10 +810,26 @@ void Muon::setIsolation( const MuonIsolation& isoR03, const MuonIsolation& isoR0
 }
 
 
-void Muon::setPFIsolation( const MuonPFIsolation& isoR03, const MuonPFIsolation& isoR04 )
+void Muon::setPFIsolation(const std::string& label, const MuonPFIsolation& deposit) 
 { 
-   pfIsolationR03_ = isoR03;
-   pfIsolationR04_ = isoR04;
+  if(label=="pfIsolationR03")
+    pfIsolationR03_ = deposit;
+
+  if(label=="pfIsolationR04")
+    pfIsolationR04_ = deposit;
+
+  if(label=="pfIsoMeanDRProfileR03")
+    pfIsoMeanDRR03_ = deposit;
+
+  if(label=="pfIsoMeanDRProfileR04")
+    pfIsoMeanDRR04_ = deposit;
+
+  if(label=="pfIsoSumDRProfileR03")
+    pfIsoSumDRR03_ = deposit;
+
+  if(label=="pfIsoSumDRProfileR04")
+    pfIsoSumDRR04_ = deposit;
+
    pfIsolationValid_ = true; 
 }
 

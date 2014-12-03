@@ -1,5 +1,5 @@
 //
-// $Id: PATConversionProducer.h,v 1.26 2012/03/29 16:43:55 tjkim Exp $
+// $Id: PATConversionProducer.h,v 1.2 2013/02/27 23:26:56 wmtan Exp $
 //
 
 #ifndef PhysicsTools_PatAlgos_PATConversionProducer_h
@@ -42,7 +42,7 @@ namespace pat {
       explicit PATConversionProducer(const edm::ParameterSet & iConfig);
       ~PATConversionProducer();
 
-      virtual void produce(edm::Event & iEvent, const edm::EventSetup & iSetup);
+      virtual void produce(edm::Event & iEvent, const edm::EventSetup& iSetup) override;
 
     private:
 

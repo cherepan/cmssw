@@ -1,5 +1,5 @@
-// Last commit: $Id: SiStripCondObjBuilderFromDb.cc,v 1.24 2011/09/19 13:50:13 demattia Exp $
-// Latest tag:  $Name: V05-01-02 $
+// Last commit: $Id: SiStripCondObjBuilderFromDb.cc,v 1.27 2013/05/30 21:52:09 gartung Exp $
+// Latest tag:  $Name: CMSSW_6_2_0 $
 
 #include "OnlineDB/SiStripESSources/interface/SiStripCondObjBuilderFromDb.h"
 #include "OnlineDB/SiStripESSources/interface/SiStripFedCablingBuilderFromDb.h"
@@ -253,7 +253,7 @@ void SiStripCondObjBuilderFromDb::setDefaultValuesApvTiming(){
 
 // -----------------------------------------------------------------------------
 /** */
-void SiStripCondObjBuilderFromDb::setDefaultValuesApvLatency(SiStripLatency & latency_, FedChannelConnection ipair, uint32_t detid, uint16_t apvnr){
+void SiStripCondObjBuilderFromDb::setDefaultValuesApvLatency(SiStripLatency & latency_, const FedChannelConnection& ipair, uint32_t detid, uint16_t apvnr){
   std::cout << "[SiStripCondObjBuilderFromDb::"<<__func__<<"]: Set Default Latency for Detid: " << detid << " ApvNr: " << apvnr << std::endl;
   if(!latency_.put( detid, apvnr, m_defaultapvmodevalue, m_defaultapvlatencyvalue))
     {
@@ -302,7 +302,7 @@ bool SiStripCondObjBuilderFromDb::setValuesApvTiming(SiStripConfigDb* const db, 
 /** */
 bool SiStripCondObjBuilderFromDb::setValuesApvLatency(SiStripLatency & latency_, SiStripConfigDb* const db, FedChannelConnection &ipair, uint32_t detid, uint16_t apvnr, SiStripConfigDb::DeviceDescriptionsRange apvs  ){
 SiStripDetInfoFileReader * fr=edm::Service<SiStripDetInfoFileReader>().operator->();
- fr->getNumberOfApvsAndStripLength(detid).first/2;
+ fr->getNumberOfApvsAndStripLength(detid);
  
  SiStripConfigDb::DeviceDescriptionsV::const_iterator iapv = apvs.begin();
  SiStripConfigDb::DeviceDescriptionsV::const_iterator japv = apvs.end();
@@ -551,7 +551,8 @@ void SiStripCondObjBuilderFromDb::buildStripRelatedObjects( SiStripConfigDb* con
 
 // -----------------------------------------------------------------------------
 /** */
-void SiStripCondObjBuilderFromDb::buildAnalysisRelatedObjects( SiStripConfigDb* const db, trackercon tc){
+void SiStripCondObjBuilderFromDb::buildAnalysisRelatedObjects( SiStripConfigDb* const db, const trackercon& _tc){
+  trackercon tc = _tc;
   std::cout << "Entering [SiStripCondObjBuilderFromDb::"<<__func__ <<"]"<<std::endl;
   //data container
   gain_= new SiStripApvGain();
@@ -604,7 +605,8 @@ void SiStripCondObjBuilderFromDb::buildAnalysisRelatedObjects( SiStripConfigDb* 
  
 // -----------------------------------------------------------------------------
 /** */
-void SiStripCondObjBuilderFromDb::buildFECRelatedObjects( SiStripConfigDb* const db, trackercon tc){
+void SiStripCondObjBuilderFromDb::buildFECRelatedObjects( SiStripConfigDb* const db, const trackercon& _tc){
+  trackercon tc = _tc;
   std::cout << "Entering [SiStripCondObjBuilderFromDb::"<<__func__ <<"]"<<std::endl;
   //data container
   latency_ = new SiStripLatency();
@@ -657,7 +659,8 @@ void SiStripCondObjBuilderFromDb::buildFECRelatedObjects( SiStripConfigDb* const
 
 // -----------------------------------------------------------------------------
 /** */
-void SiStripCondObjBuilderFromDb::buildFEDRelatedObjects( SiStripConfigDb* const db, trackercon tc){
+void SiStripCondObjBuilderFromDb::buildFEDRelatedObjects( SiStripConfigDb* const db, const trackercon& _tc){
+  trackercon tc = _tc;
   std::cout << "Entering [SiStripCondObjBuilderFromDb::"<<__func__ <<"]"<<std::endl;
 
   //data containers

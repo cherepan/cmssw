@@ -16,16 +16,9 @@
 
 
 SiPixelCluster::SiPixelCluster( const SiPixelCluster::PixelPos& pix, int adc) :
-  detId_(0),     // &&& To be fixed ?? 
-  // The center of pixel with row # N is at N+0.5 in the meas. frame!
-	//  theSumX( (pix.row()+0.5) * float(adc)), 
-	// theSumY( (pix.col()+0.5) * float(adc)),
-	//  theCharge( float(adc)),
-  theMinPixelRow( pix.row()),
-	//  theMaxPixelRow( pix.row()),
-  theMinPixelCol( pix.col()),
-	//  theMaxPixelCol( pix.col()),
-  // ggiurgiu@fnal.gov, 01/05/12
+  thePixelRow(pix.row()),
+  thePixelCol(pix.col()),
+    // ggiurgiu@fnal.gov, 01/05/12
   // Initialize the split cluster errors to un-physical values.
   // The CPE will check these errors and if they are not un-physical, 
   // it will recognize the clusters as split and assign these (increased) 
@@ -35,42 +28,51 @@ SiPixelCluster::SiPixelCluster( const SiPixelCluster::PixelPos& pix, int adc) :
 {
   // First pixel in this cluster.
   thePixelADC.push_back( adc );
-  thePixelOffset.push_back( pix.row() - theMinPixelRow );
-  thePixelOffset.push_back( pix.col() - theMinPixelCol );
+  thePixelOffset.push_back(0 );
+  thePixelOffset.push_back(0 );
 }
 
 void SiPixelCluster::add( const SiPixelCluster::PixelPos& pix, int adc) {
-
-  // The center of pixel with row # N is at N+0.5 in the meas. frame!
-  //theSumX += (pix.row()+0.5) * float(adc); 
-  //theSumY += (pix.col()+0.5) * float(adc); 
-  //theCharge += float(adc);
-	//  thePixels.push_back( Pixel( pix.row(), pix.col(), adc ) );
-	
-	int minRow = theMinPixelRow;
-	int minCol = theMinPixelCol;
-	bool recalculate = false;
-	
-	if (pix.row() < theMinPixelRow) {
-		theMinPixelRow = pix.row();
-		recalculate = true;
-	}
-	if (pix.col() < theMinPixelCol) {
-		theMinPixelCol = pix.col();
-		recalculate = true;
-	}
-	if (recalculate) {
-		int isize = thePixelADC.size();
-		for (int i=0; i<isize; ++i) {
-			int xoffset = (thePixelOffset[i*2] ) + minRow - theMinPixelRow;
-			int yoffset = (thePixelOffset[i*2+1] ) + minCol - theMinPixelCol;
-			thePixelOffset[i*2] = xoffset;
-                        thePixelOffset[i*2+1] = yoffset;
-		}
-	}
-	
-	thePixelADC.push_back( adc );
-	thePixelOffset.push_back( (pix.row() - theMinPixelRow) );
-        thePixelOffset.push_back( (pix.col() - theMinPixelCol) );
+  
+  int ominRow = minPixelRow();
+  int ominCol = minPixelCol();
+  bool recalculate = false;
+  
+  int minRow = ominRow;
+  int minCol = ominCol;
+  
+  if (pix.row() < minRow) {
+    minRow = pix.row();
+    recalculate = true;
+  }
+  if (pix.col() < minCol) {
+    minCol = pix.col();
+    recalculate = true;
+  }
+  
+  if (recalculate) {
+    int maxCol = 0;
+    int maxRow = 0;
+    int isize = thePixelADC.size();
+    for (int i=0; i<isize; ++i) {
+      int xoffset = thePixelOffset[i*2]  + ominRow - minRow;
+      int yoffset = thePixelOffset[i*2+1]  + ominCol -minCol;
+      thePixelOffset[i*2] = std::min(63,xoffset);
+      thePixelOffset[i*2+1] = std::min(63,yoffset);
+      if (xoffset > maxRow) maxRow = xoffset; 
+      if (yoffset > maxCol) maxCol = yoffset; 
+    }
+    packRow(minRow,maxRow);
+    packCol(minCol,maxCol);
+  }
+  
+  if ( (!overflowRow()) && pix.row() > maxPixelRow()) 
+    packRow(minRow,pix.row()-minRow);
+  
+  if ( (!overflowCol()) && pix.col() > maxPixelCol())
+    packCol(minCol,pix.col()-minCol);
+  
+  thePixelADC.push_back( adc );
+  thePixelOffset.push_back( std::min(63,pix.row() - minRow) );
+  thePixelOffset.push_back( std::min(63,pix.col() - minCol) );
 }
-

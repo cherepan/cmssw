@@ -4,6 +4,11 @@
 #include "RecoTracker/TkSeedGenerator/interface/SeedCreator.h"
 #include "RecoTracker/TkSeedingLayers/interface/SeedingHitSet.h"
 #include "RecoTracker/TkSeedingLayers/interface/SeedComparitor.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "TrackingTools/GeomPropagators/interface/Propagator.h"
+#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 
 class FreeTrajectoryState;
 
@@ -12,54 +17,65 @@ public:
 
   SeedFromConsecutiveHitsCreator( const edm::ParameterSet & cfg):
     thePropagatorLabel(cfg.getParameter<std::string>("propagator")),
-    theBOFFMomentum(cfg.existsAs<double>("SeedMomentumForBOFF") ? cfg.getParameter<double>("SeedMomentumForBOFF") : 5.0)
+    theBOFFMomentum(cfg.existsAs<double>("SeedMomentumForBOFF") ? cfg.getParameter<double>("SeedMomentumForBOFF") : 5.0),
+    theOriginTransverseErrorMultiplier(cfg.existsAs<double>("OriginTransverseErrorMultiplier") ? cfg.getParameter<double>("OriginTransverseErrorMultiplier") : 1.0),
+    theMinOneOverPtError(cfg.existsAs<double>("MinOneOverPtError") ? cfg.getParameter<double>("MinOneOverPtError") : 1.0)
       {}
 
   SeedFromConsecutiveHitsCreator( 
-      const std::string & propagator = "PropagatorWithMaterial", double seedMomentumForBOFF = -5.0) 
-   : thePropagatorLabel(propagator), theBOFFMomentum(seedMomentumForBOFF) { }
+      const std::string & propagator = "PropagatorWithMaterial", double seedMomentumForBOFF = -5.0, 
+      double aOriginTransverseErrorMultiplier = 1.0, double aMinOneOverPtError = 1.0) 
+    : thePropagatorLabel(propagator), theBOFFMomentum(seedMomentumForBOFF), 
+    theOriginTransverseErrorMultiplier(aOriginTransverseErrorMultiplier), theMinOneOverPtError(aMinOneOverPtError) { }
 
   //dtor
-  virtual ~SeedFromConsecutiveHitsCreator(){}
+  virtual ~SeedFromConsecutiveHitsCreator();
 
-  virtual const TrajectorySeed * trajectorySeed(TrajectorySeedCollection & seedCollection,
-						const SeedingHitSet & ordered,
-						const TrackingRegion & region,
-						const edm::EventSetup& es,
-                                                const SeedComparitor *filter);
-protected:
+  // initialize the "event dependent state"
+  virtual void init(const TrackingRegion & region,
+	       const edm::EventSetup& es,
+	       const SeedComparitor *filter) GCC11_FINAL;
 
-  virtual bool checkHit(
+  // make job 
+  // fill seedCollection with the "TrajectorySeed"
+  virtual void makeSeed(TrajectorySeedCollection & seedCollection,
+			const SeedingHitSet & hits) GCC11_FINAL;
+
+
+private:
+
+  virtual bool initialKinematic(GlobalTrajectoryParameters & kine,
+				const SeedingHitSet & hits) const;
+
+
+  bool checkHit(
       const TrajectoryStateOnSurface &tsos,
-      const TransientTrackingRecHit::ConstRecHitPointer &hit,
-      const edm::EventSetup& es,
-      const SeedComparitor *filter) const; 
+      const TransientTrackingRecHit::ConstRecHitPointer &hit) const dso_hidden;  
 
-  virtual GlobalTrajectoryParameters initialKinematic(
-      const SeedingHitSet & hits, 
-      const TrackingRegion & region, 
-      const edm::EventSetup& es,
-      const SeedComparitor *filter,
-      bool                 &passesFilter) const;
+  
+  CurvilinearTrajectoryError initialError(float sin2Theta) const  dso_hidden;
+  
+  void buildSeed(TrajectorySeedCollection & seedCollection,
+				   const SeedingHitSet & hits,
+				   const FreeTrajectoryState & fts) const  dso_hidden;
 
-  virtual CurvilinearTrajectoryError initialError(
-      const TrackingRegion& region, 
-      float sinTheta) const;
-
-  virtual const TrajectorySeed * buildSeed(
-      TrajectorySeedCollection & seedCollection,
-	const SeedingHitSet & hits,
-	const FreeTrajectoryState & fts,
-	const edm::EventSetup& es,
-        const SeedComparitor *filter) const;
-
-  virtual TransientTrackingRecHit::RecHitPointer refitHit(
-      const TransientTrackingRecHit::ConstRecHitPointer &hit, 
-      const TrajectoryStateOnSurface &state) const;
+  TransientTrackingRecHit::RecHitPointer refitHit(const TransientTrackingRecHit::ConstRecHitPointer &hit, 
+						  const TrajectoryStateOnSurface &state) const  dso_hidden;
 
 protected:
-    std::string thePropagatorLabel;
-    double theBOFFMomentum;
+
+  std::string thePropagatorLabel;
+  double theBOFFMomentum;
+  double theOriginTransverseErrorMultiplier;
+  double theMinOneOverPtError;
+  
+  const TrackingRegion * region = nullptr;
+  const SeedComparitor *filter = nullptr;
+  edm::ESHandle<TrackerGeometry> tracker;
+  edm::ESHandle<Propagator>  propagatorHandle;
+  edm::ESHandle<MagneticField> bfield;
+  float nomField;
+  bool isBOFF = false;
 
 };
 #endif 

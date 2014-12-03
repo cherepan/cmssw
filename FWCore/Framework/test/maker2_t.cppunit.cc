@@ -78,9 +78,9 @@ void testmaker2::maker2Test()
   edm::WorkerParams params1(p1, &p1, preg, pc, table);
   edm::WorkerParams params2(p2, &p2, preg, pc, table);
 
-  sigc::signal<void, const ModuleDescription&> aSignal;
-  std::auto_ptr<Worker> w1 = f->makeWorker(params1,aSignal,aSignal);
-  std::auto_ptr<Worker> w2 = f->makeWorker(params2,aSignal,aSignal);
+  signalslot::Signal<void(const ModuleDescription&)> aSignal;
+  std::unique_ptr<Worker> w1 = f->makeWorker(params1,aSignal,aSignal);
+  std::unique_ptr<Worker> w2 = f->makeWorker(params2,aSignal,aSignal);
 
 //  return 0;
 }

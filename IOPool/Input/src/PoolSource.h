@@ -35,27 +35,26 @@ namespace edm {
     static void fillDescriptions(ConfigurationDescriptions & descriptions);
 
   private:
-    virtual EventPrincipal* readEvent_();
+    virtual EventPrincipal* readEvent_(EventPrincipal& eventPrincipal);
     virtual boost::shared_ptr<LuminosityBlockAuxiliary> readLuminosityBlockAuxiliary_();
-    virtual boost::shared_ptr<LuminosityBlockPrincipal> readLuminosityBlock_(boost::shared_ptr<LuminosityBlockPrincipal> lbCache);
+    virtual boost::shared_ptr<LuminosityBlockPrincipal> readLuminosityBlock_(boost::shared_ptr<LuminosityBlockPrincipal> lumiPrincipal);
     virtual boost::shared_ptr<RunAuxiliary> readRunAuxiliary_();
-    virtual boost::shared_ptr<RunPrincipal> readRun_(boost::shared_ptr<RunPrincipal> rpCache);
-    virtual boost::shared_ptr<FileBlock> readFile_();
+    virtual boost::shared_ptr<RunPrincipal> readRun_(boost::shared_ptr<RunPrincipal> runPrincipal);
+    virtual std::unique_ptr<FileBlock> readFile_();
     virtual void closeFile_();
     virtual void endJob();
     virtual ItemType getNextItemType();
-    virtual EventPrincipal* readIt(EventID const& id);
+    virtual EventPrincipal* readIt(EventID const& id, EventPrincipal& eventPrincipal);
     virtual void skip(int offset);
     virtual bool goToEvent_(EventID const& eventID);
     virtual void rewind_();
-    virtual EventPrincipal* readOneRandom();
-    virtual EventPrincipal* readOneRandomWithID(LuminosityBlockID const& lumiID);
-    virtual EventPrincipal* readOneSequential();
-    virtual EventPrincipal* readOneSequentialWithID(LuminosityBlockID const& lumiID);
-    virtual EventPrincipal* readOneSpecified(EventID const& id);
+    virtual EventPrincipal* readOneRandom(EventPrincipal& cache);
+    virtual EventPrincipal* readOneRandomWithID(EventPrincipal& cache, LuminosityBlockID const& lumiID);
+    virtual EventPrincipal* readOneSequential(EventPrincipal& cache);
+    virtual EventPrincipal* readOneSequentialWithID(EventPrincipal& cache, LuminosityBlockID const& lumiID);
+    virtual EventPrincipal* readOneSpecified(EventPrincipal& cache, EventID const& id);
     virtual void dropUnwantedBranches_(std::vector<std::string> const& wantedBranches);
     virtual void preForkReleaseResources();
-    virtual void postForkReacquireResources(boost::shared_ptr<edm::multicore::MessageReceiverForSource>);
     virtual bool randomAccess_() const;
     virtual ProcessingController::ForwardState forwardState_() const;
     virtual ProcessingController::ReverseState reverseState_() const;
@@ -67,11 +66,6 @@ namespace edm {
     boost::shared_ptr<LuminosityBlockPrincipal> secondaryLumiPrincipal_;
     std::unique_ptr<EventPrincipal> secondaryEventPrincipal_;
     std::array<std::vector<BranchID>, NumBranchTypes>  branchIDsToReplace_;
-
-    //used when process has been forked
-    boost::shared_ptr<edm::multicore::MessageReceiverForSource> receiver_;
-    unsigned int numberOfEventsBeforeBigSkip_;
-
   }; // class PoolSource
   typedef PoolSource PoolRASource;
 }

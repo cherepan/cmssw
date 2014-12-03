@@ -8,12 +8,13 @@
 //
 // Original Author:  Chris Jones
 //         Created:  Fri Oct 23 14:44:33 CDT 2009
-// $Id: FWFromTEveCaloDataSelector.cc,v 1.11 2010/06/02 18:49:07 amraktad Exp $
+// $Id: FWFromTEveCaloDataSelector.cc,v 1.13 2012/09/20 20:09:10 eulisse Exp $
 //
 
 // system include files
 #include <boost/bind.hpp>
 #include <algorithm>
+#include <cassert>
 
 // user include files
 #include "Fireworks/Calo/src/FWFromTEveCaloDataSelector.h"

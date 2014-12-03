@@ -13,6 +13,7 @@
 
 #include "DQMServices/Diagnostic/interface/HDQMInspector.h"
 #include <time.h>
+#include <cassert>
 #include "TGraphErrors.h"
 #include "TCanvas.h"
 #include "TString.h"
@@ -835,6 +836,7 @@ double HDQMInspector::findGraphMax(TGraphErrors* g)
   int n = g->GetN();
   double* y = g->GetY();
   int locmax = TMath::LocMax(n,y);
+  assert(y != 0);
   return  y[locmax];
 }
 
@@ -845,6 +847,7 @@ double HDQMInspector::findGraphMin(TGraphErrors* g)
   int n = g->GetN();
   double* y = g->GetY();
   int locmin = TMath::LocMin(n,y);
+  assert(y != 0);
   return  y[locmin];
 }
 

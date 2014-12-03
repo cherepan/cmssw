@@ -1,5 +1,5 @@
 /*
- * $Id: EcalDumpRaw.h,v 1.3 2010/10/15 15:29:40 pgras Exp $
+ * $Id: EcalDumpRaw.h,v 1.6 2013/04/22 15:48:17 wmtan Exp $
  *
  * Author: Ph Gras. CEA/IRFU - Saclay
  */
@@ -17,6 +17,7 @@
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 /**
  * Utility to dump ECAL Raw data. Hexadecimal dump is accompagned with a side by
@@ -48,7 +49,7 @@ private:
   void analyzeApd();
   std::string toNth(int n);
   bool decode(const uint32_t* data, int iWord32, std::ostream& out);
-  double max(std::vector<double> a, unsigned& pos){
+  double max(const std::vector<double>& a, unsigned& pos){
     pos = 0;
     double m = a[pos];
     for(unsigned i = 1; i < a.size(); ++i){
@@ -56,7 +57,7 @@ private:
     }
     return m;
   }
-  double min(std::vector<double> a){
+  double min(const std::vector<double>& a){
     double m = a[0];
     for(unsigned i = 1; i < a.size(); ++i){
       if(a[i]<m) m = a[i];
@@ -182,6 +183,8 @@ private:
   int tccId_;
   //tcc sequence number of currenlty parsed tower block of one DCC
   int iTcc_;
+  edm::InputTag fedRawDataCollectionTag_;
+  edm::InputTag l1AcceptBunchCrossingCollectionTag_;
 };
 
 #endif //ECALDUMPRAW_H not defined

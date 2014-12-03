@@ -66,7 +66,11 @@ void
    std::cout << " I have "<<pDD->layers().size()      << " layers" << std::endl;
    std::cout << " I have "<<pDD->chambers().size()    << " chambers" << std::endl;
 
-
+   std::cout << " Ganged strips? " << pDD->gangedStrips() << std::endl;
+   std::cout << " Wires only?    " << pDD->wiresOnly() << std::endl;
+   std::cout << " Real wire geometry? " << pDD->realWireGeometry() << std::endl;
+   std::cout << " Use offsets to coi? " << pDD->centreTIOffsets() << std::endl;
+   
    std::cout << myName() << ": Begin iteration over geometry..." << std::endl;
    std::cout << "iter " << dashedLine_ << std::endl;
 
@@ -216,7 +220,7 @@ void
 
         // Layer geometry:  layer corner phi's...
 
-	std::vector<float> parameters = layer->geometry()->parameters();
+	std::array<const float, 4> const & parameters = layer->geometry()->parameters();
         // these parameters are half-lengths, due to GEANT
         float hBottomEdge = parameters[0];
         float hTopEdge    = parameters[1];

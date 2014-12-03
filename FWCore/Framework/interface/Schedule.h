@@ -64,7 +64,7 @@
 #include "FWCore/Framework/interface/ExceptionHelpers.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/OccurrenceTraits.h"
-#include "FWCore/Framework/interface/UnscheduledHandler.h"
+#include "FWCore/Framework/interface/UnscheduledCallProducer.h"
 #include "FWCore/Framework/src/Path.h"
 #include "FWCore/Framework/src/RunStopwatch.h"
 #include "FWCore/Framework/src/Worker.h"
@@ -93,6 +93,7 @@ namespace edm {
     class TriggerNamesService;
   }
   class ActivityRegistry;
+  class BranchIDListHelper;
   class EventSetup;
   class ExceptionCollector;
   class OutputWorker;
@@ -116,6 +117,7 @@ namespace edm {
     Schedule(ParameterSet& proc_pset,
              service::TriggerNamesService& tns,
              ProductRegistry& pregistry,
+             BranchIDListHelper& branchIDListHelper,
              ActionTable const& actions,
              boost::shared_ptr<ActivityRegistry> areg,
              boost::shared_ptr<ProcessConfiguration> processConfiguration,
@@ -128,7 +130,7 @@ namespace edm {
                               EventSetup const& eventSetup,
                               bool cleaningUpAfterException = false);
 
-    void beginJob();
+    void beginJob(ProductRegistry const&);
     void endJob(ExceptionCollector & collector);
 
     // Write the luminosity block
@@ -278,7 +280,7 @@ namespace edm {
                      boost::shared_ptr<ProcessConfiguration const> processConfiguration,
                      int bitpos, std::string const& name);
 
-    void limitOutput(ParameterSet const& proc_pset);
+    void limitOutput(ParameterSet const& proc_pset, BranchIDLists const& branchIDLists);
 
     void addToAllWorkers(Worker* w);
     
@@ -303,6 +305,8 @@ namespace edm {
     AllOutputWorkers         all_output_workers_;
     TrigPaths                trig_paths_;
     TrigPaths                end_paths_;
+    std::vector<int>         empty_trig_paths_;
+    vstring                  empty_trig_path_names_;
 
     //For each branch that has been marked for early deletion
     // keep track of how many modules are left that read this data but have
@@ -348,85 +352,6 @@ namespace edm {
     EventSetup const& es;
   };
 
-  class UnscheduledCallProducer : public UnscheduledHandler {
-  public:
-    UnscheduledCallProducer() : UnscheduledHandler(), labelToWorkers_() {}
-    void addWorker(Worker* aWorker) {
-      assert(0 != aWorker);
-      labelToWorkers_[aWorker->description().moduleLabel()] = aWorker;
-    }
-
-    template <typename T>
-    void runNow(typename T::MyPrincipal& p, EventSetup const& es) {
-      //do nothing for event since we will run when requested
-      if(!T::isEvent_) {
-        for(std::map<std::string, Worker*>::iterator it = labelToWorkers_.begin(), itEnd=labelToWorkers_.end();
-            it != itEnd;
-            ++it) {
-          CPUTimer timer;
-          try {
-            it->second->doWork<T>(p, es, 0, &timer);
-          }
-          catch (cms::Exception & ex) {
-	    std::ostringstream ost;
-            if (T::isEvent_) {
-              ost << "Calling event method";
-            }
-            else if (T::begin_ && T::branchType_ == InRun) {
-              ost << "Calling beginRun";
-            }
-            else if (T::begin_ && T::branchType_ == InLumi) {
-              ost << "Calling beginLuminosityBlock";
-            }
-            else if (!T::begin_ && T::branchType_ == InLumi) {
-              ost << "Calling endLuminosityBlock";
-            }
-            else if (!T::begin_ && T::branchType_ == InRun) {
-              ost << "Calling endRun";
-            }
-            else {
-              // It should be impossible to get here ...
-              ost << "Calling unknown function";
-            }
-            ost << " for unscheduled module " << it->second->description().moduleName()
-                << "/'" << it->second->description().moduleLabel() << "'";
-            ex.addContext(ost.str());
-            ost.str("");
-            ost << "Processing " << p.id();
-            ex.addContext(ost.str());
-            throw;
-          }
-        }
-      }
-    }
-
-  private:
-    virtual bool tryToFillImpl(std::string const& moduleLabel,
-                               EventPrincipal& event,
-                               EventSetup const& eventSetup,
-                               CurrentProcessingContext const* iContext) {
-      std::map<std::string, Worker*>::const_iterator itFound =
-        labelToWorkers_.find(moduleLabel);
-      if(itFound != labelToWorkers_.end()) {
-        CPUTimer timer;
-        try {
-          itFound->second->doWork<OccurrenceTraits<EventPrincipal, BranchActionBegin> >(event, eventSetup, iContext, &timer);
-        }
-        catch (cms::Exception & ex) {
-	  std::ostringstream ost;
-          ost << "Calling produce method for unscheduled module " 
-              <<  itFound->second->description().moduleName() << "/'"
-              << itFound->second->description().moduleLabel() << "'";
-          ex.addContext(ost.str());
-          throw;
-        }
-        return true;
-      }
-      return false;
-    }
-    std::map<std::string, Worker*> labelToWorkers_;
-  };
-
   void
   inline
   Schedule::reportSkipped(EventPrincipal const& ep) const {
@@ -440,6 +365,9 @@ namespace edm {
                                  EventSetup const& es,
                                  bool cleaningUpAfterException) {
     this->resetAll();
+    for (int empty_trig_path : empty_trig_paths_) {
+      results_->at(empty_trig_path) = HLTPathStatus(hlt::Pass, 0);
+    }
     state_ = Running;
 
     // A RunStopwatch, but only if we are processing an event.
@@ -472,7 +400,7 @@ namespace edm {
 
         try {
           CPUTimer timer;
-          if (results_inserter_.get()) results_inserter_->doWork<T>(ep, es, 0, &timer);
+          if (results_inserter_.get()) results_inserter_->doWork<T>(ep, es, nullptr, &timer);
         }
         catch (cms::Exception & ex) {
           if (T::isEvent_) {

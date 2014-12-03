@@ -1,6 +1,6 @@
-// Last commit: $Id: SiStripNoiseBuilderFromDb.cc,v 1.10 2008/06/06 08:05:12 bainbrid Exp $
-// Latest tag:  $Name: V02-00-06 $
-// Location:    $Source: /cvs_server/repositories/CMSSW/CMSSW/OnlineDB/SiStripESSources/src/SiStripNoiseBuilderFromDb.cc,v $
+// Last commit: $Id: SiStripNoiseBuilderFromDb.cc,v 1.12 2013/05/30 21:52:09 gartung Exp $
+// Latest tag:  $Name: CMSSW_6_2_0 $
+// Location:    $Source: /local/reps/CMSSW/CMSSW/OnlineDB/SiStripESSources/src/SiStripNoiseBuilderFromDb.cc,v $
 
 #include "OnlineDB/SiStripESSources/interface/SiStripNoiseBuilderFromDb.h"
 #include "CondFormats/SiStripObjects/interface/SiStripNoises.h"

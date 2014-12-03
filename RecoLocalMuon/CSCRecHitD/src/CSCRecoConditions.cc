@@ -1,5 +1,6 @@
 #include <RecoLocalMuon/CSCRecHitD/src/CSCRecoConditions.h>
 #include <CondFormats/CSCObjects/interface/CSCChannelTranslator.h>
+#include <FWCore/MessageLogger/interface/MessageLogger.h>
 #include <iostream>
 
 CSCRecoConditions::CSCRecoConditions( const edm::ParameterSet & ps ) : theConditions( ps ) {
@@ -12,301 +13,135 @@ void CSCRecoConditions::initializeEvent( const edm::EventSetup& es ) {
   theConditions.initializeEvent( es );
 }
 
+/// gains & pedestals are requested by geometric channel (as in CSCStripDigi-
+/// e.g. 1-16 for ganged ME1a, and with any readout flips already removed)
 
-float CSCRecoConditions::gain(const CSCDetId & id, int channel) const { 
-  CSCChannelTranslator translate;
-  CSCDetId idraw = translate.rawCSCDetId( id );
-  int iraw = translate.rawStripChannel( id, channel );
-  return theConditions.gain(idraw, iraw);
+float CSCRecoConditions::pedestal(const CSCDetId& id, int geomChannel) const {
+  LogTrace("CSCRecoConditions") << id << " geomChannel " << geomChannel << " pedestal " << theConditions.pedestal(id, geomChannel);
+  return theConditions.pedestal(id, geomChannel);
 }
 
-float CSCRecoConditions::pedestal(const CSCDetId & id, int channel) const { 
-  CSCChannelTranslator translate;
-  CSCDetId idraw = translate.rawCSCDetId( id );
-  int iraw = translate.rawStripChannel( id, channel );
-  return theConditions.pedestal(idraw, iraw);
+float CSCRecoConditions::pedestalSigma(const CSCDetId& id, int geomChannel) const {
+  return theConditions.pedestalSigma(id, geomChannel);
 }
 
-float CSCRecoConditions::pedestalSigma(const CSCDetId & id, int channel) const { 
-  CSCChannelTranslator translate;
-  CSCDetId idraw = translate.rawCSCDetId( id );
-  int iraw = translate.rawStripChannel( id, channel );
-  return theConditions.pedestalSigma(idraw, iraw);
+float CSCRecoConditions::gain(const CSCDetId& id, int geomChannel) const {
+  LogTrace("CSCRecoConditions") << id << " geomChannel " <<  geomChannel << " gain " << theConditions.gain(id, geomChannel);
+  return theConditions.gain(id, geomChannel);
 }
 
-float CSCRecoConditions::chipCorrection(const CSCDetId & id, int geomStrip) const { 
-  //printf("RecoCondition before translation e:%d s:%d r:%d c:%d l:%d strip:%d \n",id.endcap(),id.station(), id.ring(),id.chamber(),id.layer(),geomStrip);
-  CSCChannelTranslator translate;
-  // If ME1/4, set ring = 1
-  CSCDetId idraw = translate.rawCSCDetId( id );
-  // If ME1/4, collapse 48 chips into 16 electronics channel (1-48) -> (1-16)
-  int geomChannel = translate.channelFromStrip( id, geomStrip );
-  // Translate geometry-oriented strip channels into raw channels 
-  // reordering ME+1/1a and ME-1/1b and moving ME1/1a (1-16)->(65-80)
-  int iraw = translate.rawStripChannel( id, geomChannel);
-  //printf("RecoCondition after  translation e:%d s:%d r:%d c:%d l:%d strip:%d \n",idraw.endcap(),idraw.station(), idraw.ring(),idraw.chamber(),idraw.layer(),iraw);
-  return theConditions.chipCorrection(idraw, iraw);
+/// All other functions are accessed by geometrical strip label (i.e. strip number according to local coordinates)
+
+float CSCRecoConditions::chipCorrection(const CSCDetId & id, int geomStrip) const {
+  // geometric strip to geometric channel (e.g. ME1a, 1-48->1-16 ganged or 1-48 unganged)
+  int geomChannel = theConditions.channelFromStrip( id, geomStrip );
+  return theConditions.chipCorrection(id, geomChannel);
 }
 
-float CSCRecoConditions::chamberTimingCorrection(const CSCDetId & id) const { 
-  CSCChannelTranslator translate;
-  // If ME1/4, set ring = 1
-  CSCDetId idraw = translate.rawCSCDetId( id );
-  return theConditions.chamberTimingCorrection(idraw);
-}
+//  stripWeights is required in CSCHitFromStripOnly.
+// - Has nstrips in arg list because caller already has this value from CSCChamberSpecs.
+// - We only have gains per geometric channel of course, and we only apply them by channel too
+// (in CSCHitFromStripOnly), but we may as well fill values for each strip.
 
-float CSCRecoConditions::anodeBXoffset(const CSCDetId & id) const { 
-  CSCChannelTranslator translate;
-  // If ME1/4, set ring = 1
-  CSCDetId idraw = translate.rawCSCDetId( id );
-  return theConditions.anodeBXoffset(idraw);
-}
+void CSCRecoConditions::stripWeights( const CSCDetId& id, short int nstrips, float* weights ) const {
 
-void CSCRecoConditions::stripWeights( const CSCDetId& id, float* weights ) const {
-
-  short int is = id.station();
-  short int ir = id.ring();
-
-  short int strip1 = 1;
-  short int nStrips = 80;
-  if ( is == 1 && ir == 1) nStrips = 64; // ME1b
-  if ( is == 1 && ir == 3) nStrips = 64; // ME13
-
-  if ( ir == 4 ) { // ME1a
-    const CSCDetId testId( id.endcap(), 1, 1, id.chamber(), id.layer() ); // create ME11 detId
-    strip1 = 65; // ME1a channels are 65-80 in ME11
-    for ( short int i = 0; i < 16; ++i) {
-      float w = stripWeight(testId, strip1+i);
-
-      // Unfold ganged channels in ME1a
-      weights[i]    = w;
-      weights[i+16] = w;
-      weights[i+32] = w;
-    }
-  } 
-  else { // non-ME1a chambers
-    for ( short int i = 0; i < nStrips; ++i) {
-      weights[i] = stripWeight(id, strip1+i);
-    }
+  for ( short int i = 1; i < nstrips+1; ++i) {
+      weights[i-1] = stripWeight(id, i) ;
   }
 }
 
-void CSCRecoConditions::noiseMatrix( const CSCDetId& id, int centralStrip, std::vector<float>& nMatrix ) const {
+//  Calculate weight as 1/(gain/average gain)
+//  Input is offline CSCDetId (e.g. ir=4 for ME1A), and geom strip # (e.g. 1-48 for ME1A)
 
-  // nMatrix will be filled with expanded noise matrix elements for 
-  // channel 'centralStrip' and its immediate neighbours
+float CSCRecoConditions::stripWeight( const CSCDetId& id, int geomStrip ) const {
+   int geomChannel = theConditions.channelFromStrip( id, geomStrip );
+   float w = averageGain() / gain(id, geomChannel); // averageGain() from CSCConditions
+   // Weights are forced to lie within 0.5 and 1.5
+   if (w > 1.5) w = 1.5;
+   if (w < 0.5) w = 0.5;
+   LogTrace("CSCRecoConditions") << id << " geomStrip " << geomStrip << " stripWeight " << w;
+   return w;
+}
+
+void CSCRecoConditions::noiseMatrix( const CSCDetId& id, int geomStrip, std::vector<float>& nMatrix ) const {
+
+  // nMatrix will be filled with expanded noise matrix elements for strip 'geomStrip' and its immediate neighbours
+
   nMatrix.clear();
 
-  // Initialize values in case we can't find chamber with constants
-  // These are ME1/2 constants...
+  // These are ME1/2 constants as fall-back
+  const float fakeme12[15] = {8.64, 3.47, 2.45, 8.60, 3.28, 1.88, 8.61, 3.18, 1.99, 7.67, 2.64, 0., 7.71, 0., 0.};
+
   float elem[15];
-  elem[0] = 8.64;
-  elem[1] = 3.47;
-  elem[2] = 2.45;
-  elem[3] = 8.60;
-  elem[4] = 3.28;
-  elem[5] = 1.88;
-  elem[6] = 8.61;
-  elem[7] = 3.18;
-  elem[8] = 1.99;
-  elem[9] = 7.67;
-  elem[10] = 2.64;
-  elem[11] = 0.;
-  elem[12] = 7.71;
-  elem[13] = 0.;
-  elem[14] = 0.;
 
-  short int strip1 = centralStrip;
-  short int triplet[3];
-  bool isME1a = (id.ring()==4);
-  CSCDetId id1;
+  for ( short int i = geomStrip-1; i < geomStrip+2; ++i) {
 
-  // ME1/a constants are stored in channels 65-80 of ME11, ME1/b in channels 1-64.
-  // ME1/a channels are ganged - 48 strips to 16 channels.
-  if ( isME1a ) { // ME1a
-
-    strip1 = centralStrip%16;     // strip#   1-48
-    if (strip1 == 0) strip1 = 16; // channel# 1-16
-    strip1 += 64;                 // strip1   65-80
-    id1=CSCDetId( id.endcap(), 1, 1, id.chamber(), id.layer() ); // ME11 detId
-    
-    if (strip1 == 65) {
-      triplet[0]=80;
-      triplet[1]=65;
-      triplet[2]=66;
-    } else if (strip1 == 80) {
-      triplet[0]=79;
-      triplet[1]=80;
-      triplet[2]=65;
-    } else {
-      triplet[0]=strip1-1;
-      triplet[1]=strip1;
-      triplet[2]=strip1+1;
-
-    }
-  } 
-  else { // non-ME1a
-      triplet[0]=strip1-1;
-      triplet[1]=strip1;
-      triplet[2]=strip1+1;
-  }
-
-  for ( short int i = 0; i < 3; ++i) {
-  
-    short int channel = triplet[i];
-    float w;
     std::vector<float> me(12);
 
-    if ( isME1a ) {
-      w = stripWeight(id1, channel);
-      theConditions.noiseMatrixElements(id1, channel, me);
-    }
-    else {
-      w = stripWeight(id, channel);
-      theConditions.noiseMatrixElements(id, channel, me);
-    }
+    float w = stripWeight(id, i);
     w = w*w;
+    int geomChannel = theConditions.channelFromStrip( id, i );
+    theConditions.noiseMatrixElements(id, geomChannel, me);
     for ( short int j=0; j<11; ++j ) {
-      elem[j] = me[j] * w;     
+      elem[j] = me[j] * w;
     }
-    elem[11]= 0.; 
+    elem[11]= 0.;
     elem[12]= me[11] * w;
     elem[13]= 0.;
     elem[14]= 0.;
-      
+
     // Test that elements make sense:
-    bool isFlawed = false;      
-    for ( int k = 0; k < 15; ++k) {
-      // make sure the number isn't too close to zero...
-      if (elem[k] < 0.001) elem[k] = 0.001;
-      // make sure the number isn't too big...
-      if (elem[k] > 50.) isFlawed = true; 
+    bool isFlawed = false;
+    for ( short int k = 0; k < 15; ++k) {
+      if (elem[k] < 0.001) elem[k] = 0.001; // fix if too small...
+      if (elem[k] > 50.) isFlawed = true; // fail if too big...
     }
 
     if ( isFlawed ) {
       // These are fake ME1/2:
-      elem[0] = 8.64;
-      elem[1] = 3.47;
-      elem[2] = 2.45;
-      elem[3] = 8.60;
-      elem[4] = 3.28;
-      elem[5] = 1.88;
-      elem[6] = 8.61;
-      elem[7] = 3.18;
-      elem[8] = 1.99;
-      elem[9] = 7.67;
-      elem[10] = 2.64;
-      elem[11] = 0.;
-      elem[12] = 7.71;
-      elem[13] = 0.;
-      elem[14] = 0.;
+      for ( short int m = 0; m < 15; ++m ) { elem[m] = fakeme12[m]; }
     }
 
-    for (int k = 0; k < 15; ++k) nMatrix.push_back( elem[k] );
+    for (int k = 0; k < 15; ++k) { nMatrix.push_back( elem[k] ); }
   }
 }
 
-void CSCRecoConditions::crossTalk( const CSCDetId& id, int centralStrip, std::vector<float>& xtalks) const {
+void CSCRecoConditions::crossTalk( const CSCDetId& id, int geomStrip, std::vector<float>& xtalks) const {
+
+  // xtalks will be filled with crosstalk for geomStrip and its immediate neighbours
 
   xtalks.clear();
 
-  short int strip1 = centralStrip;
-  short int triplet[3];
-  bool isME1a = (id.ring()==4);
-  CSCDetId id1;
-
-  // ME1/a constants are stored in channels 65-80 of ME11, ME1/b in channels 1-64.
-  // ME1/a channels are ganged - 48 strips to 16 channels.
-  if ( isME1a ) { // ME1a
-
-    strip1 = centralStrip%16;     // strip#   1-48
-    if (strip1 == 0) strip1 = 16; // channel# 1-16
-    strip1 += 64;                 // strip1   65-80
-    id1=CSCDetId( id.endcap(), 1, 1, id.chamber(), id.layer() ); // ME11 detId
-    
-    if (strip1 == 65) {
-      triplet[0]=80;
-      triplet[1]=65;
-      triplet[2]=66;
-    } else if (strip1 == 80) {
-      triplet[0]=79;
-      triplet[1]=80;
-      triplet[2]=65;
-    } else {
-      triplet[0]=strip1-1;
-      triplet[1]=strip1;
-      triplet[2]=strip1+1;
-    }
-  } 
-  else { // non-ME1a
-      triplet[0]=strip1-1;
-      triplet[1]=strip1;
-      triplet[2]=strip1+1;
-  }
-
-  // For 3 neighbouring strips get crosstalks
-  short int idx = 0;
-  for ( short int i = 0; i < 3; ++i) {
-  
-    short int channel = triplet[i];
+  for ( short int i = geomStrip-1; i < geomStrip+2; ++i) {
+    int geomChannel = theConditions.channelFromStrip( id, i );
     std::vector<float> ct(4);
-
-    if ( isME1a ) {
-      theConditions.crossTalk(id1, channel, ct);
-    }
-    else {
-      theConditions.crossTalk(id, channel, ct);
-    }
-
+    theConditions.crossTalk(id, geomChannel, ct);
     xtalks.push_back(ct[0]);
     xtalks.push_back(ct[1]);
     xtalks.push_back(ct[2]);
     xtalks.push_back(ct[3]);
-    ++idx;
   }
 }
 
-/// Test for neighbouring bad strip
-/// I'm a bit confused about this - it returns true if strip is
-/// not at edge, and either of its neighbours is bad.
-
+///  Is an immediate neighbour a bad strip?
 bool CSCRecoConditions::nearBadStrip( const CSCDetId& id, int geomStrip ) const {
-  // Note ME1A strip runs 1-48 
-  /*
-  CSCChannelTranslator translate;
-  CSCDetId idraw = translate.rawCSCDetId( id );
-  int geomChan = translate.channelFromStrip( id, geomStrip ); 
-  int rawChan = translate.rawStripChannel( id, geomChan ); 
-
-  const std::bitset<80>& badStrips = theConditions.badStripWord(idraw);
-
-  bool nearBad = false;
-  if( rawChan>1 && rawChan<80 ){ // 80 bits max, labelled 0-79. Test 1-78 for neighbours.
-    nearBad = (badStrips.test(rawChan) || badStrips.test(rawChan-2));
-  }
-  */
-  //
   bool nearBad = (badStrip(id,geomStrip-1) || badStrip(id,geomStrip+1));
-
-
   return nearBad;
 }
-//
-/// Test for a bad strip
 
+/// Is strip itself a bad strip?
 bool CSCRecoConditions::badStrip( const CSCDetId& id, int geomStrip ) const {
-  // Note ME1A strip runs 1-48 
+  //@@ NOT YET UPDATED FOR UNGANGED ME11A
+
   bool aBadS = false;
-  if(geomStrip>0 && geomStrip<81){ 
-    CSCChannelTranslator translate;
-    CSCDetId idraw = translate.rawCSCDetId( id );
-    int geomChan = translate.channelFromStrip( id, geomStrip ); 
-    int rawChan = translate.rawStripChannel( id, geomChan ); 
+  if(geomStrip>0 && geomStrip<81){
+    int geomChan = theConditions.channelFromStrip( id, geomStrip );
+    const std::bitset<80>& badStrips = theConditions.badStripWord(id);
 
-    const std::bitset<80>& badStrips = theConditions.badStripWord(idraw);
+    int rawChan = theConditions.rawStripChannel( id, geomChan );
+    if( rawChan>0 && rawChan<81 ){
+      aBadS = badStrips.test(rawChan-1); // 80 bits max, labelled 0-79.
 
-    if( rawChan>0 && rawChan<81 ){ // 80 bits max, labelled 0-79. Test 0-79 (i.e. any - that's the idea)
-      aBadS = badStrips.test(rawChan-1);
     }
   }
   return aBadS;
@@ -317,27 +152,15 @@ const std::bitset<112>& CSCRecoConditions::badWireWord( const CSCDetId& id ) con
     return theConditions.badWireWord( id );
 }
 
-// This expects raw ME11 detId for ME1b (channels 1-64) & for ME1a (channels 65-80)
-float CSCRecoConditions::stripWeight( const CSCDetId& id, int channel ) const {
-   float w = averageGain() / theConditions.gain(id, channel);
-  
-   // Weights are forced to lie within 0.5 and 1.5
-   if (w > 1.5) w = 1.5;
-   if (w < 0.5) w = 0.5;
-   return w;
+float CSCRecoConditions::chamberTimingCorrection(const CSCDetId & id) const {
+  return theConditions.chamberTimingCorrection(id);
 }
 
-float CSCRecoConditions::gasGainCorrection(const CSCDetId & id, int geomStrip, int wire ) const { 
-  //printf("RecoCondition before translation e:%d s:%d r:%d c:%d l:%d strip:%d wire:%d \n",id.endcap(),id.station(), id.ring(),id.chamber(),id.layer(),geomStrip,wire);
-  CSCChannelTranslator translate;
-  // If ME1/4, set ring = 1
-  CSCDetId idraw = translate.rawCSCDetId( id );
-  // If ME1/4, collapse 48 chips into 16 electronics channel (1-48) -> (1-16)
-  int geomChannel = translate.channelFromStrip( id, geomStrip );
-  // Translate geometry-oriented strip channels into raw channels 
-  // reordering ME+1/1a and ME-1/1b and moving ME1/1a (1-16)->(65-80)
-  int iraw = translate.rawStripChannel( id, geomChannel);
-  //printf("RecoCondition after  translation e:%d s:%d r:%d c:%d l:%d strip:%d \n",idraw.endcap(),idraw.station(), idraw.ring(),idraw.chamber(),idraw.layer(),iraw);
-  return theConditions.gasGainCorrection(idraw, iraw, wire);
+float CSCRecoConditions::anodeBXoffset(const CSCDetId & id) const {
+  return theConditions.anodeBXoffset(id);
 }
 
+float CSCRecoConditions::gasGainCorrection(const CSCDetId & id, int geomStrip, int wiregroup ) const {
+  int geomChannel = theConditions.channelFromStrip( id, geomStrip);
+  return theConditions.gasGainCorrection(id, geomChannel, wiregroup);
+}

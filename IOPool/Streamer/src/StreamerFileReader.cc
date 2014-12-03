@@ -10,33 +10,41 @@
 #include "FWCore/Sources/interface/EventSkipperByID.h"
 
 namespace edm {
+
   StreamerFileReader::StreamerFileReader(ParameterSet const& pset, InputSourceDescription const& desc) :
       StreamerInputSource(pset, desc),
       streamerNames_(pset.getUntrackedParameter<std::vector<std::string> >("fileNames")),
       streamReader_(),
       eventSkipperByID_(EventSkipperByID::create(pset).release()),
-      numberOfEventsToSkip_(pset.getUntrackedParameter<unsigned int>("skipEvents")) {
+      initialNumberOfEventsToSkip_(pset.getUntrackedParameter<unsigned int>("skipEvents")) {
     InputFileCatalog catalog(pset.getUntrackedParameter<std::vector<std::string> >("fileNames"), pset.getUntrackedParameter<std::string>("overrideCatalog"));
     streamerNames_ = catalog.fileNames();
+    reset_();
 
+  }
+
+  StreamerFileReader::~StreamerFileReader() {
+  }
+
+  void
+  StreamerFileReader::reset_() {
     if (streamerNames_.size() > 1) {
-      streamReader_ = std::auto_ptr<StreamerInputFile>(new StreamerInputFile(streamerNames_, &numberOfEventsToSkip_, eventSkipperByID_));
+      streamReader_ = std::unique_ptr<StreamerInputFile>(new StreamerInputFile(streamerNames_, eventSkipperByID_));
     } else if (streamerNames_.size() == 1) {
-      streamReader_ = std::auto_ptr<StreamerInputFile>(new StreamerInputFile(streamerNames_.at(0), &numberOfEventsToSkip_, eventSkipperByID_));
+      streamReader_ = std::unique_ptr<StreamerInputFile>(new StreamerInputFile(streamerNames_.at(0), eventSkipperByID_));
     } else {
       throw Exception(errors::FileReadError, "StreamerFileReader::StreamerFileReader")
          << "No fileNames were specified\n";
     }
     InitMsgView const* header = getHeader();
     deserializeAndMergeWithRegistry(*header, false);
+    if(initialNumberOfEventsToSkip_) {
+      skip(initialNumberOfEventsToSkip_);
+    }
   }
 
-  StreamerFileReader::~StreamerFileReader() {
-  }
 
-  EventPrincipal*
-  StreamerFileReader::read() {
-
+  bool StreamerFileReader::checkNextEvent() {
     EventMsgView const* eview = getNextEvent();
 
     if (newHeader()) {
@@ -46,10 +54,30 @@ namespace edm {
       InitMsgView const* header = getHeader();
       deserializeAndMergeWithRegistry(*header, true);
     }
-    if (eview == 0) {
-      return  0;
+    if (eview == nullptr) {
+      return  false;
     }
-    return(deserializeEvent(*eview));
+    deserializeEvent(*eview);
+    return true;
+  }
+
+  void
+  StreamerFileReader::skip(int toSkip) {
+    for(int i = 0; i != toSkip; ++i) {
+      EventMsgView const* evMsg = getNextEvent();
+      if(evMsg == nullptr)  {
+        return;
+      }
+      // If the event would have been skipped anyway, don't count it as a skipped event.
+      if(eventSkipperByID_ && eventSkipperByID_->skipIt(evMsg->run(), evMsg->lumi(), evMsg->event())) {
+        --i;
+      }
+    }
+  }
+
+  void
+  StreamerFileReader::closeFile_() {
+    if(streamReader_.get() != nullptr) streamReader_->closeStreamerFile();
   }
 
   bool
@@ -73,7 +101,7 @@ namespace edm {
   EventMsgView const*
   StreamerFileReader::getNextEvent() {
     if (!streamReader_->next()) {
-      return 0;
+      return nullptr;
     }
     return streamReader_->currentRecord();
   }

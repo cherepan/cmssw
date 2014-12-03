@@ -14,6 +14,7 @@
 #include "Geometry/DTGeometry/interface/DTChamber.h"
 #include "Geometry/DTGeometry/interface/DTLayer.h"
 #include "Geometry/RPCGeometry/interface/RPCGeometry.h"
+#include "Geometry/GEMGeometry/interface/GEMGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "Geometry/TrackerGeometryBuilder/interface/RectangularPixelTopology.h"
@@ -93,6 +94,7 @@ FWRecoGeometryESProducer::produce( const FWRecoGeometryRecord& record )
   addDTGeometry();
   addCSCGeometry();
   addRPCGeometry();
+  addGEMGeometry();
   addCaloGeometry();
 
   m_fwGeometry->idToName.resize( m_current + 1 );
@@ -230,6 +232,34 @@ FWRecoGeometryESProducer::addRPCGeometry( void )
     }
   }
 }
+
+void
+FWRecoGeometryESProducer::addGEMGeometry( void )
+{
+  //
+  // GEM geometry
+  //
+  DetId detId( DetId::Muon, 4 );
+  const GEMGeometry* gemGeom = (const GEMGeometry*) m_geomRecord->slaveGeometry( detId );
+  for( std::vector<GEMEtaPartition *>::const_iterator it = gemGeom->etaPartitions().begin(),
+						     end = gemGeom->etaPartitions().end(); 
+       it != end; ++it )
+  {
+    GEMEtaPartition* roll = (*it);
+    if( roll )
+    {
+      unsigned int rawid = (*it)->geographicalId().rawId();
+      unsigned int current = insert_id( rawid );
+      fillShapeAndPlacement( current, roll );
+
+      const StripTopology& topo = roll->specificTopology();
+      m_fwGeometry->idToName[current].topology[0] = topo.nstrips();
+      m_fwGeometry->idToName[current].topology[1] = topo.stripLength();
+      m_fwGeometry->idToName[current].topology[2] = topo.pitch();
+    }
+  }
+}
+
 
 void
 FWRecoGeometryESProducer::addPixelBarrelGeometry( void )
@@ -404,7 +434,7 @@ FWRecoGeometryESProducer::fillShapeAndPlacement( unsigned int id, const GeomDet 
   const Bounds *b = &((det->surface ()).bounds ());
   if( const TrapezoidalPlaneBounds *b2 = dynamic_cast<const TrapezoidalPlaneBounds *> (b))
   {
-    std::vector< float > par = b2->parameters ();
+      std::array< const float, 4 > const & par = b2->parameters ();
     
     // These parameters are half-lengths, as in CMSIM/GEANT3
     m_fwGeometry->idToName[id].shape[0] = 1;

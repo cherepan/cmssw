@@ -17,7 +17,7 @@
 //
 // Original Author:  Vyacheslav Krutelyov
 //         Created:  Fri Mar  3 16:01:24 CST 2006
-// $Id: SteppingHelixPropagatorAnalyzer.cc,v 1.21 2010/04/20 13:45:33 elmer Exp $
+// $Id: SteppingHelixPropagatorAnalyzer.cc,v 1.24 2012/09/19 20:31:29 wdd Exp $
 //
 //
 
@@ -37,6 +37,7 @@
 #include "DataFormats/Common/interface/Handle.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 #include "DataFormats/GeometrySurface/interface/Cylinder.h"
 #include "DataFormats/GeometrySurface/interface/Plane.h"
@@ -156,6 +157,8 @@ private:
   bool startFromPrevHit_;
 
   std::string g4SimName_;
+  edm::InputTag simTracksTag_;
+  edm::InputTag simVertexesTag_;
 };
 
 //
@@ -169,7 +172,9 @@ private:
 //
 // constructors and destructor
 //
-SteppingHelixPropagatorAnalyzer::SteppingHelixPropagatorAnalyzer(const edm::ParameterSet& iConfig)
+SteppingHelixPropagatorAnalyzer::SteppingHelixPropagatorAnalyzer(const edm::ParameterSet& iConfig) :
+  simTracksTag_(iConfig.getParameter<edm::InputTag>("simTracksTag")),
+  simVertexesTag_(iConfig.getParameter<edm::InputTag>("simVertexesTag"))
 {
   //now do what ever initialization is needed
 
@@ -233,7 +238,8 @@ SteppingHelixPropagatorAnalyzer::~SteppingHelixPropagatorAnalyzer()
 void
 SteppingHelixPropagatorAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-  static std::string metname = "SteppingHelixPropagatorAnalyzer";
+  constexpr char const*metname = "SteppingHelixPropagatorAnalyzer";
+  (void)metname;
   using namespace edm;
   ESHandle<MagneticField> bField;
   iSetup.get<IdealMagneticFieldRecord>().get(bField);
@@ -272,7 +278,7 @@ SteppingHelixPropagatorAnalyzer::analyze(const edm::Event& iEvent, const edm::Ev
   int pStatus = 0; //1 will be bad
 
   Handle<SimTrackContainer> simTracks;
-  iEvent.getByType<SimTrackContainer>(simTracks);
+  iEvent.getByLabel<SimTrackContainer>(simTracksTag_, simTracks);
   if (! simTracks.isValid() ){
     std::cout<<"No tracks found"<<std::endl;
     return;
@@ -282,7 +288,7 @@ SteppingHelixPropagatorAnalyzer::analyze(const edm::Event& iEvent, const edm::Ev
   }
 
   Handle<SimVertexContainer> simVertices;
-  iEvent.getByType<SimVertexContainer>(simVertices);
+  iEvent.getByLabel<SimVertexContainer>(simVertexesTag_, simVertices);
   if (! simVertices.isValid() ){
     std::cout<<"No tracks found"<<std::endl;
     return;

@@ -17,6 +17,7 @@ from DQMOffline.RecoB.bTagCommon_cff import *
 bTagValidation = cms.EDAnalyzer("BTagPerformanceAnalyzerMC",
     bTagCommonBlock,
     finalizeOnly = cms.bool(False),
+    applyPtHatWeight = cms.bool(False),
     jetCorrection = cms.string(''),
     recJetMatching = cms.PSet(
         refJetCorrection = cms.string(''),
@@ -89,31 +90,17 @@ bTagValidation = cms.EDAnalyzer("BTagPerformanceAnalyzerMC",
         ), 
         cms.PSet(
             bTagSoftLeptonAnalysisBlock,
-            label = cms.InputTag("softMuonBJetTags"),
+            label = cms.InputTag("softPFMuonBJetTags"),
             folder = cms.string("SMT")
         ), 
         cms.PSet(
-            bTagSoftLeptonByIPAnalysisBlock,
-            label = cms.InputTag("softMuonByIP3dBJetTags"),
-            folder = cms.string("SMTIP3d")
+            bTagSoftLeptonAnalysisBlock,
+            label = cms.InputTag("softPFElectronBJetTags"),
+            folder = cms.string("SET")
         ), 
-        cms.PSet(
-            bTagSoftLeptonByPtAnalysisBlock,
-            label = cms.InputTag("softMuonByPtBJetTags"),
-            folder = cms.string("SMTPt")
-        ), 
-        cms.PSet(
-            bTagSoftLeptonByIPAnalysisBlock,
-            label = cms.InputTag("softElectronByIP3dBJetTags"),
-            folder = cms.string("SETIP3d")
-        ), 
-        cms.PSet(
-            bTagSoftLeptonByPtAnalysisBlock,
-            label = cms.InputTag("softElectronByPtBJetTags"),
-            folder = cms.string("SETPt")
-        )
     ),
-    mcPlots = cms.bool(True),
-    differentialPlots = cms.bool(True),
+
+    flavPlots = cms.string("allbcl"),                            
+    differentialPlots = cms.bool(False), #not needed in validation procedure, put True to produce them  
     leptonPlots = cms.uint32(0)
 )

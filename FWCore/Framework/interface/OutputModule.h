@@ -9,19 +9,20 @@ output stream.
 ----------------------------------------------------------------------*/
 
 #include "DataFormats/Provenance/interface/BranchChildren.h"
+#include "DataFormats/Provenance/interface/BranchID.h"
+#include "DataFormats/Provenance/interface/BranchIDList.h"
 #include "DataFormats/Provenance/interface/ParentageID.h"
 #include "DataFormats/Provenance/interface/ModuleDescription.h"
 #include "DataFormats/Provenance/interface/Selections.h"
 
 #include "FWCore/Framework/interface/CachedProducts.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/GroupSelectorRules.h"
-#include "FWCore/Framework/interface/GroupSelector.h"
+#include "FWCore/Framework/interface/ProductSelectorRules.h"
+#include "FWCore/Framework/interface/ProductSelector.h"
+#include "FWCore/Framework/interface/EDConsumerBase.h"
 #include "FWCore/ParameterSet/interface/ParameterSetfwd.h"
 
-#include "boost/array.hpp"
-#include "boost/utility.hpp"
-
+#include <array>
 #include <string>
 #include <vector>
 #include <map>
@@ -32,7 +33,7 @@ namespace edm {
 
   std::vector<std::string> const& getAllTriggerNames();
 
-  class OutputModule : private boost::noncopyable {
+  class OutputModule : public EDConsumerBase {
   public:
     template <typename T> friend class WorkerT;
     friend class OutputWorker;
@@ -41,6 +42,10 @@ namespace edm {
 
     explicit OutputModule(ParameterSet const& pset);
     virtual ~OutputModule();
+
+    OutputModule(OutputModule const&) = delete; // Disallow copying and moving
+    OutputModule& operator=(OutputModule const&) = delete; // Disallow copying and moving
+
     /// Accessor for maximum number of events to be written.
     /// -1 is used for unlimited.
     int maxEvents() const {return maxEvents_;}
@@ -51,23 +56,24 @@ namespace edm {
 
     bool selected(BranchDescription const& desc) const;
 
-    void selectProducts();
+    void selectProducts(ProductRegistry const& preg);
     std::string const& processName() const {return process_name_;}
     SelectionsArray const& keptProducts() const {return keptProducts_;}
-    boost::array<bool, NumBranchTypes> const& hasNewlyDroppedBranch() const {return hasNewlyDroppedBranch_;}
+    std::array<bool, NumBranchTypes> const& hasNewlyDroppedBranch() const {return hasNewlyDroppedBranch_;}
 
     static void fillDescription(ParameterSetDescription & desc);
     static void fillDescriptions(ConfigurationDescriptions& descriptions);
     static const std::string& baseType();
     static void prevalidate(ConfigurationDescriptions& );
-    
-
 
     BranchChildren const& branchChildren() const {return branchChildren_;}
 
     bool wantAllEvents() const {return wantAllEvents_;}
 
+    BranchIDLists const* branchIDLists() const;
+
   protected:
+
     //Trig const& getTriggerResults(Event const& ep) const;
     Trig getTriggerResults(Event const& ep) const;
 
@@ -101,6 +107,12 @@ namespace edm {
     void setEventSelectionInfo(std::map<std::string, std::vector<std::pair<std::string, int> > > const& outputModulePathPositions,
                                bool anyProductProduced);
 
+    void configure(OutputModuleDescription const& desc);
+
+    std::map<BranchID::value_type, BranchID::value_type> const& droppedBranchIDToKeptBranchID() {
+      return droppedBranchIDToKeptBranchID_;
+    }
+
   private:
 
     int maxEvents_;
@@ -122,11 +134,11 @@ namespace edm {
     //
     // We do not own the BranchDescriptions to which we point.
     SelectionsArray keptProducts_;
-    boost::array<bool, NumBranchTypes> hasNewlyDroppedBranch_;
+    std::array<bool, NumBranchTypes> hasNewlyDroppedBranch_;
 
     std::string process_name_;
-    GroupSelectorRules groupSelectorRules_;
-    GroupSelector groupSelector_;
+    ProductSelectorRules productSelectorRules_;
+    ProductSelector productSelector_;
     ModuleDescription moduleDescription_;
 
     // We do not own the pointed-to CurrentProcessingContext.
@@ -142,6 +154,12 @@ namespace edm {
     // subsystem.
     ParameterSetID selector_config_id_;
 
+    // needed because of possible EDAliases.
+    // filled in only if key and value are different.
+    std::map<BranchID::value_type, BranchID::value_type> droppedBranchIDToKeptBranchID_;
+    std::unique_ptr<BranchIDLists> branchIDLists_;
+    BranchIDLists const* origBranchIDLists_;
+
     typedef std::map<BranchID, std::set<ParentageID> > BranchParents;
     BranchParents branchParents_;
 
@@ -150,7 +168,6 @@ namespace edm {
     //------------------------------------------------------------------
     // private member functions
     //------------------------------------------------------------------
-    void configure(OutputModuleDescription const& desc);
     void doWriteRun(RunPrincipal const& rp);
     void doWriteLuminosityBlock(LuminosityBlockPrincipal const& lbp);
     void doOpenFile(FileBlock const& fb);
@@ -175,7 +192,7 @@ namespace edm {
     // the appropriate tests have been done.
     void reallyCloseFile();
 
-    void registerAnyProducts(OutputModule const*, ProductRegistry const*) {}
+    void registerProductsAndCallbacks(OutputModule const*, ProductRegistry const*) {}
 
     /// Ask the OutputModule if we should end the current file.
     virtual bool shouldWeCloseFile() const {return false;}

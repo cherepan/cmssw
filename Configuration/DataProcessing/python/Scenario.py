@@ -17,6 +17,10 @@ import FWCore.ParameterSet.Config as cms
 from Configuration.DataProcessing.Merge import mergeProcess
 from Configuration.DataProcessing.Repack import repackProcess
 
+#central import, will be used by all daughter classes anyways
+from Configuration.Applications.ConfigBuilder import ConfigBuilder,Options,defaultOptions
+
+
 class Scenario(object):
     """
     _Scenario_
@@ -127,7 +131,7 @@ class Scenario(object):
         raise NotImplementedError, msg
 
 
-    def skimming(self, skims, **options):
+    def skimming(self, skims, globalTag, **options):
         """
         _skimming_
 

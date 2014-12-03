@@ -1,6 +1,6 @@
 /*
- *  $Date: 2009/05/25 13:00:58 $
- *  $Revision: 1.6 $
+ *  $Date: 2013/05/17 20:09:07 $
+ *  $Revision: 1.9 $
  *  \author Julia Yarba
  */
 
@@ -107,15 +107,17 @@ BaseFlatGunProducer::~BaseFlatGunProducer()
 }
 
 
-void BaseFlatGunProducer::beginRun( edm::Run & r, const EventSetup& es )
+void BaseFlatGunProducer::beginRun(const edm::Run & r, const EventSetup& es )
 {
    es.getData( fPDGTable ) ;
    return ;
 
 }
+void BaseFlatGunProducer::endRun(const Run &run, const EventSetup& es ) {
+}
 
 
-void BaseFlatGunProducer::endRun( Run &run, const EventSetup& es )
+void BaseFlatGunProducer::endRunProduce(Run &run, const EventSetup& es )
 {
    // just create an empty product
    // to keep the EventContent definitions happy

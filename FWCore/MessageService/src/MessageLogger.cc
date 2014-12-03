@@ -479,9 +479,23 @@ void
 MessageLogger::preModule(const ModuleDescription& desc)
 {
   establishModule (desc,"");					// ChangeLog 13
+  moduleStack_.emplace_back(&desc);
 }
+
 void MessageLogger::postModule(const ModuleDescription& iDescription)
-{ unEstablishModule (iDescription, "PostModule"); }
+{ 
+  // The moduleStack_ should never be empty, but lets check to be safe ...
+  if(moduleStack_.empty()) {
+    unEstablishModule (iDescription, "PostModule");
+  } else {
+    moduleStack_.pop_back();
+    if(moduleStack_.empty()) {
+      unEstablishModule (iDescription, "PostModule");
+    } else {
+      establishModule(*moduleStack_.back(), "");
+    }
+  }
+}
 
 void
 MessageLogger::preModuleEndLumi(const ModuleDescription& desc)
@@ -528,7 +542,7 @@ void MessageLogger::postSource()
 
 void MessageLogger::preFile()
 {  establish("file_open"); }
-void MessageLogger::preFileClose()
+void MessageLogger::preFileClose( std::string const &, bool )
 {  establish("file_close"); }
 void MessageLogger::postFile()
 { unEstablish("AfterFile"); }

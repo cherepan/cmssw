@@ -1,4 +1,4 @@
-// Last commit: $Id: SiStripNullKey.cc,v 1.3 2007/03/26 10:12:43 bainbrid Exp $
+// Last commit: $Id: SiStripNullKey.cc,v 1.5 2012/07/04 19:04:53 eulisse Exp $
 
 #include "DataFormats/SiStripCommon/interface/SiStripNullKey.h"
 #include "DataFormats/SiStripCommon/interface/SiStripEnumsAndStrings.h"
@@ -11,8 +11,7 @@ SiStripNullKey::SiStripNullKey() : SiStripKey() {;}
 // -----------------------------------------------------------------------------
 // 
 bool SiStripNullKey::isEqual( const SiStripKey& input ) const {
-  SiStripKey& temp = const_cast<SiStripKey&>(input);
-  if ( &dynamic_cast<SiStripNullKey&>(temp) ) { return true; }
+  if ( &dynamic_cast<const SiStripNullKey&>(input) ) { return true; }
   else { return false; }
 }
 

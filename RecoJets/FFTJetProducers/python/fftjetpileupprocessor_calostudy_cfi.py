@@ -21,7 +21,7 @@ fftjet_pileup_grid_calo = cms.PSet(
     title = cms.untracked.string("FFTJet Pileup Grid")
 )
 
-fftjet_pileup_processor_calo = cms.EDProducer(
+fftjetPileupProcessorCalo = cms.EDProducer(
     "FFTJetPileupProcessor",
     #
     # The main eta and phi scale factors for the filters
@@ -68,11 +68,20 @@ fftjet_pileup_processor_calo = cms.EDProducer(
     # Files for mixing in external grids
     externalGridFiles = cms.vstring(),
     #
+    # Energy cutoff for external grids (removes some crazy grids)
+    externalGridMaxEnergy = cms.double(20000.0),
+    #
     # Anomalous calo tower definition (comes from JetProducers default)
     anomalous = fftjet_anomalous_tower_default,
     #
     # Some parameters inherited from FFTJetInterface which no longer
     # play any role
     insertCompleteEvent = cms.bool(fftjet_insert_complete_event),
-    completeEventScale = cms.double(fftjet_complete_event_scale)
+    completeEventScale = cms.double(fftjet_complete_event_scale),
+    #
+    # Parameters related to accessing the table of flattening factors from DB
+    flatteningTableRecord = cms.string("flatteningTableRecord"),
+    flatteningTableName = cms.string("flatteningTableName"),
+    flatteningTableCategory = cms.string("flatteningTableCategory"),
+    loadFlatteningFactorsFromDB = cms.bool(False)
 )

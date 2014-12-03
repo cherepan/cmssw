@@ -31,17 +31,20 @@
 
     /** \class HcalHitReconstructor
 	
-    $Date: 2011/07/22 22:11:49 $
-    $Revision: 1.18 $
+    $Date: 2013/02/28 08:28:56 $
+    $Revision: 1.21 $
     \author J. Temple & E. Yazgan
     ** Based on HcalSimpleReconstructor.h by J. Mans
     */
+
+class HcalTopology;
+
     class HcalHitReconstructor : public edm::EDProducer {
     public:
       explicit HcalHitReconstructor(const edm::ParameterSet& ps);
       virtual ~HcalHitReconstructor();
-      virtual void beginRun(edm::Run&r, edm::EventSetup const & es);
-      virtual void endRun(edm::Run&r, edm::EventSetup const & es);
+      virtual void beginRun(edm::Run const&r, edm::EventSetup const & es) override final;
+      virtual void endRun(edm::Run const&r, edm::EventSetup const & es) override final;
       virtual void produce(edm::Event& e, const edm::EventSetup& c);
     private:      
       HcalSimpleRecAlgo reco_;
@@ -83,7 +86,9 @@
       bool useLeakCorrection_;
       
       HcalRecoParams* paramTS;  // firstSample & sampleToAdd from DB  
-      HcalFlagHFDigiTimeParams* HFDigiTimeParams; // HF DigiTime parameters
+      const HcalFlagHFDigiTimeParams* HFDigiTimeParams; // HF DigiTime parameters
+
+      HcalTopology *theTopology;
     };
 
 #endif

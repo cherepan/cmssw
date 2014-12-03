@@ -1,6 +1,6 @@
 /* 
- *  $Date: 2009/04/16 16:53:07 $
- *  $Revision: 1.7 $
+ *  $Date: 2012/12/27 07:18:39 $
+ *  $Revision: 1.10 $
  */
 
 #include "Alignment/TrackerAlignment/interface/AlignableSiStripDet.h"
@@ -80,13 +80,13 @@ void AlignableSiStripDet::consistifyAlignments()
 
   BoundPlane::BoundPlanePointer monoPlane
     = BoundPlane::build(aliUnits[0]->globalPosition(), aliUnits[0]->globalRotation(),
-			*theMonoBounds);
+			theMonoBounds->clone());
   // Fortunately we do not seem to need a GeometricDet pointer and can use 0:
   const StripGeomDetUnit monoDet(&(*monoPlane), &theMonoType, 0);
 
   BoundPlane::BoundPlanePointer stereoPlane
     = BoundPlane::build(aliUnits[1]->globalPosition(), aliUnits[1]->globalRotation(),
-			*theStereoBounds);
+			theStereoBounds->clone());
   // Fortunately we do not seem to need a GeometricDet pointer and can use 0:
   const StripGeomDetUnit stereoDet(&(*stereoPlane), &theStereoType, 0);
 

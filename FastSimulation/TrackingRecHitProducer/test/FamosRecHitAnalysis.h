@@ -17,6 +17,7 @@
 #include <TH1F.h>
 
 class TrackerGeometry;
+class TrackerTopology;
 
 class FamosRecHitAnalysis : public edm::EDAnalyzer
 {
@@ -25,9 +26,9 @@ public:
   explicit FamosRecHitAnalysis(const edm::ParameterSet& pset);
   
   virtual ~FamosRecHitAnalysis();
-  virtual void beginRun(const edm::Run &, const edm::EventSetup & );
-  virtual void endJob(); 
-  virtual void analyze(const edm::Event& event, const edm::EventSetup& setup);
+  virtual void beginRun(edm::Run const&, const edm::EventSetup & ) override;
+  virtual void endJob() override; 
+  virtual void analyze(const edm::Event& event, const edm::EventSetup& setup) override;
   
 private:
   edm::ParameterSet _pset;
@@ -66,7 +67,7 @@ private:
                    TH1F*& hist_dedx_alpha, TH1F*& hist_dedx_beta,
 		   unsigned int mult_alpha , unsigned int mult_beta ,
 		   double       alpha      , double       beta      , 
-                   const bool hasBigPixelInX, const bool hasBigPixelInY );
+                   const bool hasBigPixelInX, const bool hasBigPixelInY, const TrackerTopology *tTopo );
   
   // ROOT
   void rootStyle();

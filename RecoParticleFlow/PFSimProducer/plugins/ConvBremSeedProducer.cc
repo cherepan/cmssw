@@ -262,6 +262,10 @@ ConvBremSeedProducer::produce(Event& iEvent, const EventSetup& iSetup)
     
 
     //OUTPUT COLLECTION
+    edm::ESHandle<MagneticField> bfield;
+    iSetup.get<IdealMagneticFieldRecord>().get(bfield);
+    float nomField = bfield->nominalValue();
+ 
 
     TransientTrackingRecHit::ConstRecHitContainer glob_hits;
     OwnVector<TrackingRecHit> loc_hits;
@@ -294,13 +298,13 @@ ConvBremSeedProducer::produce(Event& iEvent, const EventSetup& iSetup)
 	    bool tak3=isGsfTrack(gsfRecHits,&(*it3));  
 	    
 
-	    FastHelix helix(gp3, gp2, gp1,iSetup);
-	    GlobalVector gv=helix.stateAtVertex().parameters().momentum();
+	    FastHelix helix(gp3, gp2, gp1,nomField,&*bfield);
+	    GlobalVector gv=helix.stateAtVertex().momentum();
 	    GlobalVector gv_corr(gv.x(),gv.y(),gv.perp()*sineta_brem);
 	    float ene= sqrt(gv_corr.mag2()+(pfmass*pfmass));
 
-	    GlobalPoint gp=helix.stateAtVertex().parameters().position();
-	    float ch=helix.stateAtVertex().parameters().charge();
+	    GlobalPoint gp=helix.stateAtVertex().position();
+	    float ch=helix.stateAtVertex().charge();
 
 
 
@@ -384,7 +388,7 @@ ConvBremSeedProducer::produce(Event& iEvent, const EventSetup& iSetup)
 
 
 void 
-ConvBremSeedProducer::beginRun(edm::Run& run,
+ConvBremSeedProducer::beginRun(const edm::Run& run,
 			       const EventSetup& iSetup)
 {
   ESHandle<GeometricSearchTracker> track;
@@ -419,7 +423,8 @@ ConvBremSeedProducer::beginRun(edm::Run& run,
 }
 
 void 
-ConvBremSeedProducer::endRun() {
+ConvBremSeedProducer::endRun(const edm::Run& run,
+			     const EventSetup& iSetup) {
   delete propagator_;
   delete kfUpdator_;
 }
@@ -544,7 +549,7 @@ ConvBremSeedProducer::makeTrajectoryState( const DetLayer* layer,
   return TrajectoryStateOnSurface
     (GlobalTrajectoryParameters( pos, mom, TrackCharge( pp.charge()), field), *plane);
 }
-bool ConvBremSeedProducer::isGsfTrack(TrackingRecHitRefVector tkv, const TrackingRecHit *h ){
+bool ConvBremSeedProducer::isGsfTrack(const TrackingRecHitRefVector& tkv, const TrackingRecHit *h ){
   trackingRecHit_iterator ib=tkv.begin();
   trackingRecHit_iterator ie=tkv.end();
   bool istaken=false;
@@ -557,8 +562,8 @@ bool ConvBremSeedProducer::isGsfTrack(TrackingRecHitRefVector tkv, const Trackin
   }
   return istaken;
 }
-vector<bool> ConvBremSeedProducer::sharedHits( vector<pair< TrajectorySeed, 
-				   pair<GlobalVector,float> > > unclean){
+vector<bool> ConvBremSeedProducer::sharedHits( const vector<pair< TrajectorySeed, 
+				   pair<GlobalVector,float> > >& unclean){
 
   vector<bool> goodseed;
   goodseed.clear();
@@ -607,8 +612,9 @@ vector<bool> ConvBremSeedProducer::sharedHits( vector<pair< TrajectorySeed,
 
 
 
-int ConvBremSeedProducer::GoodCluster(BaseParticlePropagator bpg, const PFClusterCollection& pfc, float minep, bool sec){
-
+int ConvBremSeedProducer::GoodCluster(const BaseParticlePropagator& ubpg, const PFClusterCollection& pfc, float minep, bool sec){
+  
+  BaseParticlePropagator bpg = ubpg;
   bpg.propagateToEcalEntrance(false);
   float dr=1000;
   float de=1000;

@@ -1,25 +1,28 @@
 autoCond = { 
     # GlobalTag for MC production with perfectly aligned and calibrated detector
-    'mc'                :   'MC_53_V15A::All',
+    'mc'                :   'PRE_MC62_V8::All',
     # GlobalTag for MC production with realistic alignment and calibrations
-    'startup'           :   'START53_V15A::All',
+    'startup'           :   'PRE_ST62_V8::All',
     # GlobalTag for MC production of Heavy Ions events with realistic alignment and calibrations
-    'starthi'           :   'STARTHI53V10A::All',
+    'starthi'           :   'PRE_SH62_V15::All',
     # GlobalTag for MC production of p-Pb events with realistic alignment and calibrations
-    'startpa'           :   'STARTHI53_V17::All',
+    'startpa'           :   'PRE_SH62_V16::All',
     # GlobalTag for data reprocessing: this should always be the GR_R tag
-    'com10'             :   'GR_R_53_V16E::All',
-    # GlobalTag for running HLT on recent data: this should be the GR_P (prompt reco) global tag until a compatible GR_H tag is available,
+    'com10'             :   'PRE_62_V8::All',
+    # GlobalTag for running HLT on recent data: this should be the GR_P (prompt reco) global tag until a compatible GR_H tag is available, 
     # then it should point to the GR_H tag and override the connection string and pfnPrefix for use offline
-    'hltonline'         :   'GR_P_V43D::All',
+    'hltonline'         :   'PRE_P62_V8::All',
+    # GlobalTag for POSTLS1 upgrade studies:
+    'upgradePLS1'       :   'POSTLS162_V1::All',
+    'upgrade2017'       :   'DES17_61_V5::All', # placeholder (GT not meant for 62X)
+    'upgrade2019'       :   'DES19_61_V5::All', # placeholder (GT not meant for 62X)
+    'upgradePLS3'       :   'POSTLS261_V2::All' # placeholder (GT not meant for 62X)
 }
 
-
-# L1 configuration used during Run2011
-conditions_L1_Run2011 = (
-    # L1 GT menu 2011 v6, used during Run2011
-    'L1GtTriggerMenu_L1Menu_Collisions2011_v6_mc,L1GtTriggerMenuRcd,frontier://FrontierProd/CMS_COND_31X_L1T',
-)
+aliases = {
+    'MAINGT' : 'FT_P_V42D::All|AN_V4::All',
+    'BASEGT' : 'BASE1_V1::All|BASE2_V1::All'
+}
 
 # L1 configuration used during Run2012A
 conditions_L1_Run2012A = (
@@ -65,6 +68,7 @@ conditions_L1_Run2012C = (
     # L1 DTTF settings used since Run2012C
     'L1MuDTTFParameters_dttf12_TSC_03_csc_col_mc,L1MuDTTFParametersRcd,frontier://FrontierProd/CMS_COND_31X_L1T',
 )
+
 
 # L1 configuration used during Run2012D
 conditions_L1_Run2012D = (
@@ -112,9 +116,6 @@ conditions_HLT_JECs = (
 
 
 # dedicated GlobalTags for MC production with the frozen HLT menus
-autoCond['startup_2011']   = ( autoCond['startup'], ) \
-                             + conditions_L1_Run2011
-
 autoCond['startup_5E33v4']   = ( autoCond['startup'], ) \
                              + conditions_L1_Run2012A
 
@@ -139,10 +140,8 @@ autoCond['starthi_HIon']     = ( autoCond['starthi'], ) \
 
 autoCond['startup_PIon']     = ( autoCond['startpa'], )
 
-# dedicated GlobalTags for running the frozen HLT menus on data
-autoCond['hltonline_2011'] = ( autoCond['hltonline'], ) \
-                             + conditions_L1_Run2011
 
+# dedicated GlobalTags for running the frozen HLT menus on data
 autoCond['hltonline_5E33v4'] = ( autoCond['hltonline'], ) \
                              + conditions_L1_Run2012A
 
@@ -168,9 +167,6 @@ autoCond['hltonline_PIon']   = ( autoCond['hltonline'], ) \
                              + conditions_L1_PARun2013
 
 # dedicated GlobalTags for running RECO and the frozen HLT menus on data
-autoCond['com10_2011']     = ( autoCond['com10'], ) \
-                             + conditions_L1_Run2011
-
 autoCond['com10_5E33v4']     = ( autoCond['com10'], ) \
                              + conditions_L1_Run2012A
 

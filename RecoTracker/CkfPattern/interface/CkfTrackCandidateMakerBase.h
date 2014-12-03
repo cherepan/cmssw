@@ -8,6 +8,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "TrackingTools/PatternTools/interface/TrajectoryBuilder.h"
+#include "RecoTracker/CkfPattern/interface/BaseCkfTrajectoryBuilder.h"
 
 #include "TrackingTools/TrajectoryCleaning/interface/TrajectoryCleaner.h"
 
@@ -31,7 +32,7 @@ namespace cms
 
     virtual ~CkfTrackCandidateMakerBase();
 
-    virtual void beginRunBase (edm::Run & , edm::EventSetup const & es);
+    virtual void beginRunBase (edm::Run const & , edm::EventSetup const & es);
 
     virtual void produceBase(edm::Event& e, const edm::EventSetup& es);
 
@@ -49,7 +50,7 @@ namespace cms
     unsigned int theMaxNSeeds;
 
     std::string theTrajectoryBuilderName;
-    const TrajectoryBuilder*  theTrajectoryBuilder;
+    const BaseCkfTrajectoryBuilder*  theTrajectoryBuilder;
 
     std::string theTrajectoryCleanerName;
     const TrajectoryCleaner*               theTrajectoryCleaner;

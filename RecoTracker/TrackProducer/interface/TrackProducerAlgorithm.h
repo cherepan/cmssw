@@ -4,8 +4,8 @@
 /** \class TrackProducerAlgorithm
  *  This class calls the Final Fit and builds the Tracks then produced by the TrackProducer or by the TrackRefitter
  *
- *  $Date: 2012/03/06 17:06:21 $
- *  $Revision: 1.26 $
+ *  $Date: 2012/11/09 13:17:23 $
+ *  $Revision: 1.29 $
  *  \author cerati
  */
 
@@ -46,6 +46,8 @@ public:
     algo_(reco::TrackBase::algoByName(algoName_)),
     reMatchSplitHits_(false)
       {
+        geometricInnerState_ = (conf_.exists("GeometricInnerState") ?
+	  conf_.getParameter<bool>( "GeometricInnerState" ) : true);
 	if (conf_.exists("reMatchSplitHits"))
 	  reMatchSplitHits_=conf_.getParameter<bool>("reMatchSplitHits");
       }
@@ -123,6 +125,7 @@ public:
   std::string algoName_;
   reco::TrackBase::TrackAlgorithm algo_;
   bool reMatchSplitHits_;
+  bool geometricInnerState_;
 
   TrajectoryStateOnSurface getInitialState(const T * theT,
 					   TransientTrackingRecHit::RecHitContainer& hits,

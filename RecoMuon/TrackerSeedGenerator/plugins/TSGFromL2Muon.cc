@@ -19,6 +19,8 @@
 #include "RecoMuon/TrackerSeedGenerator/interface/TrackerSeedGenerator.h"
 #include "RecoMuon/TrackerSeedGenerator/interface/TrackerSeedGeneratorFactory.h"
 #include "RecoMuon/TrackerSeedGenerator/interface/TrackerSeedCleaner.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 
 TSGFromL2Muon::TSGFromL2Muon(const edm::ParameterSet& cfg)
   : theConfig(cfg), theService(0), theRegionBuilder(0), theTkSeedGenerator(0), theSeedCleaner(0)
@@ -65,7 +67,7 @@ TSGFromL2Muon::~TSGFromL2Muon()
   if (theRegionBuilder) delete theRegionBuilder;
 }
 
-void TSGFromL2Muon::beginRun(edm::Run & run, const edm::EventSetup&es)
+void TSGFromL2Muon::beginRun(const edm::Run & run, const edm::EventSetup&es)
 {
   //update muon proxy service
   theService->update(es);
@@ -79,6 +81,12 @@ void TSGFromL2Muon::beginRun(edm::Run & run, const edm::EventSetup&es)
 void TSGFromL2Muon::produce(edm::Event& ev, const edm::EventSetup& es)
 {
   std::auto_ptr<L3MuonTrajectorySeedCollection> result(new L3MuonTrajectorySeedCollection());
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHand;
+  es.get<IdealGeometryRecord>().get(tTopoHand);
+  const TrackerTopology *tTopo=tTopoHand.product();
+
 
   //intialize tools
   theService->update(es);
@@ -105,23 +113,21 @@ void TSGFromL2Muon::produce(edm::Event& ev, const edm::EventSetup& es)
 	 || muRef->innerMomentum().R() < thePCut ) continue;
     
     //define the region of interest
-    RectangularEtaPhiTrackingRegion region;
+    std::unique_ptr<RectangularEtaPhiTrackingRegion> region;
     if(theRegionBuilder){
-      RectangularEtaPhiTrackingRegion * region1 = theRegionBuilder->region(muRef);
-      region=RectangularEtaPhiTrackingRegion(*region1);
-      delete region1;
+      region.reset(theRegionBuilder->region(muRef));
     }
     
     //get the seeds
     std::vector<TrajectorySeed> tkSeeds;
     //make this stupid TrackCand
     std::pair<const Trajectory*,reco::TrackRef> staCand((Trajectory*)(0), muRef);
-    theTkSeedGenerator->trackerSeeds(staCand, region, tkSeeds);
+    theTkSeedGenerator->trackerSeeds(staCand, *region, tTopo,tkSeeds);
 
     //Seed Cleaner From Direction
     //clean them internatly
     if(theSeedCleaner){
-       theSeedCleaner->clean(muRef,region,tkSeeds);
+       theSeedCleaner->clean(muRef,*region,tkSeeds);
        LogDebug("TSGFromL2Muon") << tkSeeds.size() << " seeds for this L2 afther cleaning.";
     }
 

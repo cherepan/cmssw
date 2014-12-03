@@ -13,7 +13,7 @@
 //
 // Original Author:  Michael Segala
 //         Created:  Wed Feb 23 17:36:23 CST 2011
-// $Id: ClusterSummary.h,v 1.5 2012/10/03 13:29:02 msegala Exp $
+// $Id: ClusterSummary.h,v 1.9 2013/04/22 23:30:07 wmtan Exp $
 //
 //
 
@@ -32,14 +32,12 @@
 
 // user include files
 
-#include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "DataFormats/SiStripCluster/interface/SiStripCluster.h"
 #include "DataFormats/SiStripDigi/interface/SiStripDigi.h"
 #include "DataFormats/SiPixelCluster/interface/SiPixelCluster.h"
 #include "DataFormats/Common/interface/DetSetVectorNew.h"
 
 
-#include "RecoLocalTracker/SiStripClusterizer/interface/SiStripClusterInfo.h"
 #include "DataFormats/SiStripDigi/interface/SiStripProcessedRawDigi.h"
 #include "DataFormats/Common/interface/DetSetVector.h"
 
@@ -53,8 +51,6 @@
 #include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
 #include "DataFormats/SiPixelDetId/interface/PixelBarrelName.h"
-#include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
-#include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetType.h"
 
 /*****************************************************************************************
 
@@ -250,7 +246,7 @@ class ClusterSummary {
 
 
   // Setter and Getter for the User Content. You can also return the size and what is stored in the UserContent 
-  void SetUserContent(std::vector<std::string> Content)  const { userContent = Content;}
+  void SetUserContent(const std::vector<std::string>& Content)  const { userContent = Content;}
   std::vector<std::string> GetUserContent()  { return userContent;}
   int GetUserContentSize()  { return userContent.size(); }
   void  GetUserContentInfo() const  { 

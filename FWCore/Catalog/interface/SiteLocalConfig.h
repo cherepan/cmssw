@@ -4,6 +4,7 @@
 // INCLUDES
 # include <string>
 # include <vector>
+# include <netdb.h>
 
 // PUBLIC DEFINES
 // PUBLIC CONSTANTS
@@ -34,8 +35,11 @@ namespace edm {
     virtual std::string const* sourceReadHint() const = 0;
     virtual unsigned int const* sourceTTreeCacheSize() const = 0;
     virtual unsigned int const* sourceTimeout() const = 0;
+    virtual bool enablePrefetching() const = 0;
     virtual unsigned int debugLevel() const = 0;
     virtual std::vector<std::string> const* sourceNativeProtocols() const = 0;
+    virtual struct addrinfo const * statisticsDestination() const = 0;
+    virtual std::string const& siteName (void) const = 0;
 
     // implicit copy constructor
     // implicit assignment operator

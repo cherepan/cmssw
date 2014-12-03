@@ -40,7 +40,10 @@ namespace {
   bool verbose = false;
 }
 
-HFLightCalRand::HFLightCalRand (const edm::ParameterSet& fConfiguration) {
+HFLightCalRand::HFLightCalRand (const edm::ParameterSet& fConfiguration) :
+  hfDigiCollectionTag_(fConfiguration.getParameter<edm::InputTag>("hfDigiCollectionTag")),
+  hcalCalibDigiCollectionTag_(fConfiguration.getParameter<edm::InputTag>("hcalCalibDigiCollectionTag")) {
+
   //std::string histfile = fConfiguration.getUntrackedParameter<string>("rootFile");
   histfile = fConfiguration.getUntrackedParameter<string>("rootFile");
   textfile = fConfiguration.getUntrackedParameter<string>("textFile");
@@ -384,7 +387,7 @@ void HFLightCalRand::analyze(const edm::Event& fEvent, const edm::EventSetup& fS
 
   // HF PIN-diodes
   edm::Handle<HcalCalibDigiCollection> calib;  
-  fEvent.getByType(calib);
+  fEvent.getByLabel(hcalCalibDigiCollectionTag_, calib);
   if (verbose) std::cout<<"Analysis-> total CAL digis= "<<calib->size()<<std::endl;
   /* COMMENTED OUT by J. Mans (7-28-2008) as major changes needed with new Calib DetId 
    re-commented out by R.Ofierzynski (11.Nov.2008) - to be able to provide a consistent code for CMSSW_3_0_0_pre3:
@@ -442,7 +445,7 @@ void HFLightCalRand::analyze(const edm::Event& fEvent, const edm::EventSetup& fS
   */  
   // HF
   edm::Handle<HFDigiCollection> hf_digi;
-  fEvent.getByType(hf_digi);
+  fEvent.getByLabel(hfDigiCollectionTag_, hf_digi);
   if (verbose) std::cout<<"Analysis-> total HF digis= "<<hf_digi->size()<<std::endl;
 
   for (unsigned ihit = 0; ihit < hf_digi->size (); ++ihit) {
@@ -457,6 +460,7 @@ void HFLightCalRand::analyze(const edm::Event& fEvent, const edm::EventSetup& fS
     if (ieta>0) ieta = ieta-29;
     else ieta = 13-ieta-29;
 
+    for (int ii=0; ii<10; ii++) buf[ii]=0;
     maxADC=-99;
     for (int isample = 0; isample < frame.size(); ++isample) {
       int adc = frame[isample].adc();
@@ -480,7 +484,7 @@ void HFLightCalRand::analyze(const edm::Event& fEvent, const edm::EventSetup& fS
      
     // Signal is four capIDs around maxTS, Pedestal is four capID off the signal
     maxADC=-99;    
-    for (int ibf=0; ibf<9; ibf++) {
+    for (int ibf=0; ibf<frame.size()-1; ibf++) {
       Double_t sumbuf=0;
       for (int jbf=0; jbf<2; jbf++) {    
 	sumbuf += buf[ibf+jbf];

@@ -5,7 +5,7 @@
  *  Factory of seal plugins for TTrig DB corrections.
  *  The plugins are concrete implementations of DTTTrigBaseCorrection case class.
  *
- *  $Date: 2007/04/17 22:46:21 $
+ *  $Date: 2012/03/02 19:47:32 $
  *  $Revision: 1.2 $
  *  \author A. Vilela Pereira
  */
@@ -14,8 +14,9 @@
 namespace edm {
   class ParameterSet;
 }
-class DTTTrigBaseCorrection;
+namespace dtCalibration {
+  class DTTTrigBaseCorrection;
+}
 
-typedef edmplugin::PluginFactory<DTTTrigBaseCorrection *(const edm::ParameterSet &)> DTTTrigCorrectionFactory;
+typedef edmplugin::PluginFactory<dtCalibration::DTTTrigBaseCorrection *(const edm::ParameterSet &)> DTTTrigCorrectionFactory;
 #endif
-

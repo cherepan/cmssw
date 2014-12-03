@@ -16,12 +16,12 @@
 //
 // Author:      
 // Created:     Thu Sep 14 11:54:26 CDT 2006
-// $Id: HcalTPGRecord.h,v 1.1 2006/09/14 16:59:05 mansj Exp $
+// $Id: HcalTPGRecord.h,v 1.3 2012/11/12 20:47:04 dlange Exp $
 //
 
 #include "FWCore/Framework/interface/EventSetupRecordImplementation.h"
 #include "CalibFormats/HcalObjects/interface/HcalDbRecord.h"
 
-class HcalTPGRecord : public edm::eventsetup::DependentRecordImplementation<HcalTPGRecord, boost::mpl::vector<HcalDbRecord> >{};
+class HcalTPGRecord : public edm::eventsetup::DependentRecordImplementation<HcalTPGRecord, boost::mpl::vector<IdealGeometryRecord,HcalDbRecord> >{};
 
 #endif

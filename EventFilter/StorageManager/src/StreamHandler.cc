@@ -1,4 +1,4 @@
-// $Id: StreamHandler.cc,v 1.23 2011/11/08 10:48:41 mommsen Exp $
+// $Id: StreamHandler.cc,v 1.25 2012/10/17 10:13:25 mommsen Exp $
 /// @file: StreamHandler.cc
 
 #include <sstream>
@@ -151,8 +151,6 @@ namespace stor {
     fileRecord->fileCounter = getFileCounter(fileRecord->coreFileName);
     fileRecord->whyClosed = FilesMonitorCollection::FileRecord::notClosed;
     fileRecord->isOpen = true;
-    
-    streamRecord_->incrementFileCount(fileRecord->lumiSection);
     
     return fileRecord;
   }

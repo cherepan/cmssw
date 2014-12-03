@@ -10,7 +10,7 @@
 //
 // Original Author:  Ursula Berthon
 //         Created:  Fri Sep 23 11:38:38 CEST 2005
-// $Id: TestSuite.h,v 1.3 2008/02/29 20:48:53 ksmith Exp $
+// $Id: TestSuite.h,v 1.5 2012/10/10 14:39:02 wdd Exp $
 //
 //
 
@@ -23,6 +23,7 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 //DQM services for histogram
 #include "DQMServices/Core/interface/DQMStore.h"
@@ -50,4 +51,7 @@ class TestSuite : public edm::EDAnalyzer {
       int minbunch_;
       int maxbunch_;
       DQMStore* dbe_;
+
+      edm::InputTag cfTrackTag_;
+      edm::InputTag cfVertexTag_;
 };

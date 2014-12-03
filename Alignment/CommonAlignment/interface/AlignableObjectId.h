@@ -1,44 +1,25 @@
 #ifndef Alignment_CommonAlignment_AlignableObjectId_h
 #define Alignment_CommonAlignment_AlignableObjectId_h
 
-#include <map>
+#include "Alignment/CommonAlignment/interface/StructureType.h"
 #include <string>
 
-#include "Alignment/CommonAlignment/interface/StructureType.h"
-
 /// Allows conversion between type and name, and vice-versa
+// Obsolete. Use the two free functions below.
 class AlignableObjectId 
 {
 
 public:
-  
-  /// Constructor (create maps)
-  AlignableObjectId();
-
-  typedef std::map<align::StructureType, std::string> MapEnumType;
-  typedef std::map<std::string, align::StructureType> ReverseMapEnumType;
-  typedef std::pair<align::StructureType, std::string> PairEnumType;
-  typedef std::pair<std::string, align::StructureType> PairEnumReverseType;
-
+  AlignableObjectId(){};
   /// Convert name to type
-  align::StructureType nameToType( const std::string& name ) const;
+  align::StructureType nameToType( const std::string &name ) const;
 
   /// Convert type to name
-  const std::string& typeToName( align::StructureType type ) const;
-
-private:
-  MapEnumType theMap;
-  ReverseMapEnumType theReverseMap;
-
-  // Reverse functor
-  struct reverse_pair {
-	PairEnumReverseType operator()( const PairEnumType& pair ) const 
-	{ 
-	  return PairEnumReverseType( pair.second, pair.first ); 
-	}
-  };
-
-
+  std::string typeToName( align::StructureType type ) const;
+  static const char *idToString(align::StructureType type);
+  static align::StructureType stringToId(const char *);
+  static align::StructureType stringToId(const std::string &s) { return stringToId(s.c_str()); };
 };
+
 
 #endif

@@ -13,7 +13,7 @@
 //
 // Original Author:  Dmytro Kovalskyi
 //         Created:  Fri Apr 21 10:59:41 PDT 2006
-// $Id: TrackDetectorAssociator.cc,v 1.49 2011/10/02 21:44:16 dmytro Exp $
+// $Id: TrackDetectorAssociator.cc,v 1.51 2012/09/20 15:06:07 wdd Exp $
 //
 //
 
@@ -947,11 +947,11 @@ void TrackDetectorAssociator::fillCaloTruth( const edm::Event& iEvent,
    // get list of simulated tracks and their vertices
    using namespace edm;
    Handle<SimTrackContainer> simTracks;
-   iEvent.getByType<SimTrackContainer>(simTracks);
+   iEvent.getByLabel<SimTrackContainer>("g4SimHits", simTracks);
    if (! simTracks.isValid() ) throw cms::Exception("FatalError") << "No simulated tracks found\n";
    
    Handle<SimVertexContainer> simVertices;
-   iEvent.getByType<SimVertexContainer>(simVertices);
+   iEvent.getByLabel<SimVertexContainer>("g4SimHits", simVertices);
    if (! simVertices.isValid() ) throw cms::Exception("FatalError") << "No simulated vertices found\n";
    
    // get sim calo hits

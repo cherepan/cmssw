@@ -8,7 +8,7 @@
 //
 // Original Author:  
 //         Created:  Fri Jul  2 16:11:42 CEST 2010
-// $Id: TGeoFromDddService.cc,v 1.2 2010/07/05 18:06:49 matevz Exp $
+// $Id: TGeoFromDddService.cc,v 1.5 2012/07/31 22:52:53 amraktad Exp $
 //
 
 // system include files
@@ -380,7 +380,7 @@ TGeoFromDddService::createShape(const std::string& iName,
 	 case ddpseudotrap:
 	 {
 	    //implementation taken from SimG4Core/Geometry/src/DDG4SolidConverter.cc
-	    static DDRotationMatrix s_rot(ROOT::Math::RotationX(90.*deg));
+	    const static DDRotationMatrix s_rot(ROOT::Math::RotationX(90.*deg));
 	    DDPseudoTrap pt(iSolid);
 	    assert(pt.radius() < 0);
 	    double x=0;

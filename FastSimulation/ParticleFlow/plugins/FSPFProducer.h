@@ -19,16 +19,19 @@ class FSPFProducer : public edm::EDProducer {
   explicit FSPFProducer(const edm::ParameterSet&);
   ~FSPFProducer();
   
-  virtual void produce(edm::Event&, const edm::EventSetup&);
-  virtual void beginJob();
-  virtual void beginRun(edm::Run&, const edm::EventSetup&);
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
 
  private:
 
   edm::InputTag labelPFCandidateCollection_;
+  
   double par1, par2;
   double barrel_th, endcap_th, middle_th;
 
+  bool pfPatchInHF;
+  double HF_Ratio;
+  std::vector<double> EM_HF_ScaleFactor;
+  
   double energy_threshold(double eta);
   
 };

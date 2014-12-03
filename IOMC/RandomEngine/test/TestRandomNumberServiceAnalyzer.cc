@@ -39,13 +39,13 @@ class TestRandomNumberServiceAnalyzer : public edm::EDAnalyzer {
     explicit TestRandomNumberServiceAnalyzer(edm::ParameterSet const& pset);
     ~TestRandomNumberServiceAnalyzer();
 
-    virtual void analyze(edm::Event const& ev, edm::EventSetup const& es);
+    virtual void analyze(edm::Event const& ev, edm::EventSetup const& es) override;
     virtual void beginJob();
     virtual void endJob();
-    virtual void beginRun(edm::Run const& run, edm::EventSetup const& es);
-    virtual void endRun(edm::Run const& run, edm::EventSetup const& es);
-    virtual void beginLuminosityBlock(edm::LuminosityBlock const& lumi, edm::EventSetup const& es);
-    virtual void endLuminosityBlock(edm::LuminosityBlock const& lumi, edm::EventSetup const& es);
+    virtual void beginRun(edm::Run const& run, edm::EventSetup const& es) override;
+    virtual void endRun(edm::Run const& run, edm::EventSetup const& es) override;
+    virtual void beginLuminosityBlock(edm::LuminosityBlock const& lumi, edm::EventSetup const& es) override;
+    virtual void endLuminosityBlock(edm::LuminosityBlock const& lumi, edm::EventSetup const& es) override;
     virtual void postForkReacquireResources(unsigned int iChildIndex, unsigned int iNumberOfChildren);
 
   private:
@@ -88,6 +88,10 @@ TestRandomNumberServiceAnalyzer::TestRandomNumberServiceAnalyzer(edm::ParameterS
     rng->print();
     std::cout << "*** TestRandomNumberServiceAnalyzer constructor " << rng->mySeed() << "\n";
   }
+  if(rng->getEngine().name() !="RanecuEngine") {
+    //std::cout <<rng->getEngine().name()<<" "<<rng->mySeed()<<" "<<rng->getEngine().getSeed()<<std::endl;
+    assert(static_cast<long>(rng->mySeed())==rng->getEngine().getSeed());
+  }
 }
 
 TestRandomNumberServiceAnalyzer::~TestRandomNumberServiceAnalyzer() {
@@ -117,7 +121,7 @@ TestRandomNumberServiceAnalyzer::analyze(edm::Event const& iEvent, edm::EventSet
           << "\n";
   outFile << rng->mySeed() << "\n";
   outFile << rng->getEngine().name() << "\n";
-
+  
   // Get a reference to the engine.  This call can
   // be here or it can be in the module constructor
   // if the class saves the reference as a member.  It is

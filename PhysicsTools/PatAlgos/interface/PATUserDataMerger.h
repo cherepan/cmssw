@@ -1,5 +1,5 @@
 //
-// $Id: PATUserDataMerger.h,v 1.9 2010/02/20 21:00:14 wmtan Exp $
+// $Id: PATUserDataMerger.h,v 1.11 2013/02/27 23:26:56 wmtan Exp $
 //
 
 #ifndef PhysicsTools_PatAlgos_PATUserDataMerger_h
@@ -18,7 +18,7 @@
 		cases.
 
   \author   Salvatore Rappoccio
-  \version  $Id: PATUserDataMerger.h,v 1.9 2010/02/20 21:00:14 wmtan Exp $
+  \version  $Id: PATUserDataMerger.h,v 1.11 2013/02/27 23:26:56 wmtan Exp $
 */
 
 #include "FWCore/Framework/interface/EDProducer.h"
@@ -122,7 +122,7 @@ template<class ObjectType, typename Operation>
 void
 pat::PATUserDataMerger<ObjectType, Operation>::add(ObjectType & patObject,
 						   edm::Event const & iEvent,
-						   const edm::EventSetup & iSetup )
+						   const edm::EventSetup& iSetup)
 {
 
   std::vector<edm::InputTag>::const_iterator input_it = userDataSrc_.begin(),

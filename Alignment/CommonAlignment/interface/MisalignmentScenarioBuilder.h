@@ -3,10 +3,10 @@
 
 /// \class MisalignmentScenarioBuilder
 ///
-/// $Date: 2009/03/20 17:28:51 $
-/// $Revision: 1.9 $
+/// $Date: 2012/06/30 09:36:23 $
+/// $Revision: 1.11 $
 ///
-/// $Author: flucke $
+/// $Author: eulisse $
 /// \author Frederic Ronga - CERN-PH-CMG
 
 #include <vector>
@@ -84,8 +84,6 @@ protected: // Members
 
   edm::ParameterSet theScenario;           ///< Misalignment scenario to apply (from config file)
   AlignableModifier theModifier;           ///< Helper class for random movements
-  
-  AlignableObjectId theAlignableObjectId;  ///< Type to name converter
   
   int theModifierCounter;                  ///< Counter for applied modification
 

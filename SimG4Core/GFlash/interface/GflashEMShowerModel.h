@@ -24,8 +24,8 @@
 // ********************************************************************
 //
 //
-// $Id: GflashEMShowerModel.h,v 1.8 2010/01/15 21:46:28 syjun Exp $
-// GEANT4 tag $Name:  $
+// $Id: GflashEMShowerModel.h,v 1.12 2013/05/30 21:10:49 gartung Exp $
+// GEANT4 tag $Name: CMSSW_6_2_0 $
 //
 //
 //---------------------------------------------------------------
@@ -51,13 +51,15 @@
 #include "G4Step.hh"
 
 class GflashEMShowerProfile;
+class G4Region;
 
 class GflashEMShowerModel : public G4VFastSimulationModel {
 
  public:
   
-  GflashEMShowerModel (G4String name, G4Envelope* env, edm::ParameterSet parSet);
-  ~GflashEMShowerModel ();  
+  GflashEMShowerModel (const G4String& name, G4Envelope* env, 
+		       const edm::ParameterSet& parSet);
+  virtual ~GflashEMShowerModel ();  
 
   G4bool ModelTrigger(const G4FastTrack &); 
   G4bool IsApplicable(const G4ParticleDefinition&);
@@ -66,13 +68,15 @@ class GflashEMShowerModel : public G4VFastSimulationModel {
 private:
   G4bool excludeDetectorRegion(const G4FastTrack& fastTrack);
   void makeHits(const G4FastTrack& fastTrack);
-  void updateGflashStep(G4ThreeVector position, G4double time);
+  void updateGflashStep(const G4ThreeVector& position, G4double time);
 
 private:
   edm::ParameterSet theParSet;
   bool theWatcherOn;
 
   GflashEMShowerProfile *theProfile;
+
+  const G4Region* theRegion;
 
   G4Step *theGflashStep;
   G4Navigator *theGflashNavigator;

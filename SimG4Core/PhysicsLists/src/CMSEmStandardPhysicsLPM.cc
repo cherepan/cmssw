@@ -13,15 +13,15 @@
 
 #include "G4hMultipleScattering.hh"
 #include "G4eMultipleScattering.hh"
+#include "G4MuMultipleScattering.hh"
 #include "G4MscStepLimitType.hh"
-#include "CMSUrbanMscModel93.hh"
+#include "G4UrbanMscModel93.hh"
+#include "G4WentzelVIModel.hh"
+#include "G4CoulombScattering.hh"
 
 #include "G4eIonisation.hh"
 #include "G4eBremsstrahlung.hh"
 #include "G4eplusAnnihilation.hh"
-
-#include "G4SeltzerBergerModel95.hh"
-#include "G4eBremsstrahlungRelModel95.hh"
 
 #include "G4MuIonisation.hh"
 #include "G4MuBremsstrahlung.hh"
@@ -139,7 +139,7 @@ void CMSEmStandardPhysicsLPM::ConstructProcess()
       pmanager->AddDiscreteProcess(new G4ComptonScattering);
       G4GammaConversion* conv = new G4GammaConversion();
       G4PairProductionRelModel* mod = new G4PairProductionRelModel();
-      mod->SetLowEnergyLimit(100*GeV);
+      mod->SetLowEnergyLimit(80*GeV);
       conv->AddEmModel(0, mod);
       pmanager->AddDiscreteProcess(conv);
 
@@ -149,12 +149,9 @@ void CMSEmStandardPhysicsLPM::ConstructProcess()
       eioni->SetStepFunction(0.8, 1.0*mm);
       G4eMultipleScattering* msc = new G4eMultipleScattering;
       msc->SetStepLimitType(fMinimal);
-      msc->AddEmModel(0,new CMSUrbanMscModel93());
+      msc->AddEmModel(0,new G4UrbanMscModel93());
 
       G4eBremsstrahlung* ebrem = new G4eBremsstrahlung();
-      ebrem->SetEmModel(new G4SeltzerBergerModel95(), 1);
-      ebrem->SetEmModel(new G4eBremsstrahlungRelModel95(), 2);
-      ebrem->EmModel(2)->SetLowEnergyLimit(GeV);
 
       pmanager->AddProcess(msc,                   -1, 1, 1);
       pmanager->AddProcess(eioni,                 -1, 2, 2);
@@ -166,12 +163,9 @@ void CMSEmStandardPhysicsLPM::ConstructProcess()
       eioni->SetStepFunction(0.8, 1.0*mm);
       G4eMultipleScattering* msc = new G4eMultipleScattering;
       msc->SetStepLimitType(fMinimal);
-      msc->AddEmModel(0,new CMSUrbanMscModel93());
+      msc->AddEmModel(0,new G4UrbanMscModel93());
 
       G4eBremsstrahlung* ebrem = new G4eBremsstrahlung();
-      ebrem->SetEmModel(new G4SeltzerBergerModel95(), 1);
-      ebrem->SetEmModel(new G4eBremsstrahlungRelModel95(), 2);
-      ebrem->EmModel(2)->SetLowEnergyLimit(GeV);
 
       pmanager->AddProcess(msc,                     -1, 1, 1);
       pmanager->AddProcess(eioni,                   -1, 2, 2);
@@ -181,10 +175,13 @@ void CMSEmStandardPhysicsLPM::ConstructProcess()
     } else if (particleName == "mu+" ||
                particleName == "mu-"    ) {
 
-      pmanager->AddProcess(new G4hMultipleScattering, -1, 1, 1);
+      G4MuMultipleScattering* mumsc = new G4MuMultipleScattering();
+      mumsc->AddEmModel(0, new G4WentzelVIModel());
+      pmanager->AddProcess(mumsc,                     -1, 1, 1);
       pmanager->AddProcess(new G4MuIonisation,        -1, 2, 2);
       pmanager->AddProcess(new G4MuBremsstrahlung,    -1,-3, 3);
       pmanager->AddProcess(new G4MuPairProduction,    -1,-4, 4);
+      pmanager->AddProcess(new G4CoulombScattering,   -1,-4, 5);
 
     } else if (particleName == "alpha" ||
                particleName == "He3" ||
@@ -241,6 +238,10 @@ void CMSEmStandardPhysicsLPM::ConstructProcess()
   //
   G4EmProcessOptions opt;
   opt.SetVerbose(verbose);
+
+  // muon scattering
+  opt.SetPolarAngleLimit(CLHEP::pi);
+
   // ApplyCuts
   //
   opt.SetApplyCuts(true);

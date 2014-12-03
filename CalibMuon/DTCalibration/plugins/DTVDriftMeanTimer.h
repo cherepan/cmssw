@@ -15,6 +15,8 @@
 class TFile;
 class DTMeanTimerFitter;
 
+namespace dtCalibration {
+
 class DTVDriftMeanTimer: public DTVDriftBaseAlgo {
 public:
    DTVDriftMeanTimer(edm::ParameterSet const&);
@@ -27,4 +29,5 @@ private:
    DTMeanTimerFitter* fitter_;
 };
 
+} // namespace
 #endif

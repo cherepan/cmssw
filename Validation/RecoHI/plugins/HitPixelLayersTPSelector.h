@@ -4,8 +4,9 @@
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticleFwd.h"
 
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 
 /**
  Selector to select only tracking particles that leave hits in three pixel layers
@@ -49,6 +50,10 @@ class HitPixelLayersTPSelector
     void select( const edm::Handle<collection> & TPCH, const edm::Event & iEvent, const edm::EventSetup & iSetup)
     {
       selected_.clear();
+      //Retrieve tracker topology from geometry
+      edm::ESHandle<TrackerTopology> tTopoHand;
+      iSetup.get<IdealGeometryRecord>().get(tTopoHand);
+      const TrackerTopology *tTopo=tTopoHand.product();
       
 
       const collection & tpc = *(TPCH.product());
@@ -72,14 +77,14 @@ class HitPixelLayersTPSelector
 	  }
 	  
 	  // selection criteria
-	  if ( tpr->matchedHit() >= minHit_ &&   
+	  if ( tpr->numberOfTrackerLayers() >= minHit_ &&   
 	       sqrt(tpr->momentum().perp2()) >= ptMin_ && 
 	       tpr->momentum().eta() >= minRapidity_ && tpr->momentum().eta() <= maxRapidity_ && 
 	       sqrt(tpr->vertex().perp2()) <= tip_ &&
 	       fabs(tpr->vertex().z()) <= lip_ &&
 	       testId)
 	    {
-	      if (tripletSeedOnly_ && !goodHitPattern(pixelHitPattern(tpr)) ) continue; //findable triplet seed
+	      if (tripletSeedOnly_ && !goodHitPattern(pixelHitPattern(tpr,tTopo)) ) continue; //findable triplet seed
 	      const TrackingParticle * trap = &(tpc[i]);
 	      selected_.push_back(trap);
 	    } 
@@ -88,10 +93,12 @@ class HitPixelLayersTPSelector
     }
     
     // return pixel layer hit pattern
-    std::vector<bool> pixelHitPattern( const TrackingParticleRef& simTrack )
+    std::vector<bool> pixelHitPattern( const TrackingParticleRef& simTrack, const TrackerTopology *tTopo )
       {
 	std::vector<bool> hitpattern(5,false); // PXB 0,1,2  PXF 0,1
 	
+#warning "This file has been modified just to get it to compile without any regard as to whether it still functions as intended"
+#ifdef REMOVED_JUST_TO_GET_IT_TO_COMPILE__THIS_CODE_NEEDS_TO_BE_CHECKED
 	for(std::vector<PSimHit>::const_iterator simHit = simTrack->pSimHit_begin();simHit!= simTrack->pSimHit_end();simHit++){
 	  
 	  DetId id = DetId(simHit->detUnitId());
@@ -100,18 +107,19 @@ class HitPixelLayersTPSelector
 	  
 	  if (detid == DetId::Tracker) {
 	    if (subdet == PixelSubdetector::PixelBarrel) 
-	      hitpattern[PXBDetId(id).layer()-1]=true;
+	      hitpattern[tTopo->pxbLayer(id)-1]=true;
 	    else if (subdet == PixelSubdetector::PixelEndcap) 
-	      hitpattern[PXFDetId(id).disk()+2]=true;
+	      hitpattern[tTopo->pxfDisk(id)+2]=true;
 	  }
 	  
 	}// end simhit loop
+#endif
 	
 	return hitpattern;
       }
     
     // test whether hit pattern would give a pixel triplet seed
-    bool goodHitPattern( const std::vector<bool> hitpattern )
+    bool goodHitPattern( const std::vector<bool>& hitpattern )
     {
       if( (hitpattern[0] && hitpattern[1] && hitpattern[2]) ||
 	  (hitpattern[0] && hitpattern[1] && hitpattern[3]) ||

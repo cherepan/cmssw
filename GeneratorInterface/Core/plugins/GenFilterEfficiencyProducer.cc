@@ -54,24 +54,21 @@ GenFilterEfficiencyProducer::produce(edm::Event& iEvent, const edm::EventSetup& 
     if ( trigR->accept(pathIndex) ) { numEventsPassed++; }
     //    std::cout << "Total events = " << numEventsTotal << " passed = " << numEventsPassed << std::endl;
   }
-
 }
 
-
 void
-GenFilterEfficiencyProducer::beginLuminosityBlock(edm::LuminosityBlock & iLumi, const edm::EventSetup&) {
- 
+GenFilterEfficiencyProducer::beginLuminosityBlock(edm::LuminosityBlock const&, const edm::EventSetup&) {
+
   numEventsTotal = 0;
-  numEventsPassed = 0;
-  
+  numEventsPassed = 0;  
+}
+void
+GenFilterEfficiencyProducer::endLuminosityBlock(edm::LuminosityBlock const& iLumi, const edm::EventSetup&) {
 }
 
 void
-GenFilterEfficiencyProducer::endLuminosityBlock(edm::LuminosityBlock & iLumi, const edm::EventSetup&) {
+GenFilterEfficiencyProducer::endLuminosityBlockProduce(edm::LuminosityBlock & iLumi, const edm::EventSetup&) {
 
   std::auto_ptr<GenFilterInfo> thisProduct(new GenFilterInfo(numEventsTotal,numEventsPassed));
   iLumi.put(thisProduct);
-  
 }
-
-

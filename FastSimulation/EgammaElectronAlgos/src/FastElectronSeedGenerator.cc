@@ -14,7 +14,7 @@
 // Original Author:  Patrick Janot
 //
 //
-#include "FastSimulation/EgammaElectronAlgos/interface/FastElectronSeedGenerator.h"
+#include "FastElectronSeedGenerator.h"
 
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -23,8 +23,8 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
-#include "FastSimulation/EgammaElectronAlgos/interface/FastPixelHitMatcher.h"
-#include "FastSimulation/EgammaElectronAlgos/interface/FastElectronSeedGenerator.h"
+#include "FastPixelHitMatcher.h"
+#include "FastElectronSeedGenerator.h"
 
 #include "RecoTracker/Record/interface/TrackerRecoGeometryRecord.h"
 #include "RecoTracker/TkSeedGenerator/interface/FastHelix.h"
@@ -33,8 +33,6 @@
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 
 #include "DataFormats/EgammaReco/interface/ElectronSeed.h"
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/TrajectorySeed/interface/TrajectorySeedCollection.h"
 
@@ -144,6 +142,7 @@ void  FastElectronSeedGenerator::run(edm::Event& e,
 				      const SiTrackerGSMatchedRecHit2DCollection* theGSRecHits,
 				      const edm::SimTrackContainer* theSimTracks,
 				      TrajectorySeedCollection *seeds,
+				     const TrackerTopology *tTopo,
 				      reco::ElectronSeedCollection & out){
 
   // Take the seed collection.
@@ -209,7 +208,7 @@ void  FastElectronSeedGenerator::run(edm::Event& e,
 	    ++iterRecHit) {
 	++numberOfRecHits;
 
-	currentHit = TrackerRecHit(&(*iterRecHit),theTrackerGeometry);
+	currentHit = TrackerRecHit(&(*iterRecHit),theTrackerGeometry,tTopo);
 	if ( ( currentHit.subDetId() <= 2 ) ||  // Pixel Hits
 	     // Add TID/TEC (optional)
 	     ( searchInTIDTEC &&
@@ -260,7 +259,7 @@ void  FastElectronSeedGenerator::run(edm::Event& e,
       for ( ; theSeedItr != theSeedRangeIteratorEnd; ++theSeedItr ) {
 	const SiTrackerGSMatchedRecHit2D * theSeedingRecHit =
 	  (const SiTrackerGSMatchedRecHit2D*) (&(*theSeedItr));
-	currentHit = TrackerRecHit(theSeedingRecHit,theTrackerGeometry);
+	currentHit = TrackerRecHit(theSeedingRecHit,theTrackerGeometry,tTopo);
 	theHits.push_back(currentHit);
       }
 
@@ -412,11 +411,16 @@ bool FastElectronSeedGenerator::prepareElTrackSeed(ConstRecHitPointer innerhit,
   LogDebug("") <<"[FastElectronSeedGenerator::prepareElTrackSeed] "
 	       << "outer PixelHit   x,y,z "<<outerhit->globalPosition();
 
+  // FIXME to be optimized moving them outside the loop 
+  edm::ESHandle<MagneticField> bfield;
+  theSetup->get<IdealMagneticFieldRecord>().get(bfield);
+  float nomField = bfield->nominalValue();
+
   // make a spiral from the two hits and the vertex position
-  FastHelix helix(outerhit->globalPosition(),innerhit->globalPosition(),vertexPos,*theSetup);
+  FastHelix helix(outerhit->globalPosition(),innerhit->globalPosition(),vertexPos,nomField,&*bfield);
   if ( !helix.isValid()) return false;
 
-  FreeTrajectoryState fts = helix.stateAtVertex();
+  FreeTrajectoryState fts(helix.stateAtVertex());
 
   // Give infinite errors to start the fit (no pattern recognition here).
   AlgebraicSymMatrix55 errorMatrix= AlgebraicMatrixID();

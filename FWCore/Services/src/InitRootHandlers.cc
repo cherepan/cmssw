@@ -9,7 +9,9 @@
 #include "FWCore/RootAutoLibraryLoader/interface/RootAutoLibraryLoader.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "FWCore/Utilities/interface/DictionaryTools.h"
 #include "FWCore/Utilities/interface/EDMException.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 #include "FWCore/Utilities/interface/UnixSignalHandlers.h"
 
 #include <sstream>
@@ -17,7 +19,6 @@
 
 #include "Cintex/Cintex.h"
 #include "G__ci.h"
-#include "Reflex/Type.h"
 #include "TROOT.h"
 #include "TError.h"
 #include "TFile.h"
@@ -126,10 +127,13 @@ namespace {
        std::ostringstream sstr;
        sstr << "Fatal Root Error: " << el_location << "\n" << el_message << '\n';
        edm::Exception except(edm::errors::FatalRootError, sstr.str());
+       except.addAdditionalInfo(except.message());
+       except.clearMessage();
        throw except;
+     
     }
 
-    // Currently we get here only for informational messages,
+    // Typically, we get here only for informational messages,
     // but we leave the other code in just in case we change
     // the criteria for throwing.
     if (el_severity == edm::ELseverityLevel::ELsev_fatal) {
@@ -236,9 +240,9 @@ namespace edm {
       setRefCoreStreamer();
       setStreamedProductStreamer();
 
-      // Load the library containing dictionaries for std:: classes (e.g. std::vector<int>)
-      if (ROOT::Reflex::Type()== Reflex::Type::ByName("std::vector<std::vector<unsigned int> >")) {
-         edmplugin::PluginCapabilities::get()->load("LCGReflex/std::vector<std::vector<unsigned int> >");
+      // Load the library containing dictionaries for std:: classes, if not already loaded.
+      if (!TypeWithDict(typeid(std::vector<std::vector<unsigned int> >)).hasDictionary()) {
+         edmplugin::PluginCapabilities::get()->load(dictionaryPlugInPrefix() + "std::vector<std::vector<unsigned int> >");
       }
     }
 

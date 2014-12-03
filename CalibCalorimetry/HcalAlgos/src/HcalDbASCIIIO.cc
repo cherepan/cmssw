@@ -1,6 +1,6 @@
 //
 // F.Ratnikov (UMd), Oct 28, 2005
-// $Id: HcalDbASCIIIO.cc,v 1.63 2011/10/26 13:58:20 xiezhen Exp $
+// $Id: HcalDbASCIIIO.cc,v 1.68 2012/11/12 20:40:40 dlange Exp $
 //
 #include <vector>
 #include <string>
@@ -163,7 +163,7 @@ bool from_string(T& t, const std::string& s, std::ios_base& (*f)(std::ios_base&)
 
 template <class T,class S> 
 bool getHcalObject (std::istream& fInput, T* fObject, S* fCondObject) {
-  if (!fObject) fObject = new T;
+  if (!fObject) return false; //fObject = new T;
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment
@@ -212,7 +212,7 @@ bool dumpHcalObject (std::ostream& fOutput, const T& fObject) {
 
 template <class T,class S> 
 bool getHcalSingleFloatObject (std::istream& fInput, T* fObject, S* fCondObject) {
-  if (!fObject) fObject = new T;
+  if (!fObject) return false; //fObject = new T;
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment
@@ -257,7 +257,7 @@ bool dumpHcalSingleFloatObject (std::ostream& fOutput, const T& fObject) {
 
 template <class T,class S> 
 bool getHcalSingleIntObject (std::istream& fInput, T* fObject, S* fCondObject) {
-  if (!fObject) fObject = new T;
+  if (!fObject) return false; //fObject = new T;
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment
@@ -302,7 +302,7 @@ bool dumpHcalSingleIntObject (std::ostream& fOutput, const T& fObject) {
 
 template <class T,class S>
 bool getHcalMatrixObject (std::istream& fInput, T* fObject, S* fCondObject) {
-  if (!fObject) fObject = new T;
+  if (!fObject) return false; //fObject = new T;
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment
@@ -388,7 +388,7 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalCovarianceMatri
 // ------------------------------ start specific implementations ------------------------------
 bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalRecoParams* fObject)
 {
-  if (!fObject) fObject = new HcalRecoParams();
+  if (!fObject) return false; // fObject = new HcalRecoParams();  This was always useless...
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment
@@ -583,7 +583,7 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalRecoParams& fOb
 
 bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalLongRecoParams* fObject)
 {
-  if (!fObject) fObject = new HcalLongRecoParams();
+  if (!fObject) return false; // fObject = new HcalLongRecoParams();
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment
@@ -611,7 +611,7 @@ bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalLongRecoParams* fObject
 }
 bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalTimingParams* fObject)
 {
-  if (!fObject) fObject = new HcalTimingParams();
+  if (!fObject) return false; // fObject = new HcalTimingParams();
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment
@@ -696,7 +696,7 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalLongRecoParams&
 
 bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalMCParams* fObject)
 {
-  if (!fObject) fObject = new HcalMCParams();
+  if (!fObject) return false; // fObject = new HcalMCParams();
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment
@@ -810,7 +810,6 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalMCParams& fObje
 }
 
 bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalPedestals* fObject) {
-  if (!fObject) fObject = new HcalPedestals(false);
   char buffer [1024];
 
   while (fInput.getline(buffer, 1024)) {
@@ -905,7 +904,7 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalPedestals& fObj
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalChannelQuality* fObject) 
 {
-  if (!fObject) fObject = new HcalChannelQuality;
+  if (!fObject) return false; //fObject = new HcalChannelQuality;
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment
@@ -963,7 +962,6 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalChannelQuality&
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalL1TriggerObjects* fObject)
 {
-  if (!fObject) fObject = new HcalL1TriggerObjects;
   char buffer [1024];
 
   while (fInput.getline(buffer, 1024)) {
@@ -1033,7 +1031,6 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalL1TriggerObject
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalPedestalWidths* fObject) {
-  if (!fObject) fObject = new HcalPedestalWidths(false);
   char buffer [1024];
   int linecounter = 0;
 
@@ -1166,17 +1163,7 @@ bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalQIEData* fObject) {
     std::vector <std::string> items = splitString (std::string (buffer));
     if (items.size()<1) continue;
     if (items [0] == "SHAPE") { // basic shape
-      if (items.size () < 33) {
-	edm::LogWarning("Format Error") << "Bad line: " << buffer << "\n line must contain 33 items: SHAPE  32 x low QIE edges for first 32 bins" << std::endl;
-	continue;
-      }
-      // comment, as normally not used ----------------------- 
-      /* 
-      float lowEdges [32];
-      int i = 32;
-      while (--i >= 0) lowEdges [i] = atof (items [i+1].c_str ());
-      */
-      //      fObject->setShape (lowEdges);
+      //this shape keyword is obsolete
     }
     else { // QIE parameters
       if (items.size () < 36) {
@@ -1202,6 +1189,9 @@ bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalQIEData* fObject) {
 	    coder.setSlope (capid, range, atof (items [index++].c_str ()));
 	  }
 	}
+	if (items.size()>36)
+	  coder.setQIEIndex(atoi(items[index++].c_str()));
+
 	fObject->addCoder (coder);
 //      }
     }
@@ -1211,15 +1201,8 @@ bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalQIEData* fObject) {
 }
 
 bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalQIEData& fObject) {
+  std::cout <<"dumping object\n";
   char buffer [1024];
-  fOutput << "# QIE basic shape: SHAPE 32 x low edge values for first 32 channels" << std::endl;
-  sprintf (buffer, "SHAPE ");
-  fOutput << buffer;
-  for (unsigned bin = 0; bin < 32; bin++) {
-    sprintf (buffer, " %8.5f", fObject.getShape ().lowEdge (bin));
-    fOutput << buffer;
-  }
-  fOutput << std::endl;
 
   fOutput << "# QIE data" << std::endl;
   sprintf (buffer, "# %15s %15s %15s %15s %36s %36s %36s %36s %36s %36s %36s %36s\n", 
@@ -1246,6 +1229,8 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalQIEData& fObjec
 	fOutput << buffer;
       }
     }
+    sprintf (buffer, " %2d", coder->qieIndex());
+    fOutput << buffer;
     fOutput << std::endl;
   }
   return true;
@@ -1432,7 +1417,7 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalElectronicsMap&
 
 
 bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalLutMetadata* fObject){
-  if (!fObject) fObject = new HcalLutMetadata;
+  if (!fObject) return false; //fObject = new HcalLutMetadata;
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment
@@ -1500,7 +1485,7 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalLutMetadata& fO
 
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 bool HcalDbASCIIIO::getObject(std::istream& fInput, HcalDcsValues * fObject) {
-  if (!fObject) fObject = new HcalDcsValues;
+  if (!fObject) return false; //fObject = new HcalDcsValues;
   std::string buffer;
   while (getline(fInput, buffer)) {
     if (buffer.at(0) == '#') continue; //ignore comment
@@ -1759,7 +1744,7 @@ bool HcalDbASCIIIO::dumpObject (std::ostream& fOutput, const HcalDcsMap& fObject
 bool HcalDbASCIIIO::getObject (std::istream& fInput, HcalFlagHFDigiTimeParams* fObject)
 {
   
-  if (!fObject) fObject = new HcalFlagHFDigiTimeParams();
+  if (!fObject) return false; //fObject = new HcalFlagHFDigiTimeParams();
   char buffer [1024];
   while (fInput.getline(buffer, 1024)) {
     if (buffer [0] == '#') continue; //ignore comment

@@ -82,6 +82,7 @@ OscarProducer::OscarProducer(edm::ParameterSet const & p)
     produces<edm::PSimHitContainer>("MuonDTHits");
     produces<edm::PSimHitContainer>("MuonCSCHits");
     produces<edm::PSimHitContainer>("MuonRPCHits");
+    produces<edm::PSimHitContainer>("MuonGEMHits");
     produces<edm::PCaloHitContainer>("CastorPL");
     produces<edm::PCaloHitContainer>("CastorFI");
     produces<edm::PCaloHitContainer>("CastorBU");
@@ -119,7 +120,7 @@ OscarProducer::~OscarProducer()
 
 }
 
-void OscarProducer::beginRun(edm::Run & r, const edm::EventSetup & es)
+void OscarProducer::beginRun(const edm::Run & r, const edm::EventSetup & es)
 {
   m_runManager->initG4(es);
 }

@@ -5,8 +5,8 @@
  *  Description:
  *       Class to hold configuration identifier for chambers
  *
- *  $Date: 2009/09/25 12:03:19 $
- *  $Revision: 1.3 $
+ *  $Date: 2013/05/23 15:59:44 $
+ *  $Revision: 1.5 $
  *  \author Paolo Ronchese INFN Padova
  *
  */
@@ -96,7 +96,7 @@ class DTCCBConfig {
   /// reset content
   void clear();
 
-  void setFullKey( std::vector<DTConfigKey> );
+  void setFullKey( const std::vector<DTConfigKey>& );
   void setStamp( int s );
 
   int setConfigKey( int   wheelId,

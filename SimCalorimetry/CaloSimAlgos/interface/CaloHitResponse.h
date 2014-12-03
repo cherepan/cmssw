@@ -19,7 +19,7 @@
  \brief Creates electronics signals from hits 
 
 */
-
+#define ChangeHcalEnergyScale
 
 class CaloVShape;
 class CaloShapes;
@@ -41,6 +41,9 @@ public:
   /// doesn't delete the pointers passed in
   virtual ~CaloHitResponse();
 
+  // change HBHE scale
+  void initHBHEScale();
+  void setHBHEScale(std::string &); //GMA
 
   /// tells it which pileup bunches to do
   void setBunchRange(int minBunch, int maxBunch);
@@ -48,8 +51,13 @@ public:
   /// geometry needed for time-of-flight
   void setGeometry(const CaloGeometry * geometry) { theGeometry = geometry; }
 
+  virtual bool keepBlank() const { return true ; }
 
-      virtual bool keepBlank() const { return true ; }
+  /// Initialize hits
+  virtual void initializeHits() {}
+
+  /// Finalize hits
+  virtual void finalizeHits() {}
 
   /// Complete cell digitization.
   virtual void run(MixCollection<PCaloHit> & hits);
@@ -88,7 +96,7 @@ public:
 
   /// finds the amplitude contribution from this hit, applying
   /// photostatistics, if needed.  Results are in photoelectrons
-  double analogSignalAmplitude(const PCaloHit & hit, const CaloSimParameters & parameters) const;
+  double analogSignalAmplitude(const DetId & id, float energy, const CaloSimParameters & parameters) const;
 
   /// users can look for the signal for a given cell
   CaloSamples * findSignal(const DetId & detId);
@@ -106,6 +114,12 @@ public:
 
   /// setting the phase shift for asynchronous trigger (e.g. test beams)
   void setPhaseShift(const double & thePhaseShift) { thePhaseShift_ = thePhaseShift; }
+
+  /// check if crossing is within bunch range:
+
+  bool withinBunchRange(int bunchCrossing) const {
+    return(bunchCrossing >= theMinBunch && bunchCrossing <= theMaxBunch);
+  }
 
 protected:
 
@@ -127,6 +141,11 @@ protected:
 
   double thePhaseShift_;
 
+  // private : 
+  bool  changeScale;
+#ifdef ChangeHcalEnergyScale
+  float hcal_en_scale[100][72][4];
+#endif  
 };
 
 #endif

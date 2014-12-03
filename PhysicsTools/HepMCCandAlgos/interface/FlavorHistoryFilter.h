@@ -46,7 +46,7 @@
 //
 // Original Author:  "Salvatore Rappoccio"
 //         Created:  Sat Jun 28 00:41:21 CDT 2008
-// $Id: FlavorHistoryFilter.h,v 1.8 2009/06/16 20:17:39 srappocc Exp $
+// $Id: FlavorHistoryFilter.h,v 1.10 2013/02/27 23:16:51 wmtan Exp $
 //
 //
 
@@ -83,7 +83,7 @@ class FlavorHistoryFilter : public edm::EDFilter {
       ~FlavorHistoryFilter();
 
    private:
-      virtual bool filter(edm::Event&, const edm::EventSetup&);
+      virtual bool filter(edm::Event&, const edm::EventSetup&) override;
       virtual void endJob() ;
       
       // ----------member data ---------------------------

@@ -9,7 +9,7 @@
 
  author: Francisco Yumiceva, Fermilab (yumiceva@fnal.gov)
 
- version $Id: BSpdfsFcn.h,v 1.1 2006/12/15 20:00:37 yumiceva Exp $
+ version $Id: BSpdfsFcn.h,v 1.3 2013/04/11 23:08:42 wmtan Exp $
 
 ________________________________________________________________**/
 
@@ -24,7 +24,7 @@ class BSpdfsFcn : public ROOT::Minuit2::FCNBase {
 	
   public:
 	// cache the current data
-	void SetData(std::vector < BSTrkParameters > a_BSvector){
+	void SetData(const std::vector < BSTrkParameters > &a_BSvector){
 		
 		fBSvector = a_BSvector;
 		

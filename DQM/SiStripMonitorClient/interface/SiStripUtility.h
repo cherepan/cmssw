@@ -5,8 +5,8 @@
  * *
  *  Class that handles the SiStrip Quality Tests
  * 
- *  $Date: 2009/09/22 12:59:41 $
- *  $Revision: 1.14 $
+ *  $Date: 2013/01/03 18:59:35 $
+ *  $Revision: 1.17 $
  *  \author Suchandra Dutta
   */
 
@@ -18,6 +18,7 @@
 
 class MonitorElement;
 class DQMStore;
+class TrackerTopology;
 class SiStripUtility
 {
  public:
@@ -36,7 +37,7 @@ class SiStripUtility
  static void getModuleFolderList(DQMStore* dqm_store, std::vector<std::string>& m_ids);
  static void getMEValue(MonitorElement* me, std::string & val);
  static bool goToDir(DQMStore * dqm_store, std::string name);
- static void getSubDetectorTag(uint32_t det_id, std::string& subdet_tag);
+ static void getSubDetectorTag(uint32_t det_id, std::string& subdet_tag, const TrackerTopology* tTopo);
  static void setBadModuleFlag(std::string & hname, uint16_t& flg);
  static void getBadModuleStatus(uint16_t flag, std::string& message);
  static void getTopFolderPath(DQMStore* dqm_store, std::string type, std::string& path);   

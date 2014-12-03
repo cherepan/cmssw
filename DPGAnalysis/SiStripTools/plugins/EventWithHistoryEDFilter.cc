@@ -13,7 +13,7 @@
 //
 // Original Author:  Andrea Venturi
 //         Created:  Tue Dec  9 18:33:42 CET 2008
-// $Id: EventWithHistoryEDFilter.cc,v 1.2 2009/09/25 12:03:27 venturia Exp $
+// $Id: EventWithHistoryEDFilter.cc,v 1.4 2013/02/27 19:49:46 wmtan Exp $
 //
 //
 
@@ -49,7 +49,7 @@ public:
 private:
   
   virtual void beginJob() ;
-  virtual bool filter(edm::Event&, const edm::EventSetup&);
+  virtual bool filter(edm::Event&, const edm::EventSetup&) override;
   virtual void endJob() ;
   
   // ----------member data ---------------------------

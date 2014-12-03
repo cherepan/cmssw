@@ -8,7 +8,7 @@
  * around the direction of the region 
  */
 
-#include "RecoTracker/TkTrackingRegions/interface/TrackingRegionBase.h"
+#include "RecoTracker/TkTrackingRegions/interface/TrackingRegion.h"
 #include "RecoTracker/TkTrackingRegions/interface/TkTrackingRegionsMargin.h"
 //#include "CommonDet/TrajectoryParametrization/interface/GlobalTrajectoryParameters.h"
 #include "RecoTracker/TkTrackingRegions/interface/HitRZConstraint.h"
@@ -18,13 +18,10 @@ class OuterEstimator;
 class BarrelDetLayer;
 class ForwardDetLayer;
 
-class RectangularEtaPhiTrackingRegion : public TrackingRegionBase {
+class RectangularEtaPhiTrackingRegion GCC11_FINAL : public TrackingRegion {
 public:
 
   typedef TkTrackingRegionsMargin<float> Margin;
-
- /// dummy constructor
- RectangularEtaPhiTrackingRegion() { }
 
  /** constructor (symmetric eta and phi margins). <BR>
   * dir        - the direction around which region is constructed <BR>
@@ -123,10 +120,12 @@ public:
       const edm::EventSetup& es, 
       const ctfseeding::SeedingLayer* layer) const;
 
-  virtual HitRZCompatibility* checkRZ(
-      const DetLayer* layer, 
-      const Hit &  outerHit,
-      const edm::EventSetup& iSetup) const { return checkRZOld(layer,outerHit->hit(),iSetup); }
+  virtual HitRZCompatibility * checkRZ(const DetLayer* layer,  
+				       const Hit &  outerHit,
+				       const edm::EventSetup& iSetup,
+				       const DetLayer* outerlayer=0,
+				       float lr=0, float gz=0, float dr=0, float dz=0) const
+  { return checkRZOld(layer,outerHit->hit(),iSetup); }
 
   virtual RectangularEtaPhiTrackingRegion* clone() const { 
     return new RectangularEtaPhiTrackingRegion(*this);

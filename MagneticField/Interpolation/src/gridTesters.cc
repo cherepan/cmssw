@@ -60,12 +60,12 @@ namespace {
     Grid1D gb(-10.,10.,11);
     Grid1D gc(-10.,10.,11);
 
-    std::vector< Grid3D::ValueType>  data;
+    std::vector< Grid3D::BVector>  data;
     data.reserve(ga.nodes()*gb.nodes()*gc.nodes());
     for (int i=0; i<ga.nodes(); ++i) 
       for (int j=0; j<gb.nodes(); ++j) 
 	for (int k=0; k<gc.nodes(); ++k) {
-	  data.push_back(Grid3D::ValueType(10*ga.node(i),10*gb.node(j),10*gc.node(k)));	  
+	  data.push_back(Grid3D::BVector(10*ga.node(i),10*gb.node(j),10*gc.node(k)));	  
 	}
     
     return new Grid3D(ga,gb,gc,data);
@@ -81,15 +81,15 @@ namespace {
 #include <iostream>
 
 int grid3d_t() {
-
+  
   Grid3D const  * grid = factory();
-
+  
   LinearGridInterpolator3D inter(*grid);
   
   std::cout << inter.interpolate(7.5,7.2,-3.4) << std::endl;
   std::cout << inter.interpolate(-0.5,10.2,-3.4) << std::endl;
-
-
+  
+  
   delete grid;
   return 0;
 }

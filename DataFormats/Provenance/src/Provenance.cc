@@ -4,22 +4,18 @@
 #include "DataFormats/Provenance/interface/ProcessHistoryRegistry.h"
 #include "DataFormats/Provenance/interface/ProductProvenance.h"
 
+#include <algorithm>
+
 /*----------------------------------------------------------------------
 
 ----------------------------------------------------------------------*/
 
 namespace edm {
 
-   Provenance::Provenance() :
-    branchDescription_(),
-    productID_(),
-    processHistoryID_(),
-    productProvenanceValid_(false),
-    productProvenancePtr_(new ProductProvenance),
-    store_() {
+  Provenance::Provenance() : Provenance{boost::shared_ptr<ConstBranchDescription>(), ProductID()} {
   }
 
-   Provenance::Provenance(boost::shared_ptr<ConstBranchDescription> const& p, ProductID const& pid) :
+  Provenance::Provenance(boost::shared_ptr<ConstBranchDescription> const& p, ProductID const& pid) :
     branchDescription_(p),
     productID_(pid),
     processHistoryID_(),
@@ -65,7 +61,7 @@ namespace edm {
     return config.id();
   }
 
-  ReleaseVersion const&
+  ReleaseVersion
   Provenance::releaseVersion() const {
     ProcessConfiguration pc;
     ProcessConfigurationRegistry::instance()->getMapped(processConfigurationID(), pc);
@@ -109,7 +105,10 @@ namespace edm {
     // This is grossly inadequate, but it is not critical for the
     // first pass.
     product().write(os);
-    productProvenance()->write(os);
+    ProductProvenance* pp = productProvenance();
+    if (pp != 0) {
+      pp->write(os);
+    }
   }
 
   bool operator==(Provenance const& a, Provenance const& b) {
@@ -132,9 +131,9 @@ namespace edm {
   Provenance::swap(Provenance& iOther) {
     branchDescription_.swap(iOther.branchDescription_);
     productID_.swap(iOther.productID_);
+    std::swap(processHistoryID_, iOther.processHistoryID_);
+    std::swap(productProvenanceValid_, iOther.productProvenanceValid_);
     productProvenancePtr_.swap(iOther.productProvenancePtr_);
     store_.swap(iOther.store_);
  }
-
 }
-

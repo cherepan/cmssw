@@ -8,7 +8,7 @@
 //
 // Original Author:  Chris Jones
 //         Created:  Sun Feb 22 10:13:39 CST 2009
-// $Id: FWCollectionSummaryTableManager.cc,v 1.12 2011/08/23 04:07:49 amraktad Exp $
+// $Id: FWCollectionSummaryTableManager.cc,v 1.14 2012/08/03 18:20:28 wmtan Exp $
 //
 
 // system include files
@@ -45,7 +45,7 @@ FWCollectionSummaryTableManager::FWCollectionSummaryTableManager(FWEventItem* iI
    
    //try to find the default columns
    std::vector<std::pair<std::string,std::string> > s_names;
-   Reflex::Type type = Reflex::Type::ByTypeInfo(*(m_collection->modelType()->GetTypeInfo()));
+   edm::TypeWithDict type(*(m_collection->modelType()->GetTypeInfo()));
 
    
    dataChanged();

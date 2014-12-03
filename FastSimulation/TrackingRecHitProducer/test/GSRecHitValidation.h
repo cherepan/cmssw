@@ -10,6 +10,7 @@
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 #include "DataFormats/TrackingRecHit/interface/TrackingRecHit.h"
 
@@ -31,6 +32,7 @@
 #include "TString.h"
 
 class TH1F;
+class TrackerTopology;
 
 class GSRecHitValidation : public edm::EDAnalyzer {
 
@@ -43,7 +45,7 @@ class GSRecHitValidation : public edm::EDAnalyzer {
   virtual void endJob();
 
  private:
-  void fillHitsPlots(TString prefix, const SiTrackerGSMatchedRecHit2D * rechit, PSimHit * simHit);
+  void fillHitsPlots(TString prefix, const SiTrackerGSMatchedRecHit2D * rechit, PSimHit * simHit, const TrackerTopology *tTopo);
   edm::ParameterSet conf_;
   const TrackerGeometry * trackerG;
     
@@ -98,6 +100,9 @@ class GSRecHitValidation : public edm::EDAnalyzer {
 
   int iEventCounter;
   TString outfilename;
+
+  edm::InputTag matchedHitCollectionInputTag_;
+  edm::InputTag hitCollectionInputTag_;
 };
 
 #endif

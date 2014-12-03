@@ -174,14 +174,10 @@ MatacqProducer::produce(edm::Event& event, const edm::EventSetup& eventSetup){
 
 void
 MatacqProducer::addMatacqData(edm::Event& event){
+
   edm::Handle<FEDRawDataCollection> sourceColl;
-  if(inputRawCollection_.label().size() == 0
-     && inputRawCollection_.instance().size() == 0){
-    event.getByType(sourceColl);
-  } else{
-    event.getByLabel(inputRawCollection_, sourceColl);
-  }
-  
+  event.getByLabel(inputRawCollection_, sourceColl);
+
   std::auto_ptr<FEDRawDataCollection> rawColl;
   if(produceRaw_){
     if(mergeRaw_){
@@ -466,7 +462,7 @@ MatacqProducer::getMatacqEvent(uint32_t runNumber,
     len = (int)MatacqRawEvent::getDccLen(&data_[0], headerSize);
     uint32_t run = MatacqRawEvent::getRunNum(&data_[0], headerSize);
     if(verbosity_>3){
-      filepos_t pos;
+      filepos_t pos = -1;
       mtell(pos);
       cout << "[Matacq " << now() << "] Header read at file position "
 	   << pos
@@ -522,8 +518,8 @@ MatacqProducer::getMatacqEvent(uint32_t runNumber,
   }
   
   if(state==found){
-    filepos_t pos;
-    filepos_t fsize;
+    filepos_t pos = -1;
+    filepos_t fsize = -1;
     mtell(pos);
     msize(fsize);
     if(pos==fsize-1){ //last byte.
@@ -606,7 +602,8 @@ uint32_t MatacqProducer::getOrbitId(edm::Event& ev) const{
   //return ev.orbitNumber();
   //we have to deal with what we have in current CMSSW releases:
   edm::Handle<FEDRawDataCollection> rawdata;
-  if(!(ev.getByType(rawdata) && rawdata.isValid())){
+  ev.getByLabel(inputRawCollection_, rawdata);
+  if(!(rawdata.isValid())){
     throw cms::Exception("NotFound")
       << "No FED raw data collection found. ECAL raw data are "
       "required to retrieve the orbit ID";
@@ -646,7 +643,8 @@ uint32_t MatacqProducer::getOrbitId(edm::Event& ev) const{
  
 int MatacqProducer::getCalibTriggerType(edm::Event& ev) const{  
   edm::Handle<FEDRawDataCollection> rawdata;
-  if(!(ev.getByType(rawdata) && rawdata.isValid())){
+  ev.getByLabel(inputRawCollection_, rawdata);
+  if(!(rawdata.isValid())){
     throw cms::Exception("NotFound")
       << "No FED raw data collection found. ECAL raw data are "
       "required to retrieve the trigger type";
@@ -852,7 +850,7 @@ bool MatacqProducer::mtell(filepos_t& pos){
 bool MatacqProducer::mread(char* buf, size_t n, const char* mess, bool peek){
   if(0==inFile_.get()) return false;
   
-  filepos_t pos;
+  filepos_t pos = -1;
   if(!mtell(pos)) return false;
 
   bool rc = false;

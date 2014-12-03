@@ -10,12 +10,13 @@
 ///
 /// Basic class for management of alignment parameters and correlations 
 ///
-///  $Date: 2010/12/09 19:47:16 $
-///  $Revision: 1.18 $
-/// (last update by $Author: flucke $)
+///  $Date: 2013/01/07 20:56:25 $
+///  $Revision: 1.20 $
+/// (last update by $Author: wmtan $)
 
 namespace edm { class ParameterSet; }
 class AlignmentUserVariables;
+class TrackerTopology;
 
 class AlignmentParameterStore 
 {
@@ -121,7 +122,7 @@ public:
   void setAlignmentPositionError( const align::Alignables& alivec, double valshift, double valrot );
 
   /// Obtain type and layer from Alignable 
-  std::pair<int,int> typeAndLayer( const Alignable* ali ) const;
+  std::pair<int,int> typeAndLayer( const Alignable* ali, const TrackerTopology* tTopo ) const;
 
   /// a single alignable parameter of an Alignable
   typedef std::pair<Alignable*, unsigned int> ParameterId;

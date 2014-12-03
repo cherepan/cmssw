@@ -10,10 +10,11 @@
 #include "CommonTools/Utils/interface/StringToEnumValue.h"
 
 #include <iostream>
-#include <Reflex/Object.h>
-#include <Reflex/Type.h>
+#include "FWCore/Utilities/interface/ObjectWithDict.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 #include <typeinfo>
 #include "DataFormats/Common/interface/TestHandle.h"
+#include "Cintex/Cintex.h"
 
 class testExpressionParser : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(testExpressionParser);
@@ -22,7 +23,7 @@ class testExpressionParser : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE_END();
 
 public:
-  void setUp() {}
+  void setUp() {ROOT::Cintex::Cintex::Enable();}
   void tearDown() {}
   void checkAll(); 
   void testStringToEnum();
@@ -32,7 +33,7 @@ public:
   void checkMuon(const std::string &, double);
   reco::Track trk;
   reco::CompositeCandidate cand;
-  ROOT::Reflex::Object o;
+  edm::ObjectWithDict o;
   reco::parser::ExpressionPtr expr;
   pat::Jet jet;
   pat::Muon muon;
@@ -110,7 +111,6 @@ void testExpressionParser::testStringToEnum() {
 
 void testExpressionParser::checkAll() {
   using namespace reco;
-  using namespace ROOT::Reflex;
   const double chi2 = 20.0;
   const int ndof = 10;
   reco::Track::Point v(1, 2, 3);
@@ -141,8 +141,8 @@ void testExpressionParser::checkAll() {
   trk.setExtra(trkExtraRef);
   trk.setAlgorithm(reco::Track::iter2);
   {
-    ROOT::Reflex::Type t = ROOT::Reflex::Type::ByTypeInfo(typeid(reco::Track));
-    o = ROOT::Reflex::Object(t, & trk);
+    edm::TypeWithDict t(typeid(reco::Track));
+    o = edm::ObjectWithDict(t, & trk);
     checkTrack("pt", trk.pt());
     checkTrack("charge", trk.charge());
     checkTrack("pt/3", trk.pt()/3);
@@ -170,8 +170,8 @@ void testExpressionParser::checkAll() {
   CPPUNIT_ASSERT(cand.daughter(0)!=0);
   CPPUNIT_ASSERT(cand.daughter(1)!=0);
   {
-    ROOT::Reflex::Type t = ROOT::Reflex::Type::ByTypeInfo(typeid(reco::Candidate));
-    o = ROOT::Reflex::Object(t, & cand);  
+    edm::TypeWithDict t(typeid(reco::Candidate));
+    o = edm::ObjectWithDict(t, & cand);  
     // these can be checked in both modes
     for (int lazyMode = 0; lazyMode <= 1; ++lazyMode) {
     checkCandidate("numberOfDaughters", cand.numberOfDaughters(), lazyMode);
@@ -182,7 +182,7 @@ void testExpressionParser::checkAll() {
     checkCandidate("min(daughter(0).pt, daughter(1).pt)", std::min(cand.daughter(0)->pt(), cand.daughter(1)->pt()), lazyMode);
     checkCandidate("max(daughter(0).pt, daughter(1).pt)", std::max(cand.daughter(0)->pt(), cand.daughter(1)->pt()), lazyMode);
     checkCandidate("deltaPhi(daughter(0).phi, daughter(1).phi)", reco::deltaPhi(cand.daughter(0)->phi(), cand.daughter(1)->phi()));
-    // chech also opposite order, to see that the sign is correct
+    // check also opposite order, to see that the sign is correct
     checkCandidate("deltaPhi(daughter(1).phi, daughter(0).phi)", reco::deltaPhi(cand.daughter(1)->phi(), cand.daughter(0)->phi())); 
     checkCandidate("deltaR(daughter(0).eta, daughter(0).phi, daughter(1).eta, daughter(1).phi)", reco::deltaR(*cand.daughter(0), *cand.daughter(1)));
     }
@@ -203,8 +203,8 @@ void testExpressionParser::checkAll() {
   CPPUNIT_ASSERT(jet.nCarrying(1.0)  == 2);
   CPPUNIT_ASSERT(jet.nCarrying(0.1)  == 1);
   {
-    ROOT::Reflex::Type t = ROOT::Reflex::Type::ByTypeInfo(typeid(pat::Jet));
-    o = ROOT::Reflex::Object(t, & jet);
+    edm::TypeWithDict t(typeid(pat::Jet));
+    o = edm::ObjectWithDict(t, & jet);
     checkJet("nCarrying(1.0)", jet.nCarrying(1.0));
     checkJet("nCarrying(0.1)", jet.nCarrying(0.1));
   }
@@ -223,8 +223,8 @@ void testExpressionParser::checkAll() {
   CPPUNIT_ASSERT(jet.bDiscriminator("d ")  == 3.0);
   CPPUNIT_ASSERT(jet.getPairDiscri().size() == 3 );
   {
-    ROOT::Reflex::Type t = ROOT::Reflex::Type::ByTypeInfo(typeid(pat::Jet));
-    o = ROOT::Reflex::Object(t, & jet);
+    edm::TypeWithDict t(typeid(pat::Jet));
+    o = edm::ObjectWithDict(t, & jet);
     checkJet("bDiscriminator(\"aaa\")", jet.bDiscriminator("aaa"));
     checkJet("bDiscriminator('aaa')"  , jet.bDiscriminator("aaa"));
     checkJet("bDiscriminator(\"b c\")", jet.bDiscriminator("b c"));
@@ -246,8 +246,8 @@ void testExpressionParser::checkAll() {
   tosa.addPathName("HLT_Something");
   muon.addTriggerObjectMatch(tosa);
   {
-    ROOT::Reflex::Type t = ROOT::Reflex::Type::ByTypeInfo(typeid(pat::Muon));
-    o = ROOT::Reflex::Object(t, & muon);
+    edm::TypeWithDict t(typeid(pat::Muon));
+    o = edm::ObjectWithDict(t, & muon);
     checkMuon("userIso"    , muon.userIso() );
     checkMuon("userIso()"  , muon.userIso() );
     checkMuon("userIso(0)" , muon.userIso(0));
@@ -277,8 +277,8 @@ void testExpressionParser::checkAll() {
   CPPUNIT_ASSERT(muon.overlaps("test").size() == 1);
   CPPUNIT_ASSERT(muon.overlaps("test")[0]->pt() == c1.pt());
   {
-    ROOT::Reflex::Type t = ROOT::Reflex::Type::ByTypeInfo(typeid(pat::Muon));
-    o = ROOT::Reflex::Object(t, & muon);
+    edm::TypeWithDict t(typeid(pat::Muon));
+    o = edm::ObjectWithDict(t, & muon);
     checkMuon("overlaps('test')[0].pt", muon.overlaps("test")[0]->pt());
 
   }

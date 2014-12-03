@@ -23,8 +23,9 @@ namespace edm {
     detail::CPCSentry sentry(current_context_, cpc);
     bool rc = false;
     Event e(ep, moduleDescription_);
+    e.setConsumer(this);
     rc = this->filter(e, c);
-    e.commit_(&previousParentage_, &previousParentageId_);
+    commit_(e,&previousParentage_, &previousParentageId_);
     return rc;
   }
 
@@ -37,48 +38,51 @@ namespace edm {
     this->endJob();
   }
 
-  bool
+  void
   EDFilter::doBeginRun(RunPrincipal& rp, EventSetup const& c,
 			CurrentProcessingContext const* cpc) {
     detail::CPCSentry sentry(current_context_, cpc);
-    bool rc = false;
     Run r(rp, moduleDescription_);
-    rc = this->beginRun(r, c);
-    r.commit_();
-    return rc;
+    r.setConsumer(this);
+    Run const& cnstR=r;
+    this->beginRun(cnstR, c);
+    commit_(r);
+    return;
   }
 
-  bool
+  void
   EDFilter::doEndRun(RunPrincipal& rp, EventSetup const& c,
 			CurrentProcessingContext const* cpc) {
     detail::CPCSentry sentry(current_context_, cpc);
-    bool rc = false;
     Run r(rp, moduleDescription_);
-    rc = this->endRun(r, c);
-    r.commit_();
-    return rc;
+    r.setConsumer(this);
+    Run const& cnstR=r;
+    this->endRun(cnstR, c);
+    commit_(r);
+    return;
   }
 
-  bool
+  void
   EDFilter::doBeginLuminosityBlock(LuminosityBlockPrincipal& lbp, EventSetup const& c,
 			CurrentProcessingContext const* cpc) {
     detail::CPCSentry sentry(current_context_, cpc);
-    bool rc = false;
     LuminosityBlock lb(lbp, moduleDescription_);
-    rc = this->beginLuminosityBlock(lb, c);
-    lb.commit_();
-    return rc;
+    lb.setConsumer(this);
+    LuminosityBlock const& cnstLb = lb;
+    this->beginLuminosityBlock(cnstLb, c);
+    commit_(lb);
   }
 
-  bool
+  void
   EDFilter::doEndLuminosityBlock(LuminosityBlockPrincipal& lbp, EventSetup const& c,
 			CurrentProcessingContext const* cpc) {
     detail::CPCSentry sentry(current_context_, cpc);
-    bool rc = false;
     LuminosityBlock lb(lbp, moduleDescription_);
-    rc = this->endLuminosityBlock(lb, c);
-    lb.commit_();
-    return rc;
+    lb.setConsumer(this);
+    LuminosityBlock const& cnstLb = lb;
+    this->endLuminosityBlock(cnstLb, c);
+    commit_(lb);
+    return ;
   }
 
   void

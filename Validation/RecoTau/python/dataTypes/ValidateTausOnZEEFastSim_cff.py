@@ -27,7 +27,7 @@ newProcAttributes = filter( lambda x: (x not in procAttributes) and (x.find('Fas
 for newAttr in newProcAttributes:
     locals()[newAttr] = getattr(proc,newAttr)
 
-produceDenominator = produceDenominatorZEEFastSim
+produceDenominator = cms.Sequence(produceDenominatorZEEFastSim)
 
 runTauValidationBatchMode = cms.Sequence(
       produceDenominatorZEEFastSim

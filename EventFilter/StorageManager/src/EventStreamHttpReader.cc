@@ -1,4 +1,4 @@
-// $Id: EventStreamHttpReader.cc,v 1.51 2011/07/05 12:06:04 mommsen Exp $
+// $Id: EventStreamHttpReader.cc,v 1.54 2012/10/31 17:09:27 wmtan Exp $
 /// @file: EventStreamHttpReader.cc
 
 #include "DQMServices/Core/interface/MonitorElement.h"
@@ -29,14 +29,15 @@ namespace edm
   lastLS_(0)
   {
     // Default in StreamerInputSource is 'false'
-    inputFileTransitionsEachEvent_ =
-      pset.getUntrackedParameter<bool>("inputFileTransitionsEachEvent", true);
+    bool inputFileTransitionsEachEvent = pset.getUntrackedParameter<bool>("inputFileTransitionsEachEvent", true);
+    if(inputFileTransitionsEachEvent) {
+      setInputFileTransitionsEachEvent();
+    }
 
     readHeader();
   }
   
-  
-  EventPrincipal* EventStreamHttpReader::read()
+  bool EventStreamHttpReader::checkNextEvent()
   {
     initializeDQMStore();
 
@@ -47,13 +48,12 @@ namespace edm
     do
     {
       eventServerProxy_.getOneEvent(data);
-      if ( data.empty() ) return 0;
+      if ( data.empty() ) return false;
       
       HeaderView hdrView(&data[0]);
       if (hdrView.code() == Header::DONE)
       {
-        setEndRun();
-        return 0;
+        return false;
       }
       
       EventMsgView eventView(&data[0]);
@@ -78,7 +78,8 @@ namespace edm
       me->Fill(totalDroppedEvents_);
     }
 
-    return deserializeEvent(EventMsgView(&data[0]));
+    deserializeEvent(EventMsgView(&data[0]));
+    return true;
   }
   
   

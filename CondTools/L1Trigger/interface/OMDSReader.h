@@ -16,7 +16,7 @@
 //
 // Original Author:  Werner Sun
 //         Created:  Sun Mar  2 01:36:06 CET 2008
-// $Id: OMDSReader.h,v 1.13 2010/02/16 21:54:01 wsun Exp $
+// $Id: OMDSReader.h,v 1.15 2013/01/09 14:07:50 davidlt Exp $
 //
 
 // system include files
@@ -247,7 +247,7 @@ namespace l1t
 	    // Use type of dummyVariable to determine type of condition RHS
 	    coral::AttributeList attList ;
 	    attList.extend( conditionRHSName, typeid( T ) ) ;
-	    T tmp ;
+	    T tmp = T();
 	    conditionRHS.fillVariable( conditionRHSName, tmp ) ;
 	    attList[ conditionRHSName ].data< T >() = tmp ;
 

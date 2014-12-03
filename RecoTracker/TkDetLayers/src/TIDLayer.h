@@ -4,6 +4,7 @@
 
 #include "TrackingTools/DetLayers/interface/RingedForwardLayer.h"
 #include "TIDRing.h"
+#include<array>
 
 
 /** A concrete implementation for TID layer 
@@ -20,7 +21,7 @@ class TIDLayer GCC11_FINAL : public RingedForwardLayer, public GeometricSearchDe
   
   virtual const std::vector<const GeomDet*>& basicComponents() const {return theBasicComps;}
   
-  virtual const std::vector<const GeometricSearchDet*>& components() const {return theComps;}
+  virtual const std::vector<const GeometricSearchDet*>& components() const;
 
   void groupedCompatibleDetsV( const TrajectoryStateOnSurface& tsos,
 			       const Propagator& prop,
@@ -33,12 +34,11 @@ class TIDLayer GCC11_FINAL : public RingedForwardLayer, public GeometricSearchDe
 
  private:
   // private methods for the implementation of groupedCompatibleDets()
-  virtual BoundDisk* computeDisk( const std::vector<const TIDRing*>& rings) const;
+  BoundDisk* computeDisk( const std::vector<const TIDRing*>& rings) const;
 
-  virtual std::vector<int> ringIndicesByCrossingProximity(const TrajectoryStateOnSurface& startingState,
-							  const Propagator& prop ) const;
+  std::array<int,3> ringIndicesByCrossingProximity(const TrajectoryStateOnSurface& startingState,
+						   const Propagator& prop ) const;
 
- protected:  
   //  bool isCompatible( const TrajectoryStateOnSurface& ms,
   //	     const MeasurementEstimator& est) const;
 
@@ -53,18 +53,14 @@ class TIDLayer GCC11_FINAL : public RingedForwardLayer, public GeometricSearchDe
   			   const TrajectoryStateOnSurface& tsos, 
 			   const MeasurementEstimator& est) const;
   
-  static void
-  orderAndMergeLevels(const TrajectoryStateOnSurface& tsos,
-		      const Propagator& prop,
-		      const std::vector<std::vector<DetGroup> > & groups,
-		      const std::vector<int> & indices,
-		      std::vector<DetGroup> & result );
+  void fillRingPars(int i);
 
+ private:
+  std::vector<GeomDet const*> theBasicComps;
+  const TIDRing* theComps[3];
+  struct RingPar { float theRingR, thetaRingMin, thetaRingMax;};
+  RingPar ringPars[3];
 
- protected:
-  std::vector<const GeometricSearchDet*> theComps;
-  std::vector<const GeomDet*> theBasicComps;
-  
 };
 
 

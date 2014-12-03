@@ -11,27 +11,39 @@
 #include "FWCore/Framework/interface/ESProducer.h"
 
 #include "FWCore/Framework/interface/ESHandle.h"
-#include "Geometry/Records/interface/IdealGeometryRecord.h"
 #include "Geometry/CaloTopology/interface/HcalTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
+
+namespace edm {
+  class ConfigurationDescriptions;
+}
 
 //
 // class decleration
 //
 
 class HcalTopologyIdealEP : public edm::ESProducer {
-   public:
-      HcalTopologyIdealEP(const edm::ParameterSet&);
-      ~HcalTopologyIdealEP();
 
-      typedef boost::shared_ptr<HcalTopology> ReturnType;
+public:
+  HcalTopologyIdealEP(const edm::ParameterSet&);
+  ~HcalTopologyIdealEP();
 
-      ReturnType produce(const IdealGeometryRecord&);
+  typedef boost::shared_ptr<HcalTopology> ReturnType;
+
+  static void fillDescriptions( edm::ConfigurationDescriptions & descriptions );
+    
+  ReturnType produce(const IdealGeometryRecord&);
+
 private:
-      // ----------member data ---------------------------
+  // ----------member data ---------------------------
   std::string m_restrictions;
-  bool m_h2mode;
+  const edm::ParameterSet m_pSet;
+    
+  // can be specified in the config
+  struct RingSegmentation {
+    int ring;
+    std::vector<int> segmentation;
+  };
+  std::vector<RingSegmentation> m_segmentation;
 };
-
-
-
 #endif

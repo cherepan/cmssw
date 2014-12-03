@@ -10,7 +10,7 @@ RootFile.h // used by ROOT input sources
 #include "InputType.h"
 #include "RootTree.h"
 #include "DataFormats/Provenance/interface/BranchChildren.h"
-#include "DataFormats/Provenance/interface/BranchIDListRegistry.h"
+#include "DataFormats/Provenance/interface/BranchIDList.h"
 #include "DataFormats/Provenance/interface/BranchListIndex.h"
 #include "DataFormats/Provenance/interface/EventAuxiliary.h"
 #include "DataFormats/Provenance/interface/EventProcessHistoryID.h" // backward compatibility
@@ -33,11 +33,12 @@ namespace edm {
   //------------------------------------------------------------
   // Class RootFile: supports file reading.
 
+  class BranchIDListHelper;
   class BranchMapper;
   class DaqProvenanceHelper;
   class DuplicateChecker;
   class EventSkipperByID;
-  class GroupSelectorRules;
+  class ProductSelectorRules;
   class InputFile;
   class ProvenanceReaderBase;
   class ProvenanceAdaptor;
@@ -63,15 +64,17 @@ namespace edm {
              InputSource::ProcessingMode processingMode,
              RunNumber_t const& forcedRunNumber,
              bool noEventSort,
-             GroupSelectorRules const& groupSelectorRules,
+             ProductSelectorRules const& productSelectorRules,
              InputType::InputType inputType,
+             boost::shared_ptr<BranchIDListHelper> branchIDListHelper,
              boost::shared_ptr<DuplicateChecker> duplicateChecker,
              bool dropDescendantsOfDroppedProducts,
              std::vector<boost::shared_ptr<IndexIntoFile> > const& indexesIntoFiles,
              std::vector<boost::shared_ptr<IndexIntoFile> >::size_type currentIndexIntoFile,
              std::vector<ProcessHistoryID>& orderedProcessHistoryIDs,
              bool labelRawDataLikeMC,
-             bool usingGoToEvent);
+             bool usingGoToEvent,
+             bool enablePrefetching);
     ~RootFile();
 
     RootFile(RootFile const&) = delete; // Disallow copying and moving
@@ -79,20 +82,17 @@ namespace edm {
 
     void reportOpened(std::string const& inputType);
     void close();
-    EventPrincipal* clearAndReadCurrentEvent(EventPrincipal& cache,
-                 boost::shared_ptr<LuminosityBlockPrincipal> lb = boost::shared_ptr<LuminosityBlockPrincipal>());
-    EventPrincipal* readCurrentEvent(EventPrincipal& cache,
-                 boost::shared_ptr<LuminosityBlockPrincipal> lb = boost::shared_ptr<LuminosityBlockPrincipal>());
-    EventPrincipal* readEvent(EventPrincipal& cache,
-                 boost::shared_ptr<LuminosityBlockPrincipal> lb = boost::shared_ptr<LuminosityBlockPrincipal>());
+    EventPrincipal* readCurrentEvent(EventPrincipal& cache);
+    EventPrincipal* readEvent(EventPrincipal& cache);
 
     boost::shared_ptr<LuminosityBlockAuxiliary> readLuminosityBlockAuxiliary_();
     boost::shared_ptr<RunAuxiliary> readRunAuxiliary_();
-    boost::shared_ptr<RunPrincipal> readRun_(boost::shared_ptr<RunPrincipal> rpCache);
-    boost::shared_ptr<LuminosityBlockPrincipal> readLumi(boost::shared_ptr<LuminosityBlockPrincipal> lbCache);
+    boost::shared_ptr<RunPrincipal> readRun_(boost::shared_ptr<RunPrincipal> runPrincipal);
+    boost::shared_ptr<LuminosityBlockPrincipal> readLumi(boost::shared_ptr<LuminosityBlockPrincipal> lumiPrincipal);
     std::string const& file() const {return file_;}
     boost::shared_ptr<ProductRegistry const> productRegistry() const {return productRegistry_;}
-    BranchIDListRegistry::collection_type const& branchIDLists() {return *branchIDLists_;}
+    boost::shared_ptr<BranchIDListHelper const> branchIDListHelper() const {return branchIDListHelper_;}
+    BranchIDLists const& branchIDLists() {return *branchIDLists_;}
     EventAuxiliary const& eventAux() const {return eventAux_;}
     // IndexIntoFile::EntryNumber_t const& entryNumber() const {return indexIntoFileIter().entry();}
     // LuminosityBlockNumber_t const& luminosityBlockNumber() const {return indexIntoFileIter().lumi();}
@@ -106,7 +106,7 @@ namespace edm {
     std::array<bool, NumBranchTypes> const& hasNewlyDroppedBranch() const {return hasNewlyDroppedBranch_;}
     bool branchListIndexesUnchanged() const {return branchListIndexesUnchanged_;}
     bool modifiedIDs() const {return daqProvenanceHelper_.get() != 0;}
-    boost::shared_ptr<FileBlock> createFileBlock() const;
+    std::unique_ptr<FileBlock> createFileBlock() const;
     bool setEntryAtItem(RunNumber_t run, LuminosityBlockNumber_t lumi, EventNumber_t event) {
       return event ? setEntryAtEvent(run, lumi, event) : (lumi ? setEntryAtLumi(run, lumi) : setEntryAtRun(run));
     }
@@ -137,9 +137,6 @@ namespace edm {
     bool wasFirstEventJustRead() const;
     IndexIntoFile::IndexIntoFileItr indexIntoFileIter() const;
     void setPosition(IndexIntoFile::IndexIntoFileItr const& position);
-    EventPrincipal& secondaryEventPrincipal() {
-      return *secondaryEventPrincipal_;
-    }
 
   private:
     void checkReleaseVersion();
@@ -158,7 +155,7 @@ namespace edm {
     void overrideRunNumber(LuminosityBlockID& id);
     void overrideRunNumber(EventID& id, bool isRealData);
     std::string const& newBranchToOldBranch(std::string const& newBranch) const;
-    void dropOnInput(ProductRegistry& reg, GroupSelectorRules const& rules, bool dropDescendants, InputType::InputType inputType);
+    void dropOnInput(ProductRegistry& reg, ProductSelectorRules const& rules, bool dropDescendants, InputType::InputType inputType);
     void readParentageTree();
     void readEntryDescriptionTree();
     void readEventHistoryTree();
@@ -199,7 +196,8 @@ namespace edm {
     RootTreePtrArray treePointers_;
     IndexIntoFile::EntryNumber_t lastEventEntryNumberRead_;
     boost::shared_ptr<ProductRegistry const> productRegistry_;
-    boost::shared_ptr<BranchIDListRegistry::collection_type const> branchIDLists_;
+    boost::shared_ptr<BranchIDLists const> branchIDLists_;
+    boost::shared_ptr<BranchIDListHelper> branchIDListHelper_;
     InputSource::ProcessingMode processingMode_;
     int forcedRunOffset_;
     std::map<std::string, std::string> newBranchToOldBranch_;
@@ -211,7 +209,6 @@ namespace edm {
     boost::shared_ptr<DuplicateChecker> duplicateChecker_;
     std::unique_ptr<ProvenanceAdaptor> provenanceAdaptor_; // backward comatibility
     std::unique_ptr<MakeProvenanceReader> provenanceReaderMaker_;
-    mutable std::unique_ptr<EventPrincipal> secondaryEventPrincipal_;
     mutable boost::shared_ptr<BranchMapper> eventBranchMapper_;
     std::vector<ParentageID> parentageIDLookup_;
     std::unique_ptr<DaqProvenanceHelper> daqProvenanceHelper_;

@@ -42,7 +42,7 @@ PF2PATEventContent = cms.PSet(
     # taus 
     'keep *_pfTaus_*_*',
     'keep recoPFTauDiscriminator_*_*_*',
-    'keep *_offlinePrimaryVertice_*_*',
+    'keep *_*fflinePrimaryVertice_*_*',
     # MET
     'keep *_pfMET_*_*',
     # Trigger
@@ -139,3 +139,5 @@ prunedAODForPF2PATEventContent = cms.PSet(
         'keep *_lumiProducer_*_*'
         )
 )
+
+

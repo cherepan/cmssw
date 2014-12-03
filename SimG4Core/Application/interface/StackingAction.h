@@ -28,6 +28,7 @@ private:
 private:
   bool                          savePDandCinTracker, savePDandCinCalo;
   bool                          savePDandCinMuon, saveFirstSecondary;
+  bool                          killInCalo, killInCaloEfH;
   bool                          killHeavy, trackNeutrino, killDeltaRay;
   double                        kmaxIon, kmaxNeutron, kmaxProton;
   double                        maxTrackTime;
@@ -35,6 +36,41 @@ private:
   std::vector<std::string>      maxTimeNames;
   std::vector<G4Region*>        maxTimeRegions;
   std::vector<G4LogicalVolume*> tracker, calo, muon;
+
+  // Russian roulette regions
+  G4Region*                     regionEcal;
+  G4Region*                     regionHcal;
+  G4Region*                     regionQuad;
+  G4Region*                     regionMuonIron;
+  G4Region*                     regionPreShower;
+  G4Region*                     regionCastor;
+  G4Region*                     regionBeamPipeOut;
+  G4Region*                     regionWorld;
+
+  // Russian roulette energy limits
+  double                        nRusRoEnerLim;
+  double                        pRusRoEnerLim;
+
+  // Russian roulette factors
+  double                        nRusRoEcal;
+  double                        pRusRoEcal;
+  double                        nRusRoHcal;
+  double                        pRusRoHcal;
+  double                        nRusRoQuad;
+  double                        pRusRoQuad;
+  double                        nRusRoMuonIron;
+  double                        pRusRoMuonIron;
+  double                        nRusRoPreShower;
+  double                        pRusRoPreShower;
+  double                        nRusRoCastor;
+  double                        pRusRoCastor;
+  double                        nRusRoBeam;
+  double                        pRusRoBeam;
+  double                        nRusRoWorld;
+  double                        pRusRoWorld;
+  // flags
+  bool                          nRRactive;
+  bool                          pRRactive;
 };
 
 #endif

@@ -6,9 +6,14 @@
 //
 #include <memory>
 #include "CalibCalorimetry/HcalStandardModules/interface/HcalPedestalMCWidths.h"
+#include "Geometry/CaloTopology/interface/HcalTopology.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 
-HcalPedestalMCWidths::HcalPedestalMCWidths(const edm::ParameterSet& ps)
-{
+HcalPedestalMCWidths::HcalPedestalMCWidths(const edm::ParameterSet& ps) :
+   hbheDigiCollectionTag_(ps.getParameter<edm::InputTag>("hbheDigiCollectionTag")),
+   hoDigiCollectionTag_(ps.getParameter<edm::InputTag>("hoDigiCollectionTag")),
+   hfDigiCollectionTag_(ps.getParameter<edm::InputTag>("hfDigiCollectionTag")) {
+
    firsttime = true;
    histflag = ps.getUntrackedParameter<bool>("saveHists",true);
 }
@@ -16,7 +21,7 @@ HcalPedestalMCWidths::HcalPedestalMCWidths(const edm::ParameterSet& ps)
 
 HcalPedestalMCWidths::~HcalPedestalMCWidths()
 {
-   HcalCovarianceMatrices * rawCovItem = new HcalCovarianceMatrices();
+   HcalCovarianceMatrices * rawCovItem = new HcalCovarianceMatrices(theTopology);
    std::ofstream outfile(widthsfilename.c_str());
    std::vector<MCWidthsBunch>::iterator bunch_it;
    for(bunch_it=Bunches.begin(); bunch_it != Bunches.end(); bunch_it++)
@@ -28,7 +33,7 @@ HcalPedestalMCWidths::~HcalPedestalMCWidths()
          for(int j = 0; j != 10; j++){
             for(int k = 0; k != 10; k++){            
                bunch_it->sig[i][j][k] = (bunch_it->prod[i][j][k]/bunch_it->num[i][j][k]);//-(bunch_it->cap[i]*bunch_it->cap[(i+j)%4]);
-               if(!std::isnan(bunch_it->sig[i][j][k]))
+               if(!edm::isNotFinite(bunch_it->sig[i][j][k]))
                {
                   item.setValue(i,j,k,bunch_it->sig[i][j][k]);
                }else{
@@ -46,7 +51,7 @@ HcalPedestalMCWidths::~HcalPedestalMCWidths()
          for(int i = 0; i != 4; i++){
             for(int j = 0; j != 10; j++){
                for(int k = j; k != 10; k++)
-               if(!std::isnan(bunch_it->sig[i][j][k])) HBMeans[j]->Fill(k-j,bunch_it->sig[i][j][k]);
+               if(!edm::isNotFinite(bunch_it->sig[i][j][k])) HBMeans[j]->Fill(k-j,bunch_it->sig[i][j][k]);
             }
          }
       }
@@ -54,7 +59,7 @@ HcalPedestalMCWidths::~HcalPedestalMCWidths()
          for(int i = 0; i != 4; i++){
             for(int j = 0; j != 10; j++){
                for(int k = j; k != 10; k++)
-               if(!std::isnan(bunch_it->sig[i][j][k])) HEMeans[j]->Fill(k-j,bunch_it->sig[i][j][k]);
+               if(!edm::isNotFinite(bunch_it->sig[i][j][k])) HEMeans[j]->Fill(k-j,bunch_it->sig[i][j][k]);
             }
          }
       }
@@ -62,7 +67,7 @@ HcalPedestalMCWidths::~HcalPedestalMCWidths()
          for(int i = 0; i != 4; i++){
             for(int j = 0; j != 10; j++){
                for(int k = j; k != 10; k++)
-               if(!std::isnan(bunch_it->sig[i][j][k])) HFMeans[j]->Fill(k-j,bunch_it->sig[i][j][k]);
+               if(!edm::isNotFinite(bunch_it->sig[i][j][k])) HFMeans[j]->Fill(k-j,bunch_it->sig[i][j][k]);
             }
          }
       }
@@ -70,7 +75,7 @@ HcalPedestalMCWidths::~HcalPedestalMCWidths()
          for(int i = 0; i != 4; i++){
             for(int j = 0; j != 10; j++){
                for(int k = j; k != 10; k++)
-               if(!std::isnan(bunch_it->sig[i][j][k])) HOMeans[j]->Fill(k-j,bunch_it->sig[i][j][k]);
+               if(!edm::isNotFinite(bunch_it->sig[i][j][k])) HOMeans[j]->Fill(k-j,bunch_it->sig[i][j][k]);
             }
          }
       }
@@ -102,9 +107,9 @@ HcalPedestalMCWidths::analyze(const edm::Event& e, const edm::EventSetup& iSetup
    using namespace edm;
    using namespace std;
 
-   edm::Handle<HBHEDigiCollection> hbhe;              e.getByType(hbhe);
-   edm::Handle<HODigiCollection> ho;                  e.getByType(ho);
-   edm::Handle<HFDigiCollection> hf;                  e.getByType(hf);
+   edm::Handle<HBHEDigiCollection> hbhe;              e.getByLabel(hbheDigiCollectionTag_, hbhe);
+   edm::Handle<HODigiCollection> ho;                  e.getByLabel(hoDigiCollectionTag_, ho);
+   edm::Handle<HFDigiCollection> hf;                  e.getByLabel(hfDigiCollectionTag_, hf);
    edm::ESHandle<HcalDbService> conditions;
    iSetup.get<HcalDbRecord>().get(conditions);
 
@@ -114,6 +119,7 @@ HcalPedestalMCWidths::analyze(const edm::Event& e, const edm::EventSetup& iSetup
 
    if(firsttime)
    {
+      theTopology=new HcalTopology(*(myRefPeds->topo()));
       runnum = e.id().run();
       std::string runnum_string;
       std::stringstream tempstringout;

@@ -10,9 +10,9 @@
 // Original Author: Steve Wagner, stevew@pizero.colorado.edu
 // Created:         Sat Jan 14 22:00:00 UTC 2006
 //
-// $Author: vlimant $
-// $Date: 2009/05/14 15:06:08 $
-// $Revision: 1.6 $
+// $Author: muzaffar $
+// $Date: 2013/02/27 13:28:30 $
+// $Revision: 1.8 $
 //
 
 #include "FWCore/Framework/interface/EDProducer.h"
@@ -42,7 +42,7 @@ namespace cms
 
     virtual ~SimpleTrackListMerger();
 
-    virtual void produce(edm::Event& e, const edm::EventSetup& c);
+    virtual void produce(edm::Event& e, const edm::EventSetup& c) override;
 
   private:
     edm::ParameterSet conf_;

@@ -1,4 +1,4 @@
-// $Id: FaultyEventStreamHandler.cc,v 1.4 2012/04/04 12:17:02 mommsen Exp $
+// $Id: FaultyEventStreamHandler.cc,v 1.6 2012/10/17 10:13:25 mommsen Exp $
 /// @file: FaultyEventStreamHandler.cc
 
 #include "FWCore/Utilities/interface/Exception.h"
@@ -67,6 +67,8 @@ namespace stor {
     }
     
     fileHandlers_.push_back(newFileHandler);
+    
+    streamRecord_->incrementFileCount(fileRecord->lumiSection);
     
     return newFileHandler;
   }

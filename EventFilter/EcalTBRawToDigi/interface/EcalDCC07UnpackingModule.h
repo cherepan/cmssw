@@ -4,8 +4,8 @@
 /** \class EcalUnpackingModule
  * 
  *
- *  $Date: 2007/10/20 10:58:00 $
- *  $Revision: 1.4 $
+ *  $Date: 2012/09/12 18:18:43 $
+ *  $Revision: 1.6 $
  * \author Y. Maravin
  * \author G. Franzoni
  * \author G. Della Ricca
@@ -13,6 +13,7 @@
 
 #include <FWCore/Framework/interface/MakerMacros.h>
 #include <FWCore/Framework/interface/EDProducer.h>
+#include "FWCore/Utilities/interface/InputTag.h"
 
 #include <iostream>
 #include <string>
@@ -51,7 +52,7 @@ class MatacqTBDataFormatter;
 
     bool ProduceEEDigis_;
     bool ProduceEBDigis_;
-
+    edm::InputTag fedRawDataCollectionTag_;
   };
 
 #endif

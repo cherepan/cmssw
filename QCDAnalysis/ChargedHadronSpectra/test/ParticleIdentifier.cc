@@ -23,7 +23,7 @@ class ParticleIdentifier : public edm::EDAnalyzer
   public:
     explicit ParticleIdentifier(const edm::ParameterSet& ps);
     ~ParticleIdentifier();
-    virtual void analyze(const edm::Event& ev, const edm::EventSetup& es);
+    virtual void analyze(const edm::Event& ev, const edm::EventSetup& es) override;
     virtual void endJob();
 
   private:
@@ -115,7 +115,7 @@ void ParticleIdentifier::processEcalSimHits(const edm::Event& ev)
   ev.getByLabel("g4SimHits", "EcalHitsEB", ecalSimHits);
   
   edm::Handle<edm::SimTrackContainer>  simTracks;
-  ev.getByType<edm::SimTrackContainer>(simTracks);
+  ev.getByLabel<edm::SimTrackContainer>("g4SimHits", simTracks);
   
   for(edm::SimTrackContainer::const_iterator simTrack = simTracks->begin();
                                              simTrack!= simTracks->end();

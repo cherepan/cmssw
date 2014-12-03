@@ -16,11 +16,11 @@ from the configuration file, the DB is not implemented yet)
 //
 // Original Author:  Valerie Halyo
 //                   David Dagenhart
-//       
+//                   Zhen Xie
 //         Created:  Tue Jun 12 00:47:28 CEST 2007
-// $Id: LumiProducer.cc,v 1.26.2.1 2012/09/25 21:30:57 slava77 Exp $
+// $Id: LumiProducer.cc,v 1.31 2013/05/17 20:54:13 chrjones Exp $
 
-#include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/one/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
@@ -79,7 +79,9 @@ namespace edm {
 //
 // class declaration
 //
-class LumiProducer : public edm::EDProducer {
+class LumiProducer : public edm::one::EDProducer<edm::one::WatchRuns,
+                                                 edm::BeginLuminosityBlockProducer,
+                                                 edm::EndRunProducer> {
 
 public:
 
@@ -125,16 +127,15 @@ public:
   
 private:
   
-  virtual void produce(edm::Event&, const edm::EventSetup&);
+  virtual void produce(edm::Event&, const edm::EventSetup&) override final;
 
-  virtual void beginRun(edm::Run&, edm::EventSetup const &);
+  virtual void beginRun(edm::Run const&, edm::EventSetup const &) override final;
 
-  virtual void beginLuminosityBlock(edm::LuminosityBlock & iLBlock,
-				    edm::EventSetup const& iSetup);
-  virtual void endLuminosityBlock(edm::LuminosityBlock& lumiBlock, 
-				  edm::EventSetup const& c);
-
-  virtual void endRun(edm::Run&, edm::EventSetup const &);
+  virtual void beginLuminosityBlockProduce(edm::LuminosityBlock & iLBlock,
+				    edm::EventSetup const& iSetup) override final;
+ 
+  virtual void endRun(edm::Run const&, edm::EventSetup const &) override final;
+  virtual void endRunProduce(edm::Run&, edm::EventSetup const &) override final;
 
   bool fillLumi(edm::LuminosityBlock & iLBlock);
   void fillRunCache(const coral::ISchema& schema,unsigned int runnumber);
@@ -147,7 +148,7 @@ private:
   unsigned long long getLumiDataId(const coral::ISchema& schema,unsigned int runnumber);
   unsigned long long getTrgDataId(const coral::ISchema& schema,unsigned int runnumber);
   unsigned long long getHltDataId(const coral::ISchema& schema,unsigned int runnumber);
-
+  std::string getCurrentDataTag(const coral::ISchema& schema);
   std::string m_connectStr;
   std::string m_lumiversion;
   std::string m_siteconfpath;
@@ -252,7 +253,7 @@ LumiProducer::LumiProducer(const edm::ParameterSet& iConfig):m_cachedrun(0),m_is
   // set up cache
   std::string connectStr=iConfig.getParameter<std::string>("connect");
   m_cachesize=iConfig.getUntrackedParameter<unsigned int>("ncacheEntries",5);
-  m_lumiversion="v2"; /*iConfig.getUntrackedParameter<std::string>("lumiversion");*/
+  m_lumiversion=iConfig.getUntrackedParameter<std::string>("lumiversion","");
   const std::string fproto("frontier://");
   //test if need frontier servlet site-local translation  
   if(connectStr.substr(0,fproto.length())==fproto){
@@ -377,8 +378,40 @@ LumiProducer::getHltDataId(const coral::ISchema& schema,unsigned int runnumber){
   delete hltQuery;
   return hltdataid;
 }
+
+std::string 
+LumiProducer::getCurrentDataTag(const coral::ISchema& schema){
+  //select tagid,tagname from tags
+  std::string result;
+  std::map<unsigned long long,std::string> alltags;
+  coral::IQuery* tagQuery=schema.newQuery();
+  tagQuery->addToTableList(lumi::LumiNames::tagsTableName());
+  tagQuery->addToOutputList("TAGID");
+  tagQuery->addToOutputList("TAGNAME");
+  coral::AttributeList tagoutput;
+  tagoutput.extend("TAGID",typeid(unsigned long long));
+  tagoutput.extend("TAGNAME",typeid(std::string));
+  tagQuery->defineOutput(tagoutput);
+  coral::ICursor& tagcursor=tagQuery->execute();
+  while( tagcursor.next() ){
+    const coral::AttributeList& row=tagcursor.currentRow();
+    unsigned long long tagid=row["TAGID"].data<unsigned long long>();
+    const std::string  tagname=row["TAGNAME"].data<std::string>();
+    alltags.insert(std::make_pair(tagid,tagname));
+  }
+  delete tagQuery;
+  unsigned long long maxid=0;
+  for(std::map<unsigned long long,std::string>::iterator it = alltags.begin(); it !=alltags.end(); ++it) {
+    if( it->first > maxid){
+      maxid=it->first;
+    }
+  }
+  result=alltags[maxid];
+  return result;
+}
+
 void 
-LumiProducer::beginRun(edm::Run& run,edm::EventSetup const &iSetup)
+LumiProducer::beginRun(edm::Run const& run,edm::EventSetup const &iSetup)
 {
   unsigned int runnumber=run.run();
   if(m_cachedrun!=runnumber){
@@ -410,7 +443,7 @@ LumiProducer::beginRun(edm::Run& run,edm::EventSetup const &iSetup)
   //std::cout<<"end of beginRun "<<runnumber<<std::endl;
 }
 
-void LumiProducer::beginLuminosityBlock(edm::LuminosityBlock &iLBlock, edm::EventSetup const &iSetup)
+void LumiProducer::beginLuminosityBlockProduce(edm::LuminosityBlock &iLBlock, edm::EventSetup const &iSetup)
 {
   unsigned int runnumber=iLBlock.run();
   unsigned int luminum=iLBlock.luminosityBlock();
@@ -435,11 +468,10 @@ void LumiProducer::beginLuminosityBlock(edm::LuminosityBlock &iLBlock, edm::Even
   writeProductsForEntry(iLBlock,runnumber,luminum); 
 }
 void 
-LumiProducer::endLuminosityBlock(edm::LuminosityBlock & iLBlock, edm::EventSetup const& iSetup)
-{
-}
+LumiProducer::endRun(edm::Run const& run,edm::EventSetup const &iSetup)
+{}
 void 
-LumiProducer::endRun(edm::Run& run,edm::EventSetup const &iSetup)
+LumiProducer::endRunProduce(edm::Run& run,edm::EventSetup const &iSetup)
 {
   std::auto_ptr<LumiSummaryRunHeader> lsrh(new LumiSummaryRunHeader());
   lsrh->swapL1Names(m_runcache.TRGBitNames);
@@ -450,6 +482,10 @@ LumiProducer::endRun(edm::Run& run,edm::EventSetup const &iSetup)
 }
 void 
 LumiProducer::fillRunCache(const coral::ISchema& schema,unsigned int runnumber){
+  if(m_lumiversion.empty()){
+    m_lumiversion=getCurrentDataTag(schema);
+  }
+  std::cout<<"lumi tag version 2 "<<m_lumiversion<<std::endl;
   if(m_cachedtrgdataid!=0){
     coral::AttributeList trgBindVariables;
     trgBindVariables.extend("trgdataid",typeid(unsigned long long));
@@ -606,11 +642,11 @@ LumiProducer::fillLSCache(unsigned int luminum){
 	for(unsigned int i=0;i<iMax;++i){
 	  unsigned int idx=bxindex[i];
 	  if(ib1Max>i && lsb1Max>idx){
-	  lsdata.beam1intensity.at(idx)=beam1intensity[i];
+	    lsdata.beam1intensity.at(idx)=beam1intensity[i];
 	  }
 	  if(ib2Max>i && lsb2Max>idx){
-	  lsdata.beam2intensity.at(idx)=beam2intensity[i];
-	}
+	    lsdata.beam2intensity.at(idx)=beam2intensity[i];
+	  }
 	}
 	::free(bxindex);
 	::free(beam1intensity);
@@ -750,7 +786,7 @@ LumiProducer::fillLSCache(unsigned int luminum){
 	const coral::Blob& hltacceptblob=row["HLTACCEPTBLOB"].data<coral::Blob>();
 	const void* hltacceptblob_StartAddress=hltacceptblob.startingAddress();
 	unsigned int* hltaccepts=(unsigned int*)::malloc(hltacceptblob.size());
-	std::memmove(hltaccepts,hltacceptblob_StartAddress,hltacceptblob.size());
+	std::memmove(hltaccepts,hltacceptblob_StartAddress,hltacceptblob.size()); 	
 	unsigned int nhltaccepts = sizeof(hltaccepts)/sizeof(unsigned int);
         if(nhltaccepts > 0 && m_runcache.HLTPathNames.size() == 0){
           edm::LogWarning("CorruptOrMissingHLTData")<<"Got "<<nhltaccepts

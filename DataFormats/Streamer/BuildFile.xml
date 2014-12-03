@@ -1,5 +1,5 @@
 <use   name="DataFormats/Provenance"/>
-<use   name="rootrflx"/>
+<use   name="DataFormats/StdDictionaries"/>
 <export>
   <lib   name="1"/>
 </export>

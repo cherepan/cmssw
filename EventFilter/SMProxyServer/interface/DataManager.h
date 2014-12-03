@@ -1,4 +1,4 @@
-// $Id: DataManager.h,v 1.1.4.2 2011/03/07 12:01:12 mommsen Exp $
+// $Id: DataManager.h,v 1.3 2013/01/10 15:55:44 eulisse Exp $
 /// @file: DataManager.h 
 
 #ifndef EventFilter_SMProxyServer_DataManager_h
@@ -28,9 +28,9 @@ namespace smproxy {
   /**
    * Manages the data retrieval
    *
-   * $Author: mommsen $
-   * $Revision: 1.1.4.2 $
-   * $Date: 2011/03/07 12:01:12 $
+   * $Author: eulisse $
+   * $Revision: 1.3 $
+   * $Date: 2013/01/10 15:55:44 $
    */
   
   class DataManager
@@ -71,6 +71,8 @@ namespace smproxy {
       stor::QueueIDs&
     ) const;
 
+    typedef EventRetriever<stor::DQMEventConsumerRegistrationInfo,
+                           stor::DQMEventQueueCollectionPtr> DQMEventRetriever;
 
   private:
 
@@ -95,8 +97,6 @@ namespace smproxy {
                      stor::utils::ptrComp<stor::EventConsumerRegistrationInfo> > DataEventRetrieverMap;
     DataEventRetrieverMap dataEventRetrievers_;
 
-    typedef EventRetriever<stor::DQMEventConsumerRegistrationInfo,
-                           stor::DQMEventQueueCollectionPtr> DQMEventRetriever;
     typedef boost::shared_ptr<DQMEventRetriever> DQMEventRetrieverPtr;
     typedef std::map<stor::DQMEventConsRegPtr, DQMEventRetrieverPtr,
                      stor::utils::ptrComp<stor::DQMEventConsumerRegistrationInfo> > DQMEventRetrieverMap;

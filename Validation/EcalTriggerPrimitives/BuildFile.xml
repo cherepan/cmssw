@@ -5,6 +5,3 @@
 <use   name="DataFormats/EcalDetId"/>
 <use   name="SimCalorimetry/EcalTrigPrimProducers"/>
 <use   name="root"/>
-<export>
-  <lib   name="1"/>
-</export>

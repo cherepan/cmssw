@@ -7,7 +7,7 @@
  *
  * \version $Revision: 1.2 $
  *
- * $Id: ConcreteChargedCandidateProducer.cc,v 1.2 2007/12/03 15:38:49 llista Exp $
+ * $Id: ConcreteChargedCandidateProducer.cc,v 1.2 2013/02/28 00:17:18 wmtan Exp $
  *
  */
 

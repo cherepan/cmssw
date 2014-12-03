@@ -14,17 +14,23 @@
 #include "Alignment/SurveyAnalysis/plugins/SurveyMisalignmentInput.h"
 
 SurveyMisalignmentInput::SurveyMisalignmentInput(const edm::ParameterSet& cfg):
-  textFileName( cfg.getParameter<std::string>("textFileName") )
-{
-}
+  textFileName( cfg.getParameter<std::string>("textFileName") ),
+  theParameterSet( cfg )
+{}
 
 void SurveyMisalignmentInput::analyze(const edm::Event&, const edm::EventSetup& setup)
 {
   if (theFirstEvent) {
+    //Retrieve tracker topology from geometry
+    edm::ESHandle<TrackerTopology> tTopoHandle;
+    setup.get<IdealGeometryRecord>().get(tTopoHandle);
+    const TrackerTopology* const tTopo = tTopoHandle.product();
+
     edm::ESHandle<GeometricDet> geom;
     setup.get<IdealGeometryRecord>().get(geom);	 
-    TrackerGeometry* tracker = TrackerGeomBuilderFromGeometricDet().build(&*geom);
-    addComponent(new AlignableTracker( tracker ) );
+    TrackerGeometry* tracker = TrackerGeomBuilderFromGeometricDet().build(&*geom, theParameterSet);
+    
+    addComponent(new AlignableTracker( tracker, tTopo ));
 
     edm::LogInfo("SurveyMisalignmentInput") << "Starting!";
     // Retrieve alignment[Error]s from DBase

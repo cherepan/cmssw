@@ -1,5 +1,5 @@
 //
-// $Id: TtGenEvent.cc,v 1.33 2012/04/20 11:27:09 snaumann Exp $
+// $Id: TtGenEvent.cc,v 1.35 2012/07/03 13:11:27 davidlt Exp $
 //
 
 #include "FWCore/Utilities/interface/EDMException.h"
@@ -31,7 +31,7 @@ TtGenEvent::fromQuarkAnnihilation() const
 {
   const reco::GenParticleCollection& initPartsColl = *initPartons_;
   if(initPartsColl.size()==2)
-    if(std::abs(initPartsColl[0].pdgId())<(unsigned)TopDecayID::tID && initPartsColl[0].pdgId()==-initPartsColl[1].pdgId())
+    if(std::abs(initPartsColl[0].pdgId())<TopDecayID::tID && initPartsColl[0].pdgId()==-initPartsColl[1].pdgId())
       return true;
   return false;
 }

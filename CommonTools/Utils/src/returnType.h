@@ -4,17 +4,17 @@
  *
  * \author Luca Lista, INFN
  *
- * \version $Id: returnType.h,v 1.3 2009/01/11 23:37:33 hegner Exp $
+ * \version $Id: returnType.h,v 1.4 2012/08/28 22:28:39 wmtan Exp $
  */
 
 #include "CommonTools/Utils/src/TypeCode.h"
-#include "Reflex/Member.h"
-#include "Reflex/Type.h"
+#include "FWCore/Utilities/interface/FunctionWithDict.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 
 namespace reco {
-  Reflex::Type returnType(const Reflex::Member &);
-  method::TypeCode returnTypeCode(const Reflex::Member &);
-  method::TypeCode typeCode(const Reflex::Type &);
+  edm::TypeWithDict returnType(const edm::FunctionWithDict &);
+  method::TypeCode returnTypeCode(const edm::FunctionWithDict &);
+  method::TypeCode typeCode(const edm::TypeWithDict &);
 }
 
 #endif

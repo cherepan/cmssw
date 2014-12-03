@@ -11,21 +11,20 @@
 #include "DataFormats/JetReco/interface/CaloJetCollection.h"
 #include "DataFormats/JetReco/interface/CaloJet.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 // forward declarations
 class HcalDetDiagNoiseRMSummary; 
 class DQMStore;
 class MonitorElement;
 class HcalDbService;
-class HcalLogicalMap;
-class HcalLogicalMapGenerator;
 
 // #########################################################################################
 
 /** \class HcalDetDiagNoiseMonitor
   *  
-  * $Date: 2010/03/25 11:00:57 $
-  * $Revision: 1.5 $
+  * $Date: 2012/11/12 20:52:11 $
+  * $Revision: 1.9 $
   * \author D. Vishnevskiy
   */
 
@@ -49,15 +48,14 @@ private:
   edm::InputTag L1ADataLabel_;
   edm::InputTag digiLabel_;
   edm::InputTag rawDataLabel_;
-  
-  HcalLogicalMap          *lmap;
-  HcalLogicalMapGenerator *gen;
- 
+  edm::InputTag hcalTBTriggerDataTag_;
+
   std::string OutputFilePath;
   bool Overwrite;
   int dataset_seq_number;
  
   bool UseDB;
+  bool setupDone_;
   
   double  HPDthresholdHi;
   double  HPDthresholdLo;

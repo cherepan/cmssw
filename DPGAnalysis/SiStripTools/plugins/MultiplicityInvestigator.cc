@@ -13,7 +13,7 @@
 //
 // Original Author:  Andrea Venturi
 //         Created:  Mon Oct 27 17:37:53 CET 2008
-// $Id: MultiplicityInvestigator.cc,v 1.4 2011/12/11 09:59:11 venturia Exp $
+// $Id: MultiplicityInvestigator.cc,v 1.6 2013/02/27 19:49:46 wmtan Exp $
 //
 //
 
@@ -56,9 +56,8 @@ class MultiplicityInvestigator : public edm::EDAnalyzer {
 
 private:
   virtual void beginJob() ;
-  virtual void analyze(const edm::Event&, const edm::EventSetup&);
-  virtual void beginRun(const edm::Run&, const edm::EventSetup&);
-  virtual void endRun(const edm::Run&, const edm::EventSetup&);
+  virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+  virtual void beginRun(const edm::Run&, const edm::EventSetup&) override;
   virtual void endJob() ;
 
       // ----------member data ---------------------------
@@ -163,10 +162,6 @@ MultiplicityInvestigator::beginRun(const edm::Run& iRun, const edm::EventSetup& 
   m_digivtxcorrhmevent.beginRun(iRun);
   m_digilumicorrhmevent.beginRun(iRun);
 
-}
-
-void
-MultiplicityInvestigator::endRun(const edm::Run& iRun, const edm::EventSetup& iSetup) {
 }
 // ------------ method called once each job just after ending the event loop  ------------
 void 

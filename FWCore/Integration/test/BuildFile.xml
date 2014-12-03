@@ -18,16 +18,12 @@
     <flags   TEST_RUNNER_ARGS=" /bin/bash FWCore/Integration/test transRefTest.sh"/>
     <use   name="FWCore/Utilities"/>
   </bin>
-  <bin   file="TestIntegration.cpp" name="TestIntegrationGeneratedSource">
+  <bin   file="TestIntegration.cpp" name="TestIntegrationProducedSource">
     <flags   TEST_RUNNER_ARGS=" /bin/bash FWCore/Integration/test inputSourceTest.sh"/>
     <use   name="FWCore/Utilities"/>
   </bin>
   <bin   file="TestIntegration.cpp" name="TestIntegrationExternalSource">
     <flags   TEST_RUNNER_ARGS=" /bin/bash FWCore/Integration/test inputExtSourceTest.sh"/>
-    <use   name="FWCore/Utilities"/>
-  </bin>
-  <bin   file="TestIntegration.cpp" name="TestIntegrationRawSource">
-    <flags   TEST_RUNNER_ARGS=" /bin/bash FWCore/Integration/test inputRawSourceTest.sh"/>
     <use   name="FWCore/Utilities"/>
   </bin>
   <bin   file="TestIntegration.cpp" name="TestIntegrationEventSetup">
@@ -48,6 +44,10 @@
   </bin>
   <bin   file="TestIntegration.cpp" name="TestIntegrationSeriesOfProcesses">
     <flags   TEST_RUNNER_ARGS=" /bin/bash FWCore/Integration/test run_SeriesOfProcesses.sh"/>
+    <use   name="FWCore/Utilities"/>
+  </bin>
+  <bin   file="TestIntegration.cpp" name="TestIntegrationGetBy">
+    <flags   TEST_RUNNER_ARGS=" /bin/bash FWCore/Integration/test run_TestGetBy.sh"/>
     <use   name="FWCore/Utilities"/>
   </bin>
   <bin   file="TestIntegration.cpp" name="TestSubProcess">
@@ -128,16 +128,10 @@
   </library>
   <library   file="ThingSource.cc,ThingAlgorithm.cc" name="TestThingSource">
     <flags   EDM_PLUGIN="1"/>
-    <use   name="FWCore/Framework"/>
+    <use   name="FWCore/Sources"/>
   </library>
   <library   file="ThingExtSource.cc,ThingAlgorithm.cc" name="TestThingExtSource">
     <flags   EDM_PLUGIN="1"/>
-    <use   name="FWCore/Framework"/>
-    <use   name="FWCore/Sources"/>
-  </library>
-  <library   file="ThingRawSource.cc,ThingAlgorithm.cc" name="TestThingRawSource">
-    <flags   EDM_PLUGIN="1"/>
-    <use   name="FWCore/Framework"/>
     <use   name="FWCore/Sources"/>
   </library>
   <library   file="OtherThingProducer.cc,OtherThingAlgorithm.cc" name="TestOtherThingProducer">
@@ -182,7 +176,7 @@
     <use   name="FWCore/Framework"/>
     <use   name="FWCore/MessageLogger"/>
   </library>
-  <library   file="TestFindProduct.cc" name="FWCoreIntegrationTestFindProduct">
+  <library   file="TestFindProduct.cc,ManyProductProducer.cc" name="FWCoreIntegrationTestFindProduct">
     <flags   EDM_PLUGIN="1"/>
     <use   name="FWCore/Framework"/>
     <use   name="FWCore/ParameterSet"/>
@@ -215,6 +209,12 @@
     <flags   EDM_PLUGIN="1"/>
     <use   name="FWCore/Framework"/>
   </library>
+  <library   file="TestGetterOfProducts.cc" name="TestGetterOfProducts">
+    <flags   EDM_PLUGIN="1"/>
+    <use   name="DataFormats/TestObjects"/>
+    <use   name="FWCore/Framework"/>
+    <use   name="FWCore/ParameterSet"/>
+  </library>
   <library   file="WhatsItExtensionCordAnalyzer.cc,WhatsIt.cc,GadgetRcd.cc" name="WhatsItExtensionCordAnalyzer">
     <flags   EDM_PLUGIN="1"/>
     <use   name="FWCore/Framework"/>
@@ -222,5 +222,19 @@
   <library   file="WhatsItWatcherAnalyzer.cc,WhatsIt.cc,GadgetRcd.cc" name="WhatsItWatcherAnalyzer">
     <flags   EDM_PLUGIN="1"/>
     <use   name="FWCore/Framework"/>
+  </library>
+  <library   file="ESTestProducers.cc,ESTestAnalyzers.cc" name="ESTestModules">
+    <flags   EDM_PLUGIN="1"/>
+    <use   name="FWCore/Framework"/>
+    <use   name="FWCore/Integration"/>
+    <use   name="FWCore/MessageLogger"/>
+    <use   name="FWCore/ParameterSet"/>
+  </library>
+  <library   file="IntSource.cc" name="IntSource">
+    <flags   EDM_PLUGIN="1"/>
+    <use   name="FWCore/Framework"/>
+    <use   name="FWCore/ParameterSet"/>
+    <use   name="FWCore/Sources"/>
+    <use   name="DataFormats/TestObjects"/>
   </library>
 </environment>

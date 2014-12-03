@@ -12,6 +12,7 @@
 
 #include "RecoMuon/TrackerSeedGenerator/interface/TrackerSeedGenerator.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 #include "TrackingTools/TrajectoryState/interface/FreeTrajectoryState.h"
 #include "RecoMuon/TrackingTools/interface/MuonServiceProxy.h"
 #include "TrackingTools/PatternTools/interface/TrajectoryMeasurement.h"
@@ -38,6 +39,7 @@ class DirectTrackerNavigation;
 class TrajectoryStateTransform;
 class SimTrack;
 class TrackerGeometry;
+class TrackerTopology;
 
 class FastTSGFromPropagation : public TrackerSeedGenerator {
 
@@ -51,7 +53,8 @@ public:
   virtual ~FastTSGFromPropagation();
 
   /// generate seed(s) for a track
-  void  trackerSeeds(const TrackCand&, const TrackingRegion&, std::vector<TrajectorySeed>&);
+  void  trackerSeeds(const TrackCand&, const TrackingRegion&, 
+		     const TrackerTopology *tTopo, std::vector<TrajectorySeed>&);
     
   /// initialize
   void init(const MuonServiceProxy*);
@@ -168,6 +171,7 @@ private:
   double theSigmaZ; 
 
   edm::ParameterSet theConfig;
+  edm::InputTag beamSpot_;
 
   edm::Handle<reco::BeamSpot> theBeamSpot;
   edm::Handle<edm::SimTrackContainer> theSimTracks;

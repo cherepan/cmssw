@@ -1,5 +1,7 @@
-# $Id: RecoJPTJets_cff.py,v 1.3 2010/03/21 19:05:55 dlange Exp $
+# $Id: RecoJPTJets_cff.py,v 1.9 2013/05/21 11:16:38 speer Exp $
+
 from RecoJets.JetPlusTracks.JetPlusTrackCorrections_cff import *
+JetPlusTrackZSPCorJetAntiKt5.ptCUT = 15.
 
 #define jetPlusTrackZSPCorJet sequences
 jetPlusTrackZSPCorJetIcone5   = cms.Sequence(JetPlusTrackCorrectionsIcone5)

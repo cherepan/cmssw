@@ -2,7 +2,7 @@
 // Object to store correlated noise data for one HPD 
 // Project: HPD noise library
 // Author: F.Ratnikov UMd, Jan. 15, 2008
-// $Id: BasicJet.h,v 1.11 2007/09/20 21:04:43 fedor Exp $
+// $Id: HPDNoiseData.cc,v 1.2 2012/06/07 18:12:43 wmtan Exp $
 // --------------------------------------------------------
 
 #include "SimCalorimetry/HcalSimAlgos/interface/HPDNoiseData.h"
@@ -10,7 +10,7 @@
 HPDNoiseData::~HPDNoiseData () {}
 
 void HPDNoiseData::addChannel (HcalDetId fId, const float* fCharges) {
-  mData.push_back (HPDNoiseDataFrame (fId, fCharges));
+  mData.emplace_back (fId, fCharges);
 }
 
 std::vector<HcalDetId> HPDNoiseData::getAllDetIds () const {

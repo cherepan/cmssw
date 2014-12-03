@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 from SimCalorimetry.HcalSimProducers.hcalSimParameters_cfi import *
 from CondCore.DBCommon.CondDBSetup_cfi import *
+from Geometry.HcalEventSetup.HcalRelabel_cfi import HcalReLabel
 
 # make a block so other modules, such as the data mixing module, can
 # also run simulation
@@ -23,6 +24,8 @@ hcalSimBlock = cms.PSet(
     useOldHE = cms.bool(True),
     useOldHF = cms.bool(True),
     useOldHO = cms.bool(True),
+    HBHEUpgradeQIE = cms.bool(True),
+    HFUpgradeQIE   = cms.bool(False),
     #HPDNoiseLibrary = cms.PSet(
     #   FileName = cms.FileInPath("SimCalorimetry/HcalSimAlgos/data/hpdNoiseLibrary.root"),
     #   HPDName = cms.untracked.string("HPD")
@@ -30,7 +33,10 @@ hcalSimBlock = cms.PSet(
     doTimeSlew = cms.bool(True),
     doHFWindow = cms.bool(False),
     hitsProducer = cms.string('g4SimHits'),
-    injectTestHits = cms.bool(False)
+    injectTestHits = cms.bool(False),
+    ChangeResponse = cms.bool(False),
+    CorrFactorFile = cms.FileInPath("SimCalorimetry/HcalSimProducers/data/calor_corr01.txt"),
+    HcalReLabel = HcalReLabel
 )
 
 #es_cholesky = cms.ESSource("PoolDBESSource",
@@ -56,10 +62,3 @@ hcalSimBlock = cms.PSet(
 #    ),
 #    appendToDataLabel = cms.string('reference')
 #)
-
-simHcalUnsuppressedDigis = cms.EDProducer("HcalDigiProducer",
-    hcalSimBlock
-)
-
-
-

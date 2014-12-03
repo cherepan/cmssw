@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 
 from FWCore.ParameterSet.Config import Service
@@ -13,8 +13,8 @@ class RandomNumberServiceHelper(object):
 
     Provide both user level and WM APIs.
 
-    Revision: "$Id: RandomServiceHelper.py,v 1.4 2008/06/10 19:49:49 ewv Exp $"
-    Version   "$Revision: 1.4 $"
+    Revision: "$Id: RandomServiceHelper.py,v 1.6 2012/10/30 11:18:57 fabiocos Exp $"
+    Version   "$Revision: 1.6 $"
     Author:   Dave Evans
     Modified: Eric Vaandering
     """

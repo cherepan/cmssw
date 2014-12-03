@@ -4,9 +4,9 @@
 /** \class ConversionTrackFinder
  **  
  **
- **  $Id: ConversionTrackFinder.h,v 1.9 2011/02/26 15:01:43 nancy Exp $ 
- **  $Date: 2011/02/26 15:01:43 $ 
- **  $Revision: 1.9 $
+ **  $Id: ConversionTrackFinder.h,v 1.11 2013/05/23 17:57:02 gartung Exp $ 
+ **  $Date: 2013/05/23 17:57:02 $ 
+ **  $Revision: 1.11 $
  **  \author Nancy Marinelli, U. of Notre Dame, US
  **
  ***/
@@ -40,7 +40,7 @@ class ConversionTrackFinder {
   virtual ~ConversionTrackFinder();
  
   
-  virtual std::vector<Trajectory> tracks(const TrajectorySeedCollection seeds , TrackCandidateCollection &candidate) const =0;
+  virtual std::vector<Trajectory> tracks(const TrajectorySeedCollection& seeds , TrackCandidateCollection &candidate) const =0;
 
   /// Initialize EventSetup objects at each event
   void setEventSetup( const edm::EventSetup& es ) ; 

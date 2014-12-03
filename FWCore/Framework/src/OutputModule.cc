@@ -6,8 +6,9 @@
 
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Provenance/interface/BranchDescription.h"
+#include "DataFormats/Provenance/interface/BranchKey.h"
 #include "DataFormats/Provenance/interface/ParentageRegistry.h"
-#include "FWCore/Framework/interface/ConstProductRegistry.h"
+#include "DataFormats/Provenance/interface/ProductRegistry.h"
 #include "FWCore/Framework/interface/CurrentProcessingContext.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventPrincipal.h"
@@ -23,16 +24,6 @@
 #include <cassert>
 
 namespace edm {
-  // This grotesque little function exists just to allow calling of
-  // ConstProductRegistry::allBranchDescriptions in the context of
-  // OutputModule's initialization list, rather than in the body of
-  // the constructor.
-
-  std::vector<BranchDescription const*>
-  getAllBranchDescriptions() {
-    Service<ConstProductRegistry> reg;
-    return reg->allBranchDescriptions();
-  }
 
   std::vector<std::string> const& getAllTriggerNames() {
     Service<service::TriggerNamesService> tns;
@@ -117,18 +108,21 @@ namespace edm {
     keptProducts_(),
     hasNewlyDroppedBranch_(),
     process_name_(),
-    groupSelectorRules_(pset, "outputCommands", "OutputModule"),
-    groupSelector_(),
+    productSelectorRules_(pset, "outputCommands", "OutputModule"),
+    productSelector_(),
     moduleDescription_(),
-    current_context_(0),
+    current_context_(nullptr),
     prodsValid_(false),
     wantAllEvents_(false),
     selectors_(),
     selector_config_id_(),
+    droppedBranchIDToKeptBranchID_(),
+    branchIDLists_(new BranchIDLists),
+    origBranchIDLists_(nullptr),
     branchParents_(),
     branchChildren_() {
 
-    hasNewlyDroppedBranch_.assign(false);
+    hasNewlyDroppedBranch_.fill(false);
 
     Service<service::TriggerNamesService> tns;
     process_name_ = tns->getProcessName();
@@ -169,31 +163,72 @@ namespace edm {
 
   void OutputModule::configure(OutputModuleDescription const& desc) {
     remainingEvents_ = maxEvents_ = desc.maxEvents_;
+    origBranchIDLists_ = desc.branchIDLists_;
   }
 
-  void OutputModule::selectProducts() {
-    if(groupSelector_.initialized()) return;
-    groupSelector_.initialize(groupSelectorRules_, getAllBranchDescriptions());
-    Service<ConstProductRegistry> reg;
+  void OutputModule::selectProducts(ProductRegistry const& preg) {
+    if(productSelector_.initialized()) return;
+    productSelector_.initialize(productSelectorRules_, preg.allBranchDescriptions());
 
-    // TODO: See if we can collapse keptProducts_ and groupSelector_ into a
-    // single object. See the notes in the header for GroupSelector
+    // TODO: See if we can collapse keptProducts_ and productSelector_ into a
+    // single object. See the notes in the header for ProductSelector
     // for more information.
 
-    ProductRegistry::ProductList::const_iterator it  =
-      reg->productList().begin();
-    ProductRegistry::ProductList::const_iterator end =
-      reg->productList().end();
+    std::map<BranchID, BranchDescription const*> trueBranchIDToKeptBranchDesc;
 
-    for(; it != end; ++it) {
-      BranchDescription const& desc = it->second;
+    for(auto const& it : preg.productList()) {
+      BranchDescription const& desc = it.second;
       if(desc.transient()) {
         // if the class of the branch is marked transient, output nothing
       } else if(!desc.present() && !desc.produced()) {
         // else if the branch containing the product has been previously dropped,
         // output nothing
       } else if(selected(desc)) {
-        // else if the branch has been selected, put it in the list of selected branches
+        // else if the branch has been selected, put it in the list of selected branches.
+        if(desc.produced()) {
+          // First we check if an equivalent branch has already been selected due to an EDAlias.
+          // We only need the check for products produced in this process.
+          BranchID const& trueBranchID = desc.originalBranchID();
+          std::map<BranchID, BranchDescription const*>::const_iterator iter = trueBranchIDToKeptBranchDesc.find(trueBranchID);
+          if(iter != trueBranchIDToKeptBranchDesc.end()) {
+             throw edm::Exception(errors::Configuration, "Duplicate Output Selection")
+               << "Two (or more) equivalent branches have been selected for output.\n"
+               << "#1: " << BranchKey(desc) << "\n" 
+               << "#2: " << BranchKey(*iter->second) << "\n" 
+               << "Please drop at least one of them.\n";
+          }
+          trueBranchIDToKeptBranchDesc.insert(std::make_pair(trueBranchID, &desc));
+        }
+        switch (desc.branchType()) {
+          case InEvent:
+          {
+            consumes(TypeToGet{desc.unwrappedTypeID(),PRODUCT_TYPE},
+                     InputTag{desc.moduleLabel(),
+                              desc.productInstanceName(),
+                       desc.processName()});
+            break;
+          }
+          case InLumi:
+          {
+            consumes<InLumi>(TypeToGet{desc.unwrappedTypeID(),PRODUCT_TYPE},
+                             InputTag(desc.moduleLabel(),
+                                      desc.productInstanceName(),
+                                      desc.processName()));
+            break;
+          }
+          case InRun:
+          {
+            consumes<InRun>(TypeToGet{desc.unwrappedTypeID(),PRODUCT_TYPE},
+                            InputTag(desc.moduleLabel(),
+                                     desc.productInstanceName(),
+                                     desc.processName()));
+            break;
+          }
+          default:
+            assert(false);
+            break;
+        }
+        // Now put it in the list of selected branches.
         keptProducts_[desc.branchType()].push_back(&desc);
       } else {
         // otherwise, output nothing,
@@ -201,12 +236,26 @@ namespace edm {
         hasNewlyDroppedBranch_[desc.branchType()] = true;
       }
     }
+    // Now fill in a mapping needed in the case that a branch was dropped while its EDAlias was kept.
+    for(auto const& it : preg.productList()) {
+      BranchDescription const& desc = it.second;
+      if(!desc.produced() || desc.isAlias()) continue;
+      BranchID const& branchID = desc.branchID();
+      std::map<BranchID, BranchDescription const*>::const_iterator iter = trueBranchIDToKeptBranchDesc.find(branchID);
+      if(iter != trueBranchIDToKeptBranchDesc.end()) {
+        // This branch, produced in this process, or an alias of it, was persisted.
+        BranchID const& keptBranchID = iter->second->branchID();
+        if(keptBranchID != branchID) {
+          // An EDAlias branch was persisted.
+          droppedBranchIDToKeptBranchID_.insert(std::make_pair(branchID.id(), keptBranchID.id()));
+        }
+      }
+    }
   }
 
   OutputModule::~OutputModule() { }
 
   void OutputModule::doBeginJob() {
-    selectProducts();
     this->beginJob();
   }
 
@@ -395,6 +444,26 @@ namespace edm {
     branchChildren_.clear();
   }
 
+  BranchIDLists const*
+  OutputModule::branchIDLists() const {
+    if(!droppedBranchIDToKeptBranchID_.empty()) {
+      // Make a private copy of the BranchIDLists.
+      *branchIDLists_ = *origBranchIDLists_;
+      // Check for branches dropped while an EDAlias was kept.
+      for(BranchIDList& branchIDList : *branchIDLists_) {
+        for(BranchID::value_type& branchID : branchIDList) {
+          // Replace BranchID of each dropped branch with that of the kept alias, so the alias branch will have the product ID of the original branch.
+          std::map<BranchID::value_type, BranchID::value_type>::const_iterator iter = droppedBranchIDToKeptBranchID_.find(branchID);
+          if(iter != droppedBranchIDToKeptBranchID_.end()) {
+            branchID = iter->second;
+          }
+        }
+      }
+      return branchIDLists_.get();
+    }
+    return origBranchIDLists_;
+  }
+
   CurrentProcessingContext const*
   OutputModule::currentContext() const {
     return current_context_;
@@ -407,7 +476,7 @@ namespace edm {
 
   bool
   OutputModule::selected(BranchDescription const& desc) const {
-    return groupSelector_.selected(desc);
+    return productSelector_.selected(desc);
   }
 
   void
@@ -419,7 +488,7 @@ namespace edm {
   
   void
   OutputModule::fillDescription(ParameterSetDescription& desc) {
-    GroupSelectorRules::fillDescription(desc, "outputCommands");
+    ProductSelectorRules::fillDescription(desc, "outputCommands");
     EventSelector::fillDescription(desc);
   }
   

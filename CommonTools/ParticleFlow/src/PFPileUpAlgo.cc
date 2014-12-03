@@ -2,16 +2,15 @@
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
-void PFPileUpAlgo::process(const reco::PFCandidateCollection & pfCandidates, 
-			   const reco::VertexCollection & vertices, 
-			   const edm::Handle<reco::PFCandidateCollection> * handle)  {
+void PFPileUpAlgo::process(const PFCollection & pfCandidates, 
+			   const reco::VertexCollection & vertices)  {
 
   pfCandidatesFromVtx_.clear();
   pfCandidatesFromPU_.clear();
 
   for( unsigned i=0; i<pfCandidates.size(); i++ ) {
     
-    const reco::PFCandidate& cand = pfCandidates[i];
+    const reco::PFCandidate& cand = * ( pfCandidates[i] );
     
     int ivertex;
 
@@ -27,14 +26,14 @@ void PFPileUpAlgo::process(const reco::PFCandidateCollection & pfCandidates,
     // not pile-up
     if( ivertex == -1  || 
 	ivertex == 0 ) {
-      pfCandidatesFromVtx_.push_back(cand);
-      pfCandidatesFromVtx_.back().setSourceCandidatePtr( reco::PFCandidatePtr(*handle,i) );
+      if(verbose_)
+	std::cout<<"VTX "<<i<<" "<< *(pfCandidates[i])<<std::endl;
+      pfCandidatesFromVtx_.push_back( pfCandidates[i] );
     } else {
+      if(verbose_)
+	std::cout<<"PU  "<<i<<" "<< *(pfCandidates[i])<<std::endl;
       // associated to a vertex
-      pfCandidatesFromPU_.push_back(cand);
-      if(handle) {
-	pfCandidatesFromPU_.back().setSourceCandidatePtr( reco::PFCandidatePtr(*handle,i) );
-      }
+      pfCandidatesFromPU_.push_back( pfCandidates[i] );
     }
   }
 }

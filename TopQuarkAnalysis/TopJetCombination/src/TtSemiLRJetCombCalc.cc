@@ -2,12 +2,12 @@
 // Author:  Jan Heyninck
 // Created: Tue Apr  3 17:33:23 PDT 2007
 //
-// $Id: TtSemiLRJetCombCalc.cc,v 1.3 2007/06/15 08:53:54 heyninck Exp $
+// $Id: TtSemiLRJetCombCalc.cc,v 1.5 2013/05/28 17:57:05 gartung Exp $
 //
 #include "TopQuarkAnalysis/TopJetCombination/interface/TtSemiLRJetCombCalc.h"
 
 // constructor with path; default should not be used
-TtSemiLRJetCombCalc::TtSemiLRJetCombCalc(TString fitInputPath, std::vector<int> observables) {
+TtSemiLRJetCombCalc::TtSemiLRJetCombCalc(const TString& fitInputPath, const std::vector<int>& observables) {
   std::cout << "=== Constructing a TtSemiLRJetCombCalc... " << std::endl; 
   myLR = new LRHelpFunctions();
   addPurity = false;

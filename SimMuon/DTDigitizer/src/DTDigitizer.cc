@@ -1,7 +1,7 @@
 /** \file
  *
- *  $Date: 2008/05/12 06:48:50 $
- *  $Revision: 1.37 $
+ *  $Date: 2013/03/03 14:24:43 $
+ *  $Revision: 1.40 $
  *  \authors: G. Bevilacqua, N. Amapane, G. Cerminara, R. Bellan
  */
 
@@ -122,6 +122,7 @@ DTDigitizer::DTDigitizer(const ParameterSet& conf_) {
   LinksTimeWindow = conf_.getParameter<double>("LinksTimeWindow"); // (10 ns)
 
   //Name of Collection used for create the XF 
+  mix_ = conf_.getParameter<std::string>("mixLabel");
   collection_for_XF = conf_.getParameter<std::string>("InputCollection");
 
   //String to choice between ideal (the deafult) and (mis)aligned geometry for the digitization step 
@@ -147,7 +148,7 @@ void DTDigitizer::produce(Event& iEvent, const EventSetup& iSetup){
     
   // use MixCollection instead of the previous
   Handle<CrossingFrame<PSimHit> > xFrame;
-  iEvent.getByLabel("mix",collection_for_XF,xFrame);
+  iEvent.getByLabel(mix_,collection_for_XF,xFrame);
   
   auto_ptr<MixCollection<PSimHit> > 
     simHits( new MixCollection<PSimHit>(xFrame.product()) );

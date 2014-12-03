@@ -11,7 +11,7 @@ using namespace RecoBTag;
 static const string ordinal[9] = { "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th" };
 
 SoftLeptonTagPlotter::SoftLeptonTagPlotter(const std::string & tagName,
-	const EtaPtBin & etaPtBin, const edm::ParameterSet& pSet, const bool& mc, const bool& update) :
+	const EtaPtBin & etaPtBin, const edm::ParameterSet& pSet, const unsigned int& mc, const bool& update) :
     BaseTagInfoPlotter(tagName, etaPtBin), mcPlots_(mc)
 {
   const std::string softLepDir(theExtensionString.substr(1));
@@ -81,6 +81,13 @@ SoftLeptonTagPlotter::~SoftLeptonTagPlotter ()
 void SoftLeptonTagPlotter::analyzeTag( const reco::BaseTagInfo * baseTagInfo,
     const int & jetFlavour )
 {
+  analyzeTag(baseTagInfo,jetFlavour,1.);
+}
+
+void SoftLeptonTagPlotter::analyzeTag( const reco::BaseTagInfo * baseTagInfo,
+				       const int & jetFlavour,
+				       const float & w)
+{
 
   const reco::SoftLeptonTagInfo * tagInfo = 
 	dynamic_cast<const reco::SoftLeptonTagInfo *>(baseTagInfo);
@@ -94,16 +101,16 @@ void SoftLeptonTagPlotter::analyzeTag( const reco::BaseTagInfo * baseTagInfo,
 
   for (int i = 0; i != n_leptons && i != s_leptons; ++i) {
     const reco::SoftLeptonProperties& properties = tagInfo->properties(i);
-    m_leptonPt[i]->fill( jetFlavour, tagInfo->lepton(i)->pt() );
-    m_leptonId[i]->fill( jetFlavour, properties.quality() );
-    m_sip2d[i]->fill(    jetFlavour, properties.sip2d );
-    m_sip3d[i]->fill(    jetFlavour, properties.sip3d );
-    m_ptRel[i]->fill(    jetFlavour, properties.ptRel );
-    m_p0Par[i]->fill(    jetFlavour, properties.p0Par );
-    m_etaRel[i]->fill(   jetFlavour, properties.etaRel );
-    m_deltaR[i]->fill(   jetFlavour, properties.deltaR );
-    m_ratio[i]->fill(    jetFlavour, properties.ratio );
-    m_ratioRel[i]->fill( jetFlavour, properties.ratioRel );
+    m_leptonPt[i]->fill( jetFlavour, tagInfo->lepton(i)->pt() ,w);
+    m_leptonId[i]->fill( jetFlavour, properties.quality() ,w);
+    m_sip2d[i]->fill(    jetFlavour, properties.sip2d ,w);
+    m_sip3d[i]->fill(    jetFlavour, properties.sip3d ,w);
+    m_ptRel[i]->fill(    jetFlavour, properties.ptRel ,w);
+    m_p0Par[i]->fill(    jetFlavour, properties.p0Par ,w);
+    m_etaRel[i]->fill(   jetFlavour, properties.etaRel ,w);
+    m_deltaR[i]->fill(   jetFlavour, properties.deltaR ,w);
+    m_ratio[i]->fill(    jetFlavour, properties.ratio ,w);
+    m_ratioRel[i]->fill( jetFlavour, properties.ratioRel ,w);
   }
 }
 

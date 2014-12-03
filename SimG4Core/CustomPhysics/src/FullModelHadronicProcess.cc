@@ -209,7 +209,7 @@ G4VParticleChange* FullModelHadronicProcess::PostStepDoIt(const G4Track& aTrack,
 
   //Getting CMS transforms. Boosting is done at histogram filling
   G4LorentzVector Target4Momentum;
-  Target4Momentum.setVectM(0.,aTarget->GetPDGMass());
+  Target4Momentum.set(0.,0.,0.,aTarget->GetPDGMass());
   //  Target4Momentum.setVectM(0.,targetNucleus.GetN()*GeV);
   G4LorentzVector psum_full,psum_cloud;
   psum_full = FullRhadron4Momentum + Target4Momentum;
@@ -755,7 +755,7 @@ void FullModelHadronicProcess::CalculateMomenta(
 
       const G4double tarmas = originalTarget->GetDefinition()->GetPDGMass();
       if( ek > 1.0*GeV )ekcor = 1./(ek/GeV);
-      const G4double atomicWeight = targetNucleus.GetN();
+      const G4double atomicWeight = G4double(targetNucleus.GetN_asInt());
       ek = 2*tarmas + ek*(1.+ekcor/atomicWeight);
 
       G4double tkin = targetNucleus.Cinema( ek );

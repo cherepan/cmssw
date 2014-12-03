@@ -13,7 +13,7 @@
 //
 // Original Author:  Jie Chen
 //         Created:  Mon Apr 12 16:41:46 CDT 2010
-// $Id$
+// $Id: ReduceHcalRecHitCollectionProducer.cc,v 1.2 2013/02/27 22:47:59 wmtan Exp $
 //
 //
 
@@ -67,7 +67,7 @@ class ReduceHcalRecHitCollectionProducer : public edm::EDProducer {
    public:
       explicit ReduceHcalRecHitCollectionProducer(const edm::ParameterSet&);
       ~ReduceHcalRecHitCollectionProducer();
-      virtual void produce(edm::Event&, const edm::EventSetup&);
+      virtual void produce(edm::Event&, const edm::EventSetup&) override;
    private:
       edm::InputTag recHitsLabel_;
       std::string reducedHitsCollection_;

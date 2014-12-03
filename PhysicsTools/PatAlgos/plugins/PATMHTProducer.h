@@ -13,7 +13,7 @@
 //
 // Original Author:  Xin Shi & Freya Blekman, Cornell University
 //         Created:  Fri Sep 12 17:58:29 CEST 2008
-// $Id: PATMHTProducer.h,v 1.4 2010/01/11 13:36:48 hegner Exp $
+// $Id: PATMHTProducer.h,v 1.7 2013/02/27 23:26:56 wmtan Exp $
 //
 //
 
@@ -50,10 +50,9 @@
 #include "DataFormats/PatCandidates/interface/Muon.h"
 
 
-#include "RecoMET/METAlgorithms/interface/SigInputObj.h"
 #include "RecoMET/METAlgorithms/interface/SignAlgoResolutions.h"
 #include "RecoMET/METAlgorithms/interface/significanceAlgo.h"
-
+#include "DataFormats/METReco/interface/SigInputObj.h"
 
 #include "TF1.h"
 #include "TMath.h"
@@ -70,8 +69,7 @@ namespace pat {
     
   private:
     virtual void beginJob() ;
-    virtual void beginRun(const edm::EventSetup&) ;
-    virtual void produce(edm::Event&, const edm::EventSetup&);
+    virtual void produce(edm::Event&, const edm::EventSetup&) override;
     virtual void endJob() ;
     
     double getJets(edm::Event&, const edm::EventSetup&);

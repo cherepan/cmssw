@@ -23,13 +23,15 @@ Test of the EventPrincipal class.
 #include "FWCore/Framework/interface/EventPrincipal.h"
 #include "FWCore/Framework/interface/LuminosityBlockPrincipal.h"
 #include "FWCore/Framework/interface/RunPrincipal.h"
-#include "FWCore/Framework/interface/Selector.h"
+#include "FWCore/Framework/interface/HistoryAppender.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/RootAutoLibraryLoader/interface/RootAutoLibraryLoader.h"
 #include "FWCore/Utilities/interface/EDMException.h"
 #include "FWCore/Utilities/interface/GetPassID.h"
 #include "FWCore/Utilities/interface/GlobalIdentifier.h"
+#include "FWCore/Utilities/interface/ProductKindOfType.h"
 #include "FWCore/Utilities/interface/TypeID.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 #include "FWCore/Version/interface/GetReleaseVersion.h"
 
 #include <cppunit/extensions/HelperMacros.h>
@@ -45,10 +47,7 @@ Test of the EventPrincipal class.
 class test_ep: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(test_ep);
   CPPUNIT_TEST(failgetbyIdTest);
-  CPPUNIT_TEST(failgetbySelectorTest);
   CPPUNIT_TEST(failgetbyLabelTest);
-  CPPUNIT_TEST(failgetManyTest);
-  CPPUNIT_TEST(failgetbyTypeTest);
   CPPUNIT_TEST(failgetManybyTypeTest);
   CPPUNIT_TEST(failgetbyInvalidIdTest);
   CPPUNIT_TEST(failgetProvenanceTest);
@@ -57,10 +56,7 @@ public:
   void setUp();
   void tearDown();
   void failgetbyIdTest();
-  void failgetbySelectorTest();
   void failgetbyLabelTest();
-  void failgetManyTest();
-  void failgetbyTypeTest();
   void failgetManybyTypeTest();
   void failgetbyInvalidIdTest();
   void failgetProvenanceTest();
@@ -85,6 +81,8 @@ private:
   boost::shared_ptr<edm::EventPrincipal>    pEvent_;
 
   edm::EventID               eventID_;
+
+  edm::HistoryAppender historyAppender_;
 };
 
 //----------------------------------------------------------------------
@@ -118,7 +116,7 @@ test_ep::fake_single_process_branch(std::string const& tag,
                                     std::string const& productInstanceName) {
   std::string moduleLabel = processName + "dummyMod";
   std::string moduleClass("DummyModule");
-  edm::TypeID dummyType(typeid(edmtest::DummyProduct));
+  edm::TypeWithDict dummyType(typeid(edmtest::DummyProduct));
   std::string productClassName = dummyType.userClassName();
   std::string friendlyProductClassName = dummyType.friendlyClassName();
   edm::ParameterSet modParams;
@@ -142,8 +140,8 @@ test_ep::fake_single_process_branch(std::string const& tag,
 }
 
 void test_ep::setUp() {
+
   edm::RootAutoLibraryLoader::enable();
-  edm::BranchIDListHelper::clearRegistries();
 
   // Making a functional EventPrincipal is not trivial, so we do it
   // all here.
@@ -157,7 +155,8 @@ void test_ep::setUp() {
   pProductRegistry_->addProduct(*fake_single_process_branch("user", "USER"));
   pProductRegistry_->addProduct(*fake_single_process_branch("rick", "USER2", "rick"));
   pProductRegistry_->setFrozen();
-  edm::BranchIDListHelper::updateRegistries(*pProductRegistry_);
+  boost::shared_ptr<edm::BranchIDListHelper> branchIDListHelper(new edm::BranchIDListHelper());
+  branchIDListHelper->updateRegistries(*pProductRegistry_);
 
   // Put products we'll look for into the EventPrincipal.
   {
@@ -187,12 +186,14 @@ void test_ep::setUp() {
     std::string uuid = edm::createGlobalIdentifier();
     edm::Timestamp now(1234567UL);
     boost::shared_ptr<edm::RunAuxiliary> runAux(new edm::RunAuxiliary(eventID_.run(), now, now));
-    boost::shared_ptr<edm::RunPrincipal> rp(new edm::RunPrincipal(runAux, pProductRegistry_, *process));
+    boost::shared_ptr<edm::RunPrincipal> rp(new edm::RunPrincipal(runAux, pProductRegistry_, *process, &historyAppender_));
     boost::shared_ptr<edm::LuminosityBlockAuxiliary> lumiAux(new edm::LuminosityBlockAuxiliary(rp->run(), 1, now, now));
-    boost::shared_ptr<edm::LuminosityBlockPrincipal>lbp(new edm::LuminosityBlockPrincipal(lumiAux, pProductRegistry_, *process, rp));
+    boost::shared_ptr<edm::LuminosityBlockPrincipal>lbp(new edm::LuminosityBlockPrincipal(lumiAux, pProductRegistry_, *process, &historyAppender_));
+    lbp->setRunPrincipal(rp);
     edm::EventAuxiliary eventAux(eventID_, uuid, now, true);
-    pEvent_.reset(new edm::EventPrincipal(pProductRegistry_, *process));
-    pEvent_->fillEventPrincipal(eventAux, lbp);
+    pEvent_.reset(new edm::EventPrincipal(pProductRegistry_, branchIDListHelper, *process, &historyAppender_));
+    pEvent_->fillEventPrincipal(eventAux);
+    pEvent_->setLuminosityBlockPrincipal(lbp);
     pEvent_->put(branchFromRegistry, product, prov);
   }
   CPPUNIT_ASSERT(pEvent_->size() == 1);
@@ -228,41 +229,13 @@ void test_ep::failgetbyIdTest() {
   CPPUNIT_ASSERT(h.failedToGet());
 }
 
-void test_ep::failgetbySelectorTest() {
-  edmtest::IntProduct dummy;
-  edm::TypeID tid(dummy);
-
-  edm::ProcessNameSelector pnsel("PROD");
-  edm::BasicHandle h(pEvent_->getBySelector(tid, pnsel));
-  CPPUNIT_ASSERT(h.failedToGet());
-}
-
 void test_ep::failgetbyLabelTest() {
   edmtest::IntProduct dummy;
   edm::TypeID tid(dummy);
 
   std::string label("this does not exist");
 
-  size_t cachedOffset = 0;
-  int fillCount = -1;
-  edm::BasicHandle h(pEvent_->getByLabel(tid, label, std::string(), std::string(), cachedOffset, fillCount));
-  CPPUNIT_ASSERT(h.failedToGet());
-}
-
-void test_ep::failgetManyTest() {
-  edmtest::IntProduct dummy;
-  edm::TypeID tid(dummy);
-
-  edm::ProcessNameSelector sel("PROD");
-  std::vector<edm::BasicHandle > handles;
-  pEvent_->getMany(tid, sel, handles);
-  CPPUNIT_ASSERT(handles.empty());
-}
-
-void test_ep::failgetbyTypeTest() {
-  edmtest::IntProduct dummy;
-  edm::TypeID tid(dummy);
-  edm::BasicHandle h(pEvent_->getByType(tid));
+  edm::BasicHandle h(pEvent_->getByLabel(edm::PRODUCT_TYPE, tid, label, std::string(), std::string()));
   CPPUNIT_ASSERT(h.failedToGet());
 }
 

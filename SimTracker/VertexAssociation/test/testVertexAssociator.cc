@@ -129,11 +129,11 @@ void testVertexAssociator::analyze(const edm::Event& event, const edm::EventSetu
   const  edm::View<reco::Track>   tC = *(trackCollection.product());
 
   edm::Handle<TrackingParticleCollection>  TPCollection ;
-  event.getByLabel("mergedtruth","MergedTrackTruth",TPCollection);
+  event.getByLabel("mix","MergedTrackTruth",TPCollection);
   const TrackingParticleCollection tPC   = *(TPCollection.product());
 
   edm::Handle<TrackingVertexCollection>  TVCollection;
-  event.getByLabel("mergedtruth","MergedTrackTruth",TVCollection);
+  event.getByLabel("mix","MergedTrackTruth",TVCollection);
   const TrackingVertexCollection tVC   = *(TVCollection.product());
 
   //Vertex Collection
@@ -153,9 +153,9 @@ void testVertexAssociator::analyze(const edm::Event& event, const edm::EventSetu
   cout << "                      ****************** Reco To Sim ****************** " << endl << endl;
 
   //cout << "-- Associator by hits --" << endl;
-  reco::RecoToSimCollection r2sTracks = associatorByHits->associateRecoToSim (trackCollection,TPCollection,&event );
+  reco::RecoToSimCollection r2sTracks = associatorByHits->associateRecoToSim (trackCollection,TPCollection,&event,&setup );
 
-  reco::SimToRecoCollection s2rTracks = associatorByHits->associateSimToReco (trackCollection,TPCollection,&event );
+  reco::SimToRecoCollection s2rTracks = associatorByHits->associateSimToReco (trackCollection,TPCollection,&event, &setup );
   //associatorByChi2->associateRecoToSim (trackCollection,TPCollection,&event );
 
   reco::VertexRecoToSimCollection r2sVertices = associatorByTracks->associateRecoToSim(vertexCollection,TVCollection,event,r2sTracks);

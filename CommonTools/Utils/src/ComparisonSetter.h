@@ -5,7 +5,7 @@
  * Comparison setter
  *
  * \author original version: Chris Jones, Cornell, 
- *         adapted to Reflex by Luca Lista, INFN
+ *         adapted by Luca Lista, INFN
  *
  * \version $Revision: 1.3 $
  *

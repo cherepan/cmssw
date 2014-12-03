@@ -1,5 +1,5 @@
 //
-// $Id: TtHadLRSignalSelCalc.h,v 1.1 2007/10/07 15:28:05 mfhansen Exp $
+// $Id: TtHadLRSignalSelCalc.h,v 1.3 2013/05/28 17:54:36 gartung Exp $
 // Adapted TtHadLRSignalSelCalc.h,v 1.1 2007/06/15 08:49:19 heyninck Exp 
 // for fully hadronic channel
 
@@ -31,7 +31,7 @@ class TtHadLRSignalSelCalc {
  public:
   
   TtHadLRSignalSelCalc();
-  TtHadLRSignalSelCalc(TString,std::vector<int>);
+  TtHadLRSignalSelCalc(const TString&,const std::vector<int>&);
   ~TtHadLRSignalSelCalc();	
   void  operator()(TtHadEvtSolution&);
   

@@ -15,8 +15,8 @@ class HcalSeverityLevelComputer;
    cell if the threshold exceeds a given maximum value R(Energy).
    Each cell must also pass ieta-dependent energy and ET cuts to be considered for flagging.
 
-   $Date: 2010/06/30 23:58:35 $
-   $Revision: 1.3 $
+   $Date: 2013/05/30 21:37:33 $
+   $Revision: 1.6 $
    \author J. Temple and D. Ferencek
 */
 
@@ -26,12 +26,12 @@ class HcalHF_S9S1algorithm {
   /** Constructors **/
   HcalHF_S9S1algorithm();
   
-  HcalHF_S9S1algorithm(std::vector<double> short_optimumSlope, 
-		       std::vector<double> short_Energy, 
-		       std::vector<double> short_ET, 
-		       std::vector<double> long_optimumSlope, 
-		       std::vector<double> long_Energy, 
-		       std::vector<double> long_ET,
+  HcalHF_S9S1algorithm(const std::vector<double>& short_optimumSlope, 
+		       const std::vector<double>& short_Energy, 
+		       const std::vector<double>& short_ET, 
+		       const std::vector<double>& long_optimumSlope, 
+		       const std::vector<double>& long_Energy, 
+		       const std::vector<double>& long_ET,
 		       int HcalAcceptSeverityLevel,
 		       bool isS8S1);
 
@@ -40,10 +40,10 @@ class HcalHF_S9S1algorithm {
 
   void HFSetFlagFromS9S1(HFRecHit& hf,
 			HFRecHitCollection& rec,
-			HcalChannelQuality* myqual,
+			const HcalChannelQuality* myqual,
 			const HcalSeverityLevelComputer* mySeverity);
-  double CalcSlope(int abs_ieta, std::vector<double> params);
-  double CalcEnergyThreshold(double abs_energy,std::vector<double> params);
+  double CalcSlope(int abs_ieta, const std::vector<double>& params);
+  double CalcEnergyThreshold(double abs_energy,const std::vector<double>& params);
 
   double bit(){return HcalCaloFlagLabels::HFLongShort;}
 

@@ -23,8 +23,8 @@ class HcalDbService;
   * [LUT 1(127)] [LUT 2(127)] ...
   * </pre>
   *
-  * $Date: 2009/10/26 18:55:38 $
-  * $Revision: 1.20 $
+  * $Date: 2012/11/12 20:43:41 $
+  * $Revision: 1.23 $
   * \author M. Weinberger -- TAMU
   * \author Tulika Bose and Greg Landsberg -- Brown
   */
@@ -41,8 +41,8 @@ public:
   virtual float getLUTGain(HcalDetId id) const;
 
   void update(const HcalDbService& conditions);
-  void update(const char* filename, bool appendMSB = false);
-  void updateXML(const char* filename);
+  void update(const char* filename, const HcalTopology&, bool appendMSB = false);
+  void updateXML(const char* filename, const HcalTopology&);
   void setLUTGenerationMode(bool gen){ LUTGenerationMode_ = gen; };
   void setMaskBit(int bit){ bitToMask_ = bit; };
   std::vector<unsigned short> getLinearizationLUTWithMSB(const HcalDetId& id) const;

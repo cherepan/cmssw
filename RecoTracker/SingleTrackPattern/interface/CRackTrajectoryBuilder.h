@@ -21,9 +21,6 @@
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateTransform.h"
 #include "TrackingTools/GeomPropagators/interface/AnalyticalPropagator.h"
 #include "TrackingTools/KalmanUpdators/interface/KFUpdator.h"
-
-#include "TrackingTools/KalmanUpdators/interface/KFStripUpdator.h"
-
 #include "TrackingTools/KalmanUpdators/interface/Chi2MeasurementEstimator.h"
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
@@ -222,11 +219,11 @@ class CRackTrajectoryBuilder
 			   const TransientTrackingRecHit& hit) const;
     
     void AddHit(Trajectory &traj,
-		std::vector<const TrackingRecHit*>Hits,
+		const std::vector<const TrackingRecHit*>&Hits,
 		Propagator *currPropagator
 		);
     //		edm::OwnVector<TransientTrackingRecHit> hits);
-    bool qualityFilter(Trajectory traj);
+    bool qualityFilter(const Trajectory& traj);
 
     bool isDifferentStripReHit2D  (const SiStripRecHit2D& hitA, const  SiStripRecHit2D& hitB );
 

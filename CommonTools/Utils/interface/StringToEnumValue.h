@@ -3,7 +3,7 @@
 
 
 #include "FWCore/Utilities/interface/Exception.h"
-#include <Reflex/Reflex.h>
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 #include <string>
 #include <sstream>
 #include <vector>
@@ -17,33 +17,15 @@
    </code>
 
    \author Stefano Argiro
-   \version $Id$
+   \version $Id: StringToEnumValue.h,v 1.6 2013/01/25 23:27:41 wmtan Exp $
    \date 04 Mar 2011
 */
 
 template <class MyType> 
-int StringToEnumValue(const std::string & enumName){
-  
-  using namespace ROOT::Reflex;
-  
-  Reflex::Type rflxType = Reflex::Type::ByTypeInfo(typeid(MyType));
-  Reflex::Member member = rflxType.MemberByName(enumName);
-
-  if (!member) {
-    std::ostringstream err;
-    err<<"StringToEnumValue Failure trying to convert " << enumName << " to int value";
-    throw cms::Exception("ConversionError",err.str());
-  }
-
-  if (member.TypeOf().TypeInfo() != typeid(int)) {
-    
-    std::ostringstream err;
-    err << "Type "<<  member.TypeOf().Name() << " is not Enum";
-    throw cms::Exception("ConversionError",err.str());
-  }
-  return Object_Cast<int>(member.Get());
-
-} // 
+int StringToEnumValue(const std::string & enumMemberName){
+  edm::TypeWithDict dataType(typeid(MyType), kIsEnum);
+  return dataType.stringToEnumValue(enumMemberName);
+}
 
 
 /**
@@ -70,7 +52,6 @@ int StringToEnumValue(const std::string & enumName){
 template <class MyType> 
 std::vector<int> StringToEnumValue(const std::vector<std::string> & enumNames){
   
-  using namespace ROOT::Reflex;
   using std::vector;
   using std::string;
 

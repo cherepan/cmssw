@@ -1,5 +1,5 @@
 /*
- * $Id: LaserSorter.h,v 1.4 2010/01/27 18:17:59 pgras Exp $
+ * $Id: LaserSorter.h,v 1.8 2012/10/09 19:00:18 wdd Exp $
  */
 
 #ifndef EVENT_SELECT_H
@@ -13,6 +13,7 @@
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/Provenance/interface/LuminosityBlockID.h"
@@ -45,8 +46,8 @@ class LaserSorter : public edm::EDAnalyzer {
   //inner classes
 private:
   struct IndexRecord{
-    uint32_t orbit;
-    uint32_t filePos;
+    int orbit;
+    std::streampos filePos;
     bool operator<(const IndexRecord& i) const { return orbit < i.orbit; }
   };
   
@@ -426,7 +427,9 @@ private:
    * </ul>
    */
   int lumiBlockSpan_;
-  
+
+  edm::InputTag fedRawDataCollectionTag_;
+
   /** FED ID associated to Matacq data
    */
   static const int matacqFedId_ = 655;

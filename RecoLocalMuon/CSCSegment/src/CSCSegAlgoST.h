@@ -50,28 +50,28 @@ public:
    * Build track segments in this chamber (this is where the actual
    * segment-building algorithm hides.)
    */
-  std::vector<CSCSegment> buildSegments(ChamberHitContainer rechits);
+  std::vector<CSCSegment> buildSegments(const ChamberHitContainer& rechits);
 
   /**
    * Build track segments in this chamber (this is where the actual
    * segment-building algorithm hides.)
    */
-  std::vector<CSCSegment> buildSegments2(ChamberHitContainer rechits);
+  std::vector<CSCSegment> buildSegments2(const ChamberHitContainer& rechits);
 
   /**
    * Build segments for all desired groups of hits
    */
-  std::vector<CSCSegment> run(const CSCChamber* aChamber, ChamberHitContainer rechits); 
+  std::vector<CSCSegment> run(const CSCChamber* aChamber, const ChamberHitContainer& rechits); 
 
   /**
    * Build groups of rechits that are separated in x and y to save time on the segment finding
    */
-  std::vector< std::vector<const CSCRecHit2D*> > clusterHits(const CSCChamber* aChamber, ChamberHitContainer & rechits);
+  std::vector< std::vector<const CSCRecHit2D*> > clusterHits(const CSCChamber* aChamber, const ChamberHitContainer & rechits);
 
 
    /* Build groups of rechits that are separated in strip numbers and Z to save time on the segment finding
    */
-     std::vector< std::vector<const CSCRecHit2D*> > chainHits(const CSCChamber* aChamber, ChamberHitContainer & rechits);
+     std::vector< std::vector<const CSCRecHit2D*> > chainHits(const CSCChamber* aChamber, const ChamberHitContainer & rechits);
 
 
   /**
@@ -100,7 +100,7 @@ private:
   void fillChiSquared(void);
   void fillLocalDirection(void);
   void doSlopesAndChi2(void);
-  // Duplicates are found in ME1/1a only
+  // Duplicates are found in ME1/1a only (i.e. only when ME1/1A is ganged)
   void findDuplicates(std::vector<CSCSegment>  & segments );
 
   bool isGoodToMerge(bool isME11a, ChamberHitContainer & newChain, ChamberHitContainer & oldChain);

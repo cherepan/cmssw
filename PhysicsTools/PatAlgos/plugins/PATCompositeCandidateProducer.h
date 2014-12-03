@@ -1,5 +1,5 @@
 //
-// $Id: PATCompositeCandidateProducer.h,v 1.2 2009/03/26 20:44:37 vadler Exp $
+// $Id: PATCompositeCandidateProducer.h,v 1.4 2013/02/27 23:26:56 wmtan Exp $
 //
 
 #ifndef PhysicsTools_PatAlgos_PATCompositeCandidateProducer_h
@@ -13,7 +13,7 @@
    any collection of Candidates
 
   \author   Salvatore Rappoccio
-  \version  $Id: PATCompositeCandidateProducer.h,v 1.2 2009/03/26 20:44:37 vadler Exp $
+  \version  $Id: PATCompositeCandidateProducer.h,v 1.4 2013/02/27 23:26:56 wmtan Exp $
 */
 
 
@@ -45,7 +45,7 @@ namespace pat {
       explicit PATCompositeCandidateProducer(const edm::ParameterSet & iConfig);
       ~PATCompositeCandidateProducer();
 
-      virtual void produce(edm::Event & iEvent, const edm::EventSetup & iSetup);
+      virtual void produce(edm::Event & iEvent, const edm::EventSetup& iSetup) override;
 
     private:
 

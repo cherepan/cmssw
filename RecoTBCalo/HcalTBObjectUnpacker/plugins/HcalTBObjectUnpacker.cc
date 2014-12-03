@@ -9,7 +9,6 @@ using namespace std;
 #include "RecoTBCalo/HcalTBObjectUnpacker/plugins/HcalTBObjectUnpacker.h"
 #include "DataFormats/Common/interface/EDCollection.h"
 #include "DataFormats/Common/interface/Handle.h"
-#include "FWCore/Framework/interface/Selector.h"
 #include <iostream>
 #include <fstream>
 
@@ -22,7 +21,8 @@ using namespace std;
     qadcFed_(conf.getUntrackedParameter<int>("HcalQADCFED",-1)),
     calibFile_(conf.getUntrackedParameter<string>("ConfigurationFile","")),
     tdcUnpacker_(conf.getUntrackedParameter<bool>("IncludeUnmatchedHits",false)),
-    doRunData_(false),doTriggerData_(false),doEventPosition_(false),doTiming_(false),doSourcePos_(false),doBeamADC_(false)
+    doRunData_(false),doTriggerData_(false),doEventPosition_(false),doTiming_(false),doSourcePos_(false),doBeamADC_(false),
+    fedRawDataCollectionTag_(conf.getParameter<edm::InputTag>("fedRawDataCollectionTag")) 
   {
 
     if (triggerFed_ >=0) {
@@ -93,8 +93,7 @@ using namespace std;
   {
     // Step A: Get Inputs 
     edm::Handle<FEDRawDataCollection> rawraw;  
-    //    edm::ProcessNameSelector s("PROD"); // HACK!
-    e.getByType(rawraw);           
+    e.getByLabel(fedRawDataCollectionTag_, rawraw);           
 
     // Step B: Create empty output    
     std::auto_ptr<HcalTBTriggerData>

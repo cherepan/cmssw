@@ -19,7 +19,6 @@
 #include "DataFormats/GeometryVector/interface/LocalPoint.h"
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
 
 #include "SimDataFormats/Vertex/interface/SimVertexContainer.h"
 
@@ -57,9 +56,7 @@ void HIPixelClusterVtxProducer::produce(edm::Event& ev, const edm::EventSetup& e
 
   // get pixel rechits
   edm::Handle<SiPixelRecHitCollection> hRecHits;
-  try {
-    ev.getByLabel(edm::InputTag(srcPixels_),hRecHits);
-  } catch (...) {}
+  ev.getByLabel(edm::InputTag(srcPixels_),hRecHits);
 
   // get tracker geometry
   if (hRecHits.isValid()) {

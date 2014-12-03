@@ -116,6 +116,15 @@ CaloSubdetectorGeometry::getCells( const GlobalPoint& r,
    return dss;
 }
 
+CaloSubdetectorGeometry::CellSet 
+CaloSubdetectorGeometry::getCellSet( const GlobalPoint& r, double dR ) const {
+  // stupid implementation not to be really used...
+  DetIdSet ids = getCells(r, dR);
+  CellSet cells; cells.reserve(ids.size());
+  for ( auto id : ids) cells.push_back(getGeometry(id));
+  return cells;
+}
+
 void 
 CaloSubdetectorGeometry::allocateCorners( CaloCellGeometry::CornersVec::size_type n )
 {
@@ -137,7 +146,8 @@ CaloSubdetectorGeometry::allocatePar( ParVec::size_type n,
 void
 CaloSubdetectorGeometry::getSummary( CaloSubdetectorGeometry::TrVec&  tVec ,
 				     CaloSubdetectorGeometry::IVec&   iVec ,   
-				     CaloSubdetectorGeometry::DimVec& dVec   )  const
+				     CaloSubdetectorGeometry::DimVec& dVec ,
+				     CaloSubdetectorGeometry::IVec& /*dins*/)  const
 {
    tVec.reserve( m_validIds.size()*numberOfTransformParms() ) ;
    iVec.reserve( numberOfShapes()==1 ? 1 : m_validIds.size() ) ;
@@ -213,7 +223,7 @@ CaloSubdetectorGeometry::deltaPhi( const DetId& detId ) const
 
    if( 0 == m_deltaPhi )
    {
-      const uint32_t kSize ( cgId.sizeForDenseIndexing() ) ;
+     const uint32_t kSize ( sizeForDenseIndex(detId));
       m_deltaPhi = new std::vector<CCGFloat> ( kSize ) ;
       for( uint32_t i ( 0 ) ; i != kSize ; ++i )
       {
@@ -253,17 +263,16 @@ CaloSubdetectorGeometry::deltaPhi( const DetId& detId ) const
 	 }
       }
    }
-   return (*m_deltaPhi)[ cgId.denseIndex() ] ;
+   return (*m_deltaPhi)[ indexFor(detId) ] ;
 }
 
 CCGFloat 
 CaloSubdetectorGeometry::deltaEta( const DetId& detId ) const
 {
-   const CaloGenericDetId cgId ( detId ) ;
 
    if( 0 == m_deltaEta )
    {
-      const uint32_t kSize ( cgId.sizeForDenseIndexing() ) ;
+     const uint32_t kSize ( sizeForDenseIndex(detId));
       m_deltaEta = new std::vector<CCGFloat> ( kSize ) ;
       for( uint32_t i ( 0 ) ; i != kSize ; ++i )
       {
@@ -301,5 +310,10 @@ CaloSubdetectorGeometry::deltaEta( const DetId& detId ) const
 	 }
       }
    }
-   return (*m_deltaEta)[ cgId.denseIndex() ] ;
+   return (*m_deltaEta)[ indexFor(detId)];
 }
+
+
+unsigned int CaloSubdetectorGeometry::indexFor(const DetId& id) const { return CaloGenericDetId(id).denseIndex(); }
+
+unsigned int CaloSubdetectorGeometry::sizeForDenseIndex(const DetId& id) const { return CaloGenericDetId(id).sizeForDenseIndexing(); }

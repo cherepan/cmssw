@@ -4,8 +4,8 @@
 /** \class KFTrajectoryFitter
  *  A Standard Kalman fit. Ported from ORCA
  *
- *  $Date: 2010/12/08 10:05:27 $
- *  $Revision: 1.12 $
+ *  $Date: 2012/09/01 11:08:33 $
+ *  $Revision: 1.15 $
  *  \author todorov, cerati
  */
 
@@ -16,10 +16,10 @@
 #include "TrackingTools/PatternTools/interface/Trajectory.h"
 #include "TrackingTools/TrackFitters/interface/TrajectoryFitter.h"
 #include "TrackingTools/PatternTools/interface/TrajectoryMeasurement.h"
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
 #include "TrackingTools/DetLayers/interface/DetLayerGeometry.h"
 
-class KFTrajectoryFitter : public TrajectoryFitter {
+class KFTrajectoryFitter GCC11_FINAL: public TrajectoryFitter {
 
 private:
 
@@ -70,13 +70,13 @@ public:
     }
   }
   
-  virtual std::vector<Trajectory> fit(const Trajectory& aTraj) const;
-  virtual std::vector<Trajectory> fit(const TrajectorySeed& aSeed,
-				      const RecHitContainer& hits) const;
+  Trajectory fitOne(const Trajectory& aTraj,fitType) const;
+  Trajectory fitOne(const TrajectorySeed& aSeed,
+		    const RecHitContainer& hits,fitType) const;
 
-  virtual std::vector<Trajectory> fit(const TrajectorySeed& aSeed,
-				      const RecHitContainer& hits, 
-				      const TSOS& firstPredTsos) const;
+  Trajectory fitOne(const TrajectorySeed& aSeed,
+		    const RecHitContainer& hits, 
+		    const TSOS& firstPredTsos,fitType) const;
 
   const Propagator* propagator() const {return thePropagator;}
   const TrajectoryStateUpdator* updator() const {return theUpdator;}

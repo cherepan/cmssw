@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// $Id: ValidateGeometry.cc,v 1.34 2011/01/25 09:40:07 yana Exp $
+// $Id: ValidateGeometry.cc,v 1.37 2013/02/28 14:23:43 yana Exp $
 //
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -1058,13 +1058,13 @@ ValidateGeometry::validateStripTopology(const TrackerGeometry::DetContainer& det
           for ( uint16_t strip = 1; strip <= nstrips; ++strip )
           {
             float stripAngle1 = rst->stripAngle(strip);
-            float stripAngle2 = parameters[5] + parameters[3]*strip*parameters[6];
-          
+            float stripAngle2 = parameters[3] * (parameters[5] + strip*parameters[6]);
+	    
             assert((stripAngle1-stripAngle2) == 0); 
             
             LocalPoint stripPosition = st->localPosition(strip);
             
-            float stripX = parameters[3]*parameters[4]*tan(stripAngle2);
+            float stripX = parameters[4]*tan(stripAngle2);
             radialStripLocalXs.push_back(stripPosition.x()-stripX);
           }
         }
@@ -1161,7 +1161,7 @@ ValidateGeometry::compareShape(const GeomDet* det, const float* shape)
  
   if ( const TrapezoidalPlaneBounds* tpbs = dynamic_cast<const TrapezoidalPlaneBounds*>(bounds) )
   {
-    std::vector<float> ps = tpbs->parameters();
+      std::array<const float, 4> const & ps = tpbs->parameters();
 
     assert(ps.size() == 4);
     

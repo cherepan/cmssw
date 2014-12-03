@@ -16,7 +16,6 @@ from Validation.Configuration.globalValidation_cff import *
 from HLTriggerOffline.Common.HLTValidation_cff import *
 
 
-from SimGeneral.TrackingAnalysis.trackingParticles_cfi import *
 from Validation.RecoMET.METRelValForDQM_cff import *
 from Validation.TrackingMCTruth.trackingTruthValidation_cfi import *
 from Validation.RecoTrack.TrackValidation_cff import *
@@ -29,7 +28,7 @@ from Validation.EventGenerator.BasicGenValidation_cff import *
 prevalidation = cms.Sequence( globalPrevalidation * hltassociation )
 
 validation = cms.Sequence(cms.SequencePlaceholder("mix")
-                         +basicGenTest_seq
+                         +genvalid_all
                          *globaldigisanalyze
                          *globalhitsanalyze
                          *globalrechitsanalyze
@@ -39,7 +38,7 @@ validation = cms.Sequence(cms.SequencePlaceholder("mix")
 prevalidation_preprod = cms.Sequence( preprodPrevalidation )
 
 validation_preprod = cms.Sequence(
-                          basicGenTest_seq
+                          genvalid_all
                           +trackingTruthValid
                           +tracksValidation
                           +METRelValSequence
@@ -51,7 +50,7 @@ validation_preprod = cms.Sequence(
 
 validation.remove(condDataValidation)
 validation_prod = cms.Sequence(
-             basicGenTest_seq
+             genvalid_all
             +hltvalidation_prod
             )
 

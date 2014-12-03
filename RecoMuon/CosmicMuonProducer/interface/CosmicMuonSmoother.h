@@ -3,8 +3,8 @@
 
 /** \file CosmicMuonSmoother
  *
- *  $Date: 2008/04/25 15:20:55 $
- *  $Revision: 1.5 $
+ *  $Date: 2012/09/01 12:44:22 $
+ *  $Revision: 1.7 $
  *  \author Chang Liu  -  Purdue University
  */
 
@@ -41,7 +41,11 @@ public:
   CosmicMuonSmoother(const edm::ParameterSet&,const MuonServiceProxy* service);
   virtual ~CosmicMuonSmoother();
 
-  virtual std::vector<Trajectory> trajectories(const Trajectory&) const;
+  Trajectory trajectory(const Trajectory&) const;
+
+  virtual TrajectoryContainer trajectories(const Trajectory& traj) const {
+     return TrajectorySmoother::trajectories(traj);
+  }
 
   virtual CosmicMuonSmoother* clone() const {
     return new CosmicMuonSmoother(*this);

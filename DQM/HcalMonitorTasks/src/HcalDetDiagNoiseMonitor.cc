@@ -57,7 +57,6 @@
 #include "CalibFormats/HcalObjects/interface/HcalDbRecord.h"
 
 // this is to retrieve HCAL LogicalMap
-#include "CalibCalorimetry/HcalAlgos/interface/HcalLogicalMapGenerator.h"
 #include "CondFormats/HcalObjects/interface/HcalLogicalMap.h"
 // to retrive trigger information (local runs only)
 #include "TBDataFormats/HcalTBObjects/interface/HcalTBTriggerData.h"
@@ -68,7 +67,7 @@
 using namespace reco;
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-static const float adc2fC[128]={-0.5,0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5, 10.5,11.5,12.5,
+constexpr float adc2fC[128]={-0.5,0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5, 10.5,11.5,12.5,
                    13.5,15.,17.,19.,21.,23.,25.,27.,29.5,32.5,35.5,38.5,42.,46.,50.,54.5,59.5,
 		   64.5,59.5,64.5,69.5,74.5,79.5,84.5,89.5,94.5,99.5,104.5,109.5,114.5,119.5,
 		   124.5,129.5,137.,147.,157.,167.,177.,187.,197.,209.5,224.5,239.5,254.5,272.,
@@ -79,14 +78,14 @@ static const float adc2fC[128]={-0.5,0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5, 10
 		   3109.5,3234.5,3359.5,3484.5,3609.5,3797.,4047.,4297.,4547.,4797.,5047.,
 		   5297.,5609.5,5984.5,6359.5,6734.5,7172.,7672.,8172.,8734.5,9359.5,9984.5};
 ////////////////////////////////////////////////////////////////////////////////////////////
-static std::string subdets[11]={"HBM","HBP","HEM","HEP","HO1M","HO0","HO1P","HO2M","HO2P","HFM","HFP"};
-static std::string HB_RBX[36]={
+constexpr char const *subdets[11]={"HBM","HBP","HEM","HEP","HO1M","HO0","HO1P","HO2M","HO2P","HFM","HFP"};
+constexpr char const *HB_RBX[36]={
 "HBM01","HBM02","HBM03","HBM04","HBM05","HBM06","HBM07","HBM08","HBM09","HBM10","HBM11","HBM12","HBM13","HBM14","HBM15","HBM16","HBM17","HBM18",
 "HBP01","HBP02","HBP03","HBP04","HBP05","HBP06","HBP07","HBP08","HBP09","HBP10","HBP11","HBP12","HBP13","HBP14","HBP15","HBP16","HBP17","HBP18"};
-static std::string HE_RBX[36]={
+constexpr char const *HE_RBX[36]={
 "HEM01","HEM02","HEM03","HEM04","HEM05","HEM06","HEM07","HEM08","HEM09","HEM10","HEM11","HEM12","HEM13","HEM14","HEM15","HEM16","HEM17","HEM18",
 "HEP01","HEP02","HEP03","HEP04","HEP05","HEP06","HEP07","HEP08","HEP09","HEP10","HEP11","HEP12","HEP13","HEP14","HEP15","HEP16","HEP17","HEP18"};
-static std::string HO_RBX[36]={
+constexpr char const *HO_RBX[36]={
 "HO2M02","HO2M04","HO2M06","HO2M08","HO2M10","HO2M12","HO1M02","HO1M04","HO1M06","HO1M08","HO1M10","HO1M12",
 "HO001","HO002","HO003","HO004","HO005","HO006","HO007","HO008","HO009","HO010","HO011","HO012",
 "HO1P02","HO1P04","HO1P06","HO1P08","HO1P10","HO1P12","HO2P02","HO2P04","HO2P06","HO2P08","HO2P10","HO2P12",
@@ -158,7 +157,8 @@ public:
   HcalDetDiagNoiseRMData rm[HcalFrontEndId::maxRmIndex];
 };
 
-HcalDetDiagNoiseMonitor::HcalDetDiagNoiseMonitor(const edm::ParameterSet& ps) 
+HcalDetDiagNoiseMonitor::HcalDetDiagNoiseMonitor(const edm::ParameterSet& ps) :
+  hcalTBTriggerDataTag_(ps.getParameter<edm::InputTag>("hcalTBTriggerDataTag"))
 {
   ievt_=0;
   run_number=-1;
@@ -196,7 +196,8 @@ HcalDetDiagNoiseMonitor::HcalDetDiagNoiseMonitor(const edm::ParameterSet& ps)
   L1ADataLabel_  = ps.getUntrackedParameter<edm::InputTag>("gtLabel");
   
   RMSummary = 0;
-
+  needLogicalMap_=true;
+  setupDone_ = false;
 }
 
 void HcalDetDiagNoiseMonitor::cleanup(){
@@ -223,6 +224,9 @@ void HcalDetDiagNoiseMonitor::beginRun(const edm::Run& run, const edm::EventSetu
 } 
 
 void HcalDetDiagNoiseMonitor::setup(){
+  if (setupDone_)
+    return;
+  setupDone_ = true;
   // Call base class setup
   HcalBaseDQMonitor::setup();
   if (!dbe_) return;
@@ -278,13 +282,12 @@ void HcalDetDiagNoiseMonitor::setup(){
      }
   } 
 
-  gen =new HcalLogicalMapGenerator();
-  lmap =new HcalLogicalMap(gen->createMap());
 
   return;
 } 
 
 void HcalDetDiagNoiseMonitor::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
+  getLogicalMap(iSetup);
   if (!IsAllowedCalibType()) return;
   if (LumiInOrder(iEvent.luminosityBlock())==false) return;
   HcalBaseDQMonitor::analyze(iEvent, iSetup);
@@ -295,7 +298,7 @@ void HcalDetDiagNoiseMonitor::analyze(const edm::Event& iEvent, const edm::Event
 
   // for local runs 
   edm::Handle<HcalTBTriggerData> trigger_data;
-  iEvent.getByType(trigger_data);
+  iEvent.getByLabel(hcalTBTriggerDataTag_, trigger_data);
   if(trigger_data.isValid()){
       if(trigger_data->triggerWord()>1000) isNoiseEvent=true;
       LocalRun=true;
@@ -359,7 +362,7 @@ void HcalDetDiagNoiseMonitor::analyze(const edm::Event& iEvent, const edm::Event
        if(max<adc2fC[digi->sample(i).adc()&0xff]) max=adc2fC[digi->sample(i).adc()&0xff];
        if(adc2fC[digi->sample(i).adc()&0xff]==0) n_zero++;
      }
-     HcalFrontEndId lmap_entry=lmap->getHcalFrontEndId(digi->id());
+     HcalFrontEndId lmap_entry=logicalMap_->getHcalFrontEndId(digi->id());
      int index=lmap_entry.rmIndex(); if(index>=HcalFrontEndId::maxRmIndex) continue;
      RMs[index].n_zero++;
      if(max>HPDthresholdLo){
@@ -381,7 +384,7 @@ void HcalDetDiagNoiseMonitor::analyze(const edm::Event& iEvent, const edm::Event
      if((Eta>=11 && Eta<=15 && Phi>=59 && Phi<=70) || (Eta>=5 && Eta<=10 && Phi>=47 && Phi<=58)){
        continue; // ignory SiPMs
      }else{
-       HcalFrontEndId lmap_entry=lmap->getHcalFrontEndId(digi->id());
+       HcalFrontEndId lmap_entry=logicalMap_->getHcalFrontEndId(digi->id());
        int index=lmap_entry.rmIndex(); if(index>=HcalFrontEndId::maxRmIndex) continue;
        RMs[index].n_zero++;
        if(max>HPDthresholdLo){
@@ -587,7 +590,7 @@ char str[500];
        for(int rbx=0;rbx<36;rbx++) for(int rm=1;rm<=4;rm++){
            int index=RMSummary->GetRMindex(HB_RBX[rbx],rm);
            if(index<0 || index>=HcalFrontEndId::maxRmIndex) continue;
-	       sprintf(RBX,"%s",HB_RBX[rbx].c_str());
+	       sprintf(RBX,"%s",HB_RBX[rbx]);
 	       RM=rm;
 	       VAL1=RMSummary->rm[index].n_th_hi/TIME;
 	       VAL2=RMSummary->rm[index].n_th_300/TIME;
@@ -599,7 +602,7 @@ char str[500];
        for(int rbx=0;rbx<36;rbx++) for(int rm=1;rm<=4;rm++){
            int index=RMSummary->GetRMindex(HE_RBX[rbx],rm);
            if(index<0 || index>=HcalFrontEndId::maxRmIndex) continue;
-	       sprintf(RBX,"%s",HE_RBX[rbx].c_str());
+	       sprintf(RBX,"%s",HE_RBX[rbx]);
 	       RM=rm;
 	       VAL1=RMSummary->rm[index].n_th_hi/TIME;
 	       VAL2=RMSummary->rm[index].n_th_300/TIME;
@@ -611,7 +614,7 @@ char str[500];
        for(int rbx=0;rbx<36;rbx++) for(int rm=1;rm<=4;rm++){
            int index=RMSummary->GetRMindex(HO_RBX[rbx],rm);
            if(index<0 || index>=HcalFrontEndId::maxRmIndex) continue;
-	       sprintf(RBX,"%s",HO_RBX[rbx].c_str());
+	       sprintf(RBX,"%s",HO_RBX[rbx]);
 	       RM=rm;
 	       VAL1=RMSummary->rm[index].n_th_hi/TIME;
 	       VAL2=RMSummary->rm[index].n_th_300/TIME;

@@ -16,6 +16,7 @@
 #include "FWCore/PluginManager/interface/ProblemTracker.h"
 #include "FWCore/RootAutoLibraryLoader/interface/RootAutoLibraryLoader.h"
 #include "FWCore/Utilities/interface/Exception.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 
 #include <cppunit/extensions/HelperMacros.h>
 
@@ -83,7 +84,7 @@ namespace {
                                      iDesc.productInstanceName() + "-" + name_,
                                      "",
                                      iDesc.parameterSetID(),
-                                     iDesc.typeID()
+                                     iDesc.unwrappedType()
                                     );
          reg_->addProduct(prod);
       }
@@ -109,12 +110,12 @@ void testProductRegistry::setUp() {
   intBranch_.reset(new edm::BranchDescription(edm::InEvent, "label", "PROD",
                                           "int", "int", "int",
                                           "", pset.id(),
-                                          edm::TypeID(typeid(int))));
+                                          edm::TypeWithDict(typeid(int))));
 
   floatBranch_.reset(new edm::BranchDescription(edm::InEvent, "label", "PROD",
                                             "float", "float", "float",
                                             "", pset.id(),
-                                            edm::TypeID(typeid(float))));
+                                            edm::TypeWithDict(typeid(float))));
 
 }
 
@@ -205,7 +206,7 @@ void testProductRegistry:: testProductRegistration() {
       "process = cms.Process('TEST')\n"
       "process.maxEvents = cms.untracked.PSet(\n"
       "  input = cms.untracked.int32(-1))\n"
-      "process.source = cms.Source('DummySource')\n"
+      "process.source = cms.Source('EmptySource')\n"
       "process.m1 = cms.EDProducer('TestPRegisterModule1')\n"
       "process.m2 = cms.EDProducer('TestPRegisterModule2')\n"
       "process.p = cms.Path(process.m1*process.m2)\n");

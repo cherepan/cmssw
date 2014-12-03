@@ -4,7 +4,7 @@ import FWCore.ParameterSet.Config as cms
 import RecoJets.FFTJetProducers.mixed_calib_calo_ttbar_result as calib_calo
 
 # FFTJet puleup estimator module configuration
-fftjet_pileup_estimator_calo = cms.EDProducer(
+fftjetPileupEstimatorCalo = cms.EDProducer(
     "FFTJetPileupEstimator",
     #
     # Label for the input info
@@ -28,5 +28,13 @@ fftjet_pileup_estimator_calo = cms.EDProducer(
     #
     # Calibration and uncertainty curves
     calibrationCurve = calib_calo.calibrationCurve,
-    uncertaintyCurve = calib_calo.uncertaintyCurve
+    uncertaintyCurve = calib_calo.uncertaintyCurve,
+    #
+    # Parameters related to calibration curve access from DB
+    calibTableRecord = cms.string("calibTableRecord"),
+    calibTableCategory = cms.string("calibTableCategory"),
+    uncertaintyZonesName = cms.string("uncertaintyZonesName"),
+    calibrationCurveName = cms.string("calibrationCurveName"),
+    uncertaintyCurveName = cms.string("uncertaintyCurveName"),
+    loadCalibFromDB = cms.bool(False)
 )

@@ -3,15 +3,14 @@
 
 #include "DQM/HcalMonitorTasks/interface/HcalBaseDQMonitor.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
-#include "CondFormats/HcalObjects/interface/HcalLogicalMap.h"
 
 #define RECHITMON_TIME_MIN -250
 #define RECHITMON_TIME_MAX 250
 
 /** \class HcalRecHitMonitor
   *
-  * $Date: 2010/11/11 09:31:21 $
-  * $Revision: 1.50 $
+  * $Date: 2012/11/12 20:52:11 $
+  * $Revision: 1.53 $
   * \author J. Temple - Univ. of Maryland
   */
 
@@ -62,8 +61,6 @@ class HcalRecHitMonitor: public HcalBaseDQMonitor {
   double HEETThreshold_;
   double HOETThreshold_;
   double HFETThreshold_;
-
-  HcalLogicalMap* logicalMap;
 
   // Basic Histograms
   EtaPhiHists OccupancyByDepth;
@@ -230,7 +227,8 @@ class HcalRecHitMonitor: public HcalBaseDQMonitor {
   MonitorElement* HFP_HFM_Energy;
 
   bool HBpresent_, HEpresent_, HOpresent_, HFpresent_;
-
+  bool setupDone_;
+  
   edm::InputTag hbheRechitLabel_, hoRechitLabel_, hfRechitLabel_;
   edm::InputTag l1gtLabel_;
   edm::InputTag hltresultsLabel_;

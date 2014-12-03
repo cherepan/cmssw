@@ -5,6 +5,8 @@
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include <vector>
 
+#include "FWCore/Utilities/interface/GCC11Compatibility.h"
+
 class CaloSubdetectorGeometry;
 class CaloCellGeometry;
 
@@ -13,8 +15,8 @@ class CaloCellGeometry;
 Interface class to the geometry information for all calorimetry 
 subdetectors.
 
-$Date: 2009/09/10 20:41:25 $
-$Revision: 1.6 $
+$Date: 2012/11/01 13:36:24 $
+$Revision: 1.8 $
 \author J. Mans and P. Meridiani
 */
 

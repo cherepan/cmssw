@@ -1,7 +1,7 @@
 /** \file AlignableParameterBuilder.cc
  *
- *  $Date: 2010/09/10 11:36:58 $
- *  $Revision: 1.18 $
+ *  $Date: 2013/01/07 20:56:25 $
+ *  $Revision: 1.20 $
 
 */
 
@@ -69,6 +69,11 @@ AlignmentParameterBuilder::AlignmentParameterBuilder(AlignableTracker* alignable
   theAlignableExtras(alignableExtras)
 {
   this->addAllSelections(pSet);
+}
+
+const AlignableTracker* AlignmentParameterBuilder::alignableTracker() const
+{
+  return theAlignableTracker;
 }
 
 //__________________________________________________________________________________________________

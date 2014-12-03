@@ -13,7 +13,7 @@
 //
 // Original Author:  Chris D Jones
 //         Created:  Wed Sep 26 08:27:23 EDT 2007
-// $Id: DumpSimGeometry.cc,v 1.1 2010/08/24 13:20:15 matevz Exp $
+// $Id: DumpSimGeometry.cc,v 1.3 2012/08/01 04:09:50 amraktad Exp $
 //
 //
 
@@ -85,7 +85,7 @@ DumpSimGeometry::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
    ESTransientHandle<TGeoManager> geoh;
    iSetup.get<DisplayGeomRecord>().get(geoh);
-   TGeoManager *geom = const_cast<TGeoManager*>(geoh.product());
+   const TGeoManager *geom = geoh.product(); // const_cast<TGeoManager*>(geoh.product());
 
    int level = 1 + geom->GetTopVolume()->CountNodes(100, 3);
 

@@ -4,8 +4,8 @@
 /** \class MultiTrackValidatorBase
  *  Base class for analyzers that produces histrograms to validate Track Reconstruction performances
  *
- *  $Date: 2010/09/13 14:56:48 $
- *  $Revision: 1.28 $
+ *  $Date: 2012/12/03 11:19:34 $
+ *  $Revision: 1.30 $
  *  \author cerati
  */
 
@@ -18,13 +18,12 @@
 #include "MagneticField/Engine/interface/MagneticField.h" 
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h" 
 
-#include "SimTracker/TrackAssociation/interface/TrackAssociatorByChi2.h"
-
+#include "SimTracker/TrackAssociation/interface/TrackAssociatorBase.h"
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
 
 #include "CommonTools/RecoAlgos/interface/RecoTrackSelector.h"
-#include "CommonTools/RecoAlgos/interface/TrackingParticleSelector.h"
+#include "SimGeneral/TrackingAnalysis/interface/TrackingParticleSelector.h"
 #include "CommonTools/RecoAlgos/interface/CosmicTrackingParticleSelector.h"
 
 #include <DQMServices/Core/interface/DQMStore.h>

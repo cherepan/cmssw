@@ -3,6 +3,8 @@
 #include "TFile.h"
 #include "TTree.h"
 
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
@@ -23,6 +25,8 @@
 #include "Alignment/TrackerAlignment/interface/AlignableTracker.h"
 #include "Alignment/CommonAlignment/interface/AlignableExtras.h"
 #include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 
 #include "Alignment/HIPAlignmentAlgorithm/interface/HIPAlignmentAlgorithm.h"
 
@@ -78,12 +82,8 @@ HIPAlignmentAlgorithm::HIPAlignmentAlgorithm(const edm::ParameterSet& cfg):
   theEventPrescale = cfg.getParameter<int>("eventPrescale");
   theCurrentPrescale = theEventPrescale;
 	
-  AlignableObjectId dummy;
-	
-  const std::vector<std::string>& levels = cfg.getUntrackedParameter<std::vector<std::string> >("surveyResiduals");
-	
-  for (unsigned int l = 0; l < levels.size(); ++l) {
-    theLevels.push_back( dummy.nameToType(levels[l]) );
+  for (std::string &s : cfg.getUntrackedParameter<std::vector<std::string> >("surveyResiduals")) {
+    theLevels.push_back(AlignableObjectId::stringToId(s) );
   }
 	
   edm::LogWarning("Alignment") << "[HIPAlignmentAlgorithm] constructed.";
@@ -181,7 +181,7 @@ void HIPAlignmentAlgorithm::startNewLoop( void )
   // try to read in alignment parameters from a previous iteration
   AlignablePositions theAlignablePositionsFromFile =
     theIO.readAlignableAbsolutePositions(theAlignables,
-					 (char*)salignedfile.c_str(),-1,ioerr);
+					 salignedfile.c_str(),-1,ioerr);
 	
   int numAlignablesFromFile = theAlignablePositionsFromFile.size();
 	
@@ -195,12 +195,12 @@ void HIPAlignmentAlgorithm::startNewLoop( void )
     // get true (de-misaligned positions) and write to root file
     // hardcoded iteration=1
     theIO.writeAlignableOriginalPositions(theAlignables,
-					  (char*)struefile.c_str(),1,false,ioerr);
+					  struefile.c_str(),1,false,ioerr);
 		
     // get misaligned positions and write to root file
     // hardcoded iteration=1
     theIO.writeAlignableAbsolutePositions(theAlignables,
-					  (char*)smisalignedfile.c_str(),1,false,ioerr);
+					  smisalignedfile.c_str(),1,false,ioerr);
 		
   }
 	
@@ -300,7 +300,7 @@ void HIPAlignmentAlgorithm::startNewLoop( void )
 
 // Call at end of job ---------------------------------------------------------
 
-void HIPAlignmentAlgorithm::terminate(void)
+void HIPAlignmentAlgorithm::terminate(const edm::EventSetup& iSetup)
 {
 	
   edm::LogWarning("Alignment") << "[HIPAlignmentAlgorithm] Terminating";
@@ -365,7 +365,7 @@ void HIPAlignmentAlgorithm::terminate(void)
 	
   // write user variables
   HIPUserVariablesIORoot HIPIO;
-  HIPIO.writeHIPUserVariables (theAlignables,(char*)suvarfile.c_str(),
+  HIPIO.writeHIPUserVariables (theAlignables,suvarfile.c_str(),
 			       theIteration,false,ioerr);
 	
   // now calculate alignment corrections ...
@@ -394,17 +394,17 @@ void HIPAlignmentAlgorithm::terminate(void)
   edm::LogWarning("Alignment") << "[HIPAlignmentAlgorithm::terminate] Aligned units: " << ialigned;
 	
   // fill alignable wise root tree
-  fillRoot();
+  fillRoot(iSetup);
 	
   edm::LogWarning("Alignment") << "[HIPAlignmentAlgorithm] Writing aligned parameters to file: " << theAlignables.size();
 	
   // write new absolute positions to disk
   theIO.writeAlignableAbsolutePositions(theAlignables,
-					(char*)salignedfile.c_str(),theIteration,false,ioerr);
+					salignedfile.c_str(),theIteration,false,ioerr);
 	
   // write alignment parameters to disk
   theIO.writeAlignmentParameters(theAlignables, 
-				 (char*)sparameterfile.c_str(),theIteration,false,ioerr);
+				 sparameterfile.c_str(),theIteration,false,ioerr);
 	
   // write iteration number to file
   writeIterationFile(siterationfile,theIteration);
@@ -910,7 +910,7 @@ int HIPAlignmentAlgorithm::readIterationFile(string filename)
 {
   int result;
   
-  ifstream inIterFile((char*)filename.c_str(), ios::in);
+  ifstream inIterFile(filename.c_str(), ios::in);
   if (!inIterFile) {
     edm::LogError("Alignment") << "[HIPAlignmentAlgorithm::readIterationFile] ERROR! "
 			       << "Unable to open Iteration file";
@@ -930,7 +930,7 @@ int HIPAlignmentAlgorithm::readIterationFile(string filename)
 
 void HIPAlignmentAlgorithm::writeIterationFile(string filename,int iter)
 {
-  ofstream outIterFile((char*)(filename.c_str()), ios::out);
+  ofstream outIterFile((filename.c_str()), ios::out);
   if (!outIterFile) {
     edm::LogError("Alignment") << "[HIPAlignmentAlgorithm::writeIterationFile] ERROR: Unable to write Iteration file";
   }
@@ -1093,11 +1093,16 @@ void HIPAlignmentAlgorithm::bookRoot(void)
 // ----------------------------------------------------------------------------
 // fill alignable-wise root tree
 
-void HIPAlignmentAlgorithm::fillRoot(void)
+void HIPAlignmentAlgorithm::fillRoot(const edm::EventSetup& iSetup)
 {
   theFile2->cd();
 	
   int naligned=0;
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  iSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
 	
   for (vector<Alignable*>::const_iterator it=theAlignables.begin();
        it!=theAlignables.end();
@@ -1113,7 +1118,7 @@ void HIPAlignmentAlgorithm::fillRoot(void)
       m2_Nhit = uservar->nhit;
 			
       // get type/layer
-      std::pair<int,int> tl = theAlignmentParameterStore->typeAndLayer(ali);
+      std::pair<int,int> tl = theAlignmentParameterStore->typeAndLayer(ali, tTopo);
       m2_Type = tl.first;
       m2_Layer = tl.second;
 			
@@ -1303,7 +1308,7 @@ void HIPAlignmentAlgorithm::collector(void)
     string uvfile = theCollectorPath+"/job"+str+"/IOUserVariables.root";
 		
     vector<AlignmentUserVariables*> uvarvec = 
-      HIPIO.readHIPUserVariables(theAlignables, (char*)uvfile.c_str(),
+      HIPIO.readHIPUserVariables(theAlignables, uvfile.c_str(),
 				 theIteration, ioerr);
     
     if (ioerr!=0) { 

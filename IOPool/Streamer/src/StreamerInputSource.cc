@@ -6,7 +6,6 @@
 
 #include "FWCore/Framework/interface/EventPrincipal.h"
 #include "FWCore/Framework/interface/FileBlock.h"
-#include "FWCore/Framework/src/PrincipalCache.h"
 #include "FWCore/ParameterSet/interface/FillProductRegistryTransients.h"
 #include "DataFormats/Provenance/interface/BranchDescription.h"
 #include "DataFormats/Provenance/interface/ProductProvenance.h"
@@ -14,6 +13,7 @@
 #include "DataFormats/Provenance/interface/LuminosityBlockAuxiliary.h"
 #include "DataFormats/Provenance/interface/RunAuxiliary.h"
 #include "DataFormats/Provenance/interface/EventSelectionID.h"
+#include "DataFormats/Provenance/interface/BranchIDListHelper.h"
 #include "DataFormats/Provenance/interface/BranchListIndex.h"
 
 #include "zlib.h"
@@ -27,7 +27,6 @@
 #include "FWCore/Utilities/interface/ThreadSafeRegistry.h"
 #include "FWCore/Utilities/interface/Adler32Calculator.h"
 
-#include "DataFormats/Provenance/interface/BranchIDListRegistry.h"
 #include "DataFormats/Provenance/interface/ProductRegistry.h"
 #include "DataFormats/Provenance/interface/ProcessConfigurationRegistry.h"
 #include "DataFormats/Provenance/interface/ProcessHistoryRegistry.h"
@@ -49,31 +48,25 @@ namespace edm {
   StreamerInputSource::StreamerInputSource(
                     ParameterSet const& pset,
                     InputSourceDescription const& desc):
-    InputSource(pset, desc),
-    // The default value for the following parameter get defined in at least one derived class
-    // where it has a different default value.
-    inputFileTransitionsEachEvent_(
-      pset.getUntrackedParameter<bool>("inputFileTransitionsEachEvent", false)),
-    newRun_(true),
-    newLumi_(true),
-    eventCached_(false),
+    RawInputSource(pset, desc),
     tc_(getTClass(typeid(SendEvent))),
     dest_(init_size),
     xbuf_(TBuffer::kRead, init_size),
-    runEndingFlag_(false),
-    productGetter_() {
+    sendEvent_(),
+    productGetter_(),
+    adjustEventToNewProductRegistry_(false) {
   }
 
   StreamerInputSource::~StreamerInputSource() {}
 
   // ---------------------------------------
-  boost::shared_ptr<FileBlock>
+  std::unique_ptr<FileBlock>
   StreamerInputSource::readFile_() {
-    return boost::shared_ptr<FileBlock>(new FileBlock);
+    return std::unique_ptr<FileBlock>(new FileBlock);
   }
 
   void
-  StreamerInputSource::mergeIntoRegistry(SendJobHeader const& header, ProductRegistry& reg, bool subsequent) {
+  StreamerInputSource::mergeIntoRegistry(SendJobHeader const& header, ProductRegistry& reg, BranchIDListHelper& branchIDListHelper, bool subsequent) {
 
     SendDescs const& descs = header.descs();
 
@@ -87,14 +80,14 @@ namespace edm {
       if (!mergeInfo.empty()) {
         throw cms::Exception("MismatchedInput","RootInputFileSequence::previousEvent()") << mergeInfo;
       }
-      BranchIDListHelper::updateFromInput(header.branchIDLists(), std::string());
+      branchIDListHelper.updateFromInput(header.branchIDLists());
     } else {
       declareStreamers(descs);
       buildClassCache(descs);
       loadExtraClasses();
       reg.updateFromInput(descs);
       fillProductRegistryTransients(header.processConfigurations(), reg);
-      BranchIDListHelper::updateFromInput(header.branchIDLists(), std::string());
+      branchIDListHelper.updateFromInput(header.branchIDLists());
     }
   }
 
@@ -121,68 +114,6 @@ namespace edm {
         FDEBUG(6) << "BuildReadData: " << real_name << std::endl;
         doBuildRealData(real_name);
     }
-  }
-
-  boost::shared_ptr<RunAuxiliary>
-  StreamerInputSource::readRunAuxiliary_() {
-    assert(newRun_);
-    assert(runAuxiliary());
-    newRun_ = false;
-    return runAuxiliary();
-  }
-
-  boost::shared_ptr<LuminosityBlockAuxiliary>
-  StreamerInputSource::readLuminosityBlockAuxiliary_() {
-    assert(!newRun_);
-    assert(newLumi_);
-    assert(luminosityBlockAuxiliary());
-    newLumi_ = false;
-    return luminosityBlockAuxiliary();
-  }
-
-  EventPrincipal*
-  StreamerInputSource::readEvent_() {
-    assert(!newRun_);
-    assert(!newLumi_);
-    assert(eventCached_);
-    eventCached_ = false;
-    eventPrincipalCache()->setLuminosityBlockPrincipal(luminosityBlockPrincipal());
-    return eventPrincipalCache();
-  }
-
-  InputSource::ItemType
-  StreamerInputSource::getNextItemType() {
-    if (runEndingFlag_) {
-      return IsStop;
-    }
-    if(newRun_ && runAuxiliary()) {
-      return IsRun;
-    }
-    if(newLumi_ && luminosityBlockAuxiliary()) {
-      return IsLumi;
-    }
-    if (eventCached_) {
-      return IsEvent;
-    }
-    if (inputFileTransitionsEachEvent_) {
-      resetRunAuxiliary();
-      resetLuminosityBlockAuxiliary();
-    }
-    read();
-    if (!eventCached_) {
-      return IsStop;
-    } else {
-      runEndingFlag_ = false;
-      if (inputFileTransitionsEachEvent_) {
-        return IsFile;
-      }
-    }
-    if(newRun_) {
-      return IsRun;
-    } else if(newLumi_) {
-      return IsLumi;
-    }
-    return IsEvent;
   }
 
   /**
@@ -241,9 +172,9 @@ namespace edm {
   StreamerInputSource::deserializeAndMergeWithRegistry(InitMsgView const& initView, bool subsequent) {
      std::auto_ptr<SendJobHeader> sd = deserializeRegistry(initView);
      ProcessConfigurationVector const& pcv = sd->processConfigurations();
-     mergeIntoRegistry(*sd, productRegistryUpdate(), subsequent);
+     mergeIntoRegistry(*sd, productRegistryUpdate(), *branchIDListHelper(), subsequent);
      if (subsequent) {
-       principalCache().adjustEventToNewProductRegistry(productRegistry());
+       adjustEventToNewProductRegistry_ = true;
      }
      SendJobHeader::ParameterSetMap const& psetMap = sd->processParameterSet();
      pset::Registry& psetRegistry = *pset::Registry::instance();
@@ -259,9 +190,9 @@ namespace edm {
   }
 
   /**
-   * Deserializes the specified event message into an EventPrincipal object.
+   * Deserializes the specified event message.
    */
-  EventPrincipal*
+  void
   StreamerInputSource::deserializeEvent(EventMsgView const& eventView) {
     if(eventView.code() != Header::EVENT)
       throw cms::Exception("StreamTranslation","Event deserialization error")
@@ -275,7 +206,7 @@ namespace edm {
          << eventView.eventLength() << " "
          << eventView.eventData()
          << std::endl;
-    EventSourceSentry(*this);
+    EventSourceSentry sentry(*this);
     // uncompress if we need to
     // 78 was a dummy value (for no uncompressed) - should be 0 for uncompressed
     // need to get rid of this when 090 MTCC streamers are gotten rid of
@@ -313,41 +244,48 @@ namespace edm {
     RootDebug tracer(10,10);
 
     setRefCoreStreamer(&productGetter_);
-    std::auto_ptr<SendEvent> sd((SendEvent*)xbuf_.ReadObjectAny(tc_));
+    sendEvent_ = std::unique_ptr<SendEvent>((SendEvent*)xbuf_.ReadObjectAny(tc_));
     setRefCoreStreamer();
 
-    if(sd.get()==0) {
+    if(sendEvent_.get()==0) {
         throw cms::Exception("StreamTranslation","Event deserialization error")
           << "got a null event from input stream\n";
     }
-    ProcessHistoryRegistry::instance()->insertMapped(sd->processHistory());
+    ProcessHistoryRegistry::instance()->insertMapped(sendEvent_->processHistory());
 
-    FDEBUG(5) << "Got event: " << sd->aux().id() << " " << sd->products().size() << std::endl;
-    if(runAuxiliary().get() == 0 || runAuxiliary()->run() != sd->aux().run()) {
-      newRun_ = newLumi_ = true;
-      RunAuxiliary* runAuxiliary = new RunAuxiliary(sd->aux().run(), sd->aux().time(), Timestamp::invalidTimestamp());
-      runAuxiliary->setProcessHistoryID(sd->processHistory().id());
+    FDEBUG(5) << "Got event: " << sendEvent_->aux().id() << " " << sendEvent_->products().size() << std::endl;
+    if(runAuxiliary().get() == 0 || runAuxiliary()->run() != sendEvent_->aux().run()) {
+      RunAuxiliary* runAuxiliary = new RunAuxiliary(sendEvent_->aux().run(), sendEvent_->aux().time(), Timestamp::invalidTimestamp());
+      runAuxiliary->setProcessHistoryID(sendEvent_->processHistory().id());
       setRunAuxiliary(runAuxiliary);
       resetLuminosityBlockAuxiliary();
     }
     if(!luminosityBlockAuxiliary() || luminosityBlockAuxiliary()->luminosityBlock() != eventView.lumi()) {
       LuminosityBlockAuxiliary* luminosityBlockAuxiliary =
-        new LuminosityBlockAuxiliary(runAuxiliary()->run(), eventView.lumi(), sd->aux().time(), Timestamp::invalidTimestamp());
-      luminosityBlockAuxiliary->setProcessHistoryID(sd->processHistory().id());
+        new LuminosityBlockAuxiliary(runAuxiliary()->run(), eventView.lumi(), sendEvent_->aux().time(), Timestamp::invalidTimestamp());
+      luminosityBlockAuxiliary->setProcessHistoryID(sendEvent_->processHistory().id());
       setLuminosityBlockAuxiliary(luminosityBlockAuxiliary);
-      newLumi_ = true;
     }
+    setEventCached();
+  }
 
-    boost::shared_ptr<EventSelectionIDVector> ids(new EventSelectionIDVector(sd->eventSelectionIDs()));
-    boost::shared_ptr<BranchListIndexes> indexes(new BranchListIndexes(sd->branchListIndexes()));
-    BranchIDListHelper::fixBranchListIndexes(*indexes);
-    eventPrincipalCache()->fillEventPrincipal(sd->aux(), boost::shared_ptr<LuminosityBlockPrincipal>(), ids, indexes);
-    productGetter_.setEventPrincipal(eventPrincipalCache());
-    eventCached_ = true;
+  EventPrincipal *
+  StreamerInputSource::read(EventPrincipal& eventPrincipal) {
+    if(adjustEventToNewProductRegistry_) {
+      eventPrincipal.adjustIndexesAfterProductRegistryAddition();
+      bool eventOK = eventPrincipal.adjustToNewProductRegistry(*productRegistry());
+      assert(eventOK);
+      adjustEventToNewProductRegistry_ = false;
+    }
+    boost::shared_ptr<EventSelectionIDVector> ids(new EventSelectionIDVector(sendEvent_->eventSelectionIDs()));
+    boost::shared_ptr<BranchListIndexes> indexes(new BranchListIndexes(sendEvent_->branchListIndexes()));
+    branchIDListHelper()->fixBranchListIndexes(*indexes);
+    eventPrincipal.fillEventPrincipal(sendEvent_->aux(), ids, indexes);
+    productGetter_.setEventPrincipal(&eventPrincipal);
 
     // no process name list handling
 
-    SendProds & sps = sd->products();
+    SendProds & sps = sendEvent_->products();
     for(SendProds::iterator spi = sps.begin(), spe = sps.end(); spi != spe; ++spi) {
         FDEBUG(10) << "check prodpair" << std::endl;
         if(spi->desc() == 0)
@@ -363,20 +301,20 @@ namespace edm {
         ProductProvenance productProvenance(spi->branchID(), *spi->parents());
 
         if(spi->prod() != 0) {
-          FDEBUG(10) << "addgroup next " << spi->branchID() << std::endl;
-          eventPrincipalCache()->putOnRead(branchDesc, spi->prod(), productProvenance);
-          FDEBUG(10) << "addgroup done" << std::endl;
+          FDEBUG(10) << "addproduct next " << spi->branchID() << std::endl;
+          eventPrincipal.putOnRead(branchDesc, spi->prod(), productProvenance);
+          FDEBUG(10) << "addproduct done" << std::endl;
         } else {
-          FDEBUG(10) << "addgroup empty next " << spi->branchID() << std::endl;
-          eventPrincipalCache()->putOnRead(branchDesc, spi->prod(), productProvenance);
-          FDEBUG(10) << "addgroup empty done" << std::endl;
+          FDEBUG(10) << "addproduct empty next " << spi->branchID() << std::endl;
+          eventPrincipal.putOnRead(branchDesc, spi->prod(), productProvenance);
+          FDEBUG(10) << "addproduct empty done" << std::endl;
         }
         spi->clear();
     }
 
-    FDEBUG(10) << "Size = " << eventPrincipalCache()->size() << std::endl;
+    FDEBUG(10) << "Size = " << eventPrincipal.size() << std::endl;
 
-    return eventPrincipalCache();
+    return &eventPrincipal;
   }
 
   /**
@@ -428,10 +366,8 @@ namespace edm {
      // so an enable command will work
      resetLuminosityBlockAuxiliary();
      resetRunAuxiliary();
-     newRun_ = newLumi_ = true;
-     assert(!eventCached_);
+     assert(!eventCached());
      reset();
-     runEndingFlag_ = false;
   }
 
   void StreamerInputSource::setRun(RunNumber_t) {
@@ -459,8 +395,6 @@ namespace edm {
 
   void
   StreamerInputSource::fillDescription(ParameterSetDescription& desc) {
-    // The default value for "inputFileTransitionsEachEvent" gets defined in the derived class
-    // as it depends on the derived class. So, we cannot redefine it here.
-    InputSource::fillDescription(desc);
+    RawInputSource::fillDescription(desc);
   }
 }

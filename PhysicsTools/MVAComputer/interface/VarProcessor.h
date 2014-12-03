@@ -9,13 +9,11 @@
 //
 // Author:	Christophe Saout <christophe.saout@cern.ch>
 // Created:     Sat Apr 24 15:18 CEST 2007
-// $Id: VarProcessor.h,v 1.8 2009/05/11 16:01:16 saout Exp $
+// $Id: VarProcessor.h,v 1.11 2013/05/23 17:02:16 gartung Exp $
 //
 
 #include <algorithm>
 #include <vector>
-
-#include "FWCore/PluginManager/interface/PluginFactory.h"
 
 #include "PhysicsTools/MVAComputer/interface/ProcessRegistry.h"
 #include "PhysicsTools/MVAComputer/interface/CalibrationFwd.h"
@@ -70,7 +68,7 @@ class VarProcessor :
 
 		struct Context { virtual ~Context() {} };
 
-		ConfigCtx(std::vector<Variable::Flags> flags);
+		ConfigCtx(const std::vector<Variable::Flags>& flags);
 		~ConfigCtx() { delete ctx; }
 
 		inline size_type size() const { return configs.size(); }
@@ -116,8 +114,9 @@ class VarProcessor :
 	                        unsigned int &nOffset) const
 	{ return kStop; }
 
+   //used to create a PluginFactory
 	struct Dummy {};
-	typedef edmplugin::PluginFactory<Dummy*()> PluginFactory;
+   typedef Dummy* PluginFunctionPrototype();
 
     protected:
 	/** \class ConfIterator
@@ -309,9 +308,5 @@ VarProcessor *ProcessRegistry<VarProcessor, Calibration::VarProcessor,
 
 } // namespace PhysicsTools
 
-#define MVA_COMPUTER_DEFINE_PLUGIN(T) \
-	DEFINE_EDM_PLUGIN(::PhysicsTools::VarProcessor::PluginFactory, \
-	                  ::PhysicsTools::VarProcessor::Dummy, \
-	                  "VarProcessor/" #T)
 
 #endif // PhysicsTools_MVAComputer_VarProcessor_h

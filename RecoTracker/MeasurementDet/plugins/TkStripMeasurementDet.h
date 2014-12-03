@@ -3,7 +3,9 @@
 
 #include "TrackingTools/MeasurementDet/interface/MeasurementDet.h"
 #include "TkMeasurementDetSet.h"
+
 #include "RecoLocalTracker/ClusterParameterEstimator/interface/StripClusterParameterEstimator.h"
+#include "DataFormats/TrackerRecHit2D/interface/OmniClusterRef.h"
 #include "DataFormats/SiStripCluster/interface/SiStripClusterCollection.h"
 #include "Geometry/TrackerGeometryBuilder/interface/StripGeomDetUnit.h"
 #include "DataFormats/Common/interface/DetSetVector.h"
@@ -14,12 +16,13 @@
 #include "CondFormats/SiStripObjects/interface/SiStripBadStrip.h"
 #include "DataFormats/Common/interface/RefGetter.h"
 #include "DataFormats/TrackerRecHit2D/interface/SiStripRecHit2D.h"
+#include "RecoTracker/TransientTrackingRecHit/interface/TSiStripRecHit2DLocalPos.h"
 
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
 
 class TransientTrackingRecHit;
 
-class TkStripMeasurementDet : public MeasurementDet {
+class TkStripMeasurementDet GCC11_FINAL : public MeasurementDet {
 public:
   
   typedef StripClusterParameterEstimator::LocalValues    LocalValues;
@@ -80,27 +83,57 @@ public:
   virtual RecHitContainer recHits( const TrajectoryStateOnSurface&) const;
   void simpleRecHits( const TrajectoryStateOnSurface& ts, std::vector<SiStripRecHit2D> &result) const ;
   
-  virtual std::vector<TrajectoryMeasurement> 
-  fastMeasurements( const TrajectoryStateOnSurface& stateOnThisDet, 
-		    const TrajectoryStateOnSurface& startingState, 
-		    const Propagator&, 
-		    const MeasurementEstimator&) const;
+  virtual bool recHits( const TrajectoryStateOnSurface& stateOnThisDet, const MeasurementEstimator& est,
+			RecHitContainer & result, std::vector<float> & diffs) const;
+  
+  virtual bool measurements( const TrajectoryStateOnSurface& stateOnThisDet,
+			     const MeasurementEstimator& est,
+			     TempMeasurements & result) const;
   
   const StripGeomDetUnit& specificGeomDet() const {return static_cast<StripGeomDetUnit const &>(fastGeomDet());}
   
+
+  template<class ClusterRefT>
   TransientTrackingRecHit::RecHitPointer
-  buildRecHit( const SiStripClusterRef&, const TrajectoryStateOnSurface& ltp) const;
+  buildRecHit( const ClusterRefT &cluster, const TrajectoryStateOnSurface& ltp) const {
+    const GeomDetUnit& gdu( specificGeomDet());
+    LocalValues lv = cpe()->localParameters( *cluster, gdu, ltp);
+    return TSiStripRecHit2DLocalPos::build( lv.first, lv.second, &fastGeomDet(), cluster, cpe());
+  }
   
-  TransientTrackingRecHit::RecHitPointer
-  buildRecHit( const SiStripRegionalClusterRef&, const TrajectoryStateOnSurface& ltp) const;
   
+  template<class ClusterRefT>
+    void
+    buildRecHits( const ClusterRefT& cluster, const TrajectoryStateOnSurface& ltp,  const RecHitContainer& _res) const {
+    RecHitContainer res = _res;
+    const GeomDetUnit& gdu( specificGeomDet());
+    VLocalValues vlv = cpe()->localParametersV( *cluster, gdu, ltp);
+    for(VLocalValues::const_iterator it=vlv.begin();it!=vlv.end();++it)
+      res.push_back(TSiStripRecHit2DLocalPos::build( it->first, it->second, &fastGeomDet(), cluster, cpe()));
+  }
   
-  TkStripMeasurementDet::RecHitContainer 
-  buildRecHits( const SiStripClusterRef&, const TrajectoryStateOnSurface& ltp) const;
-  
-  TkStripMeasurementDet::RecHitContainer 
-  buildRecHits( const SiStripRegionalClusterRef&, const TrajectoryStateOnSurface& ltp) const;
-  
+
+  template<class ClusterRefT>
+  bool filteredRecHits( const ClusterRefT& cluster, const TrajectoryStateOnSurface& ltp,  const MeasurementEstimator& est, 
+			RecHitContainer & result, std::vector<float> & diffs) const {
+    if (isMasked(*cluster)) return true;
+    const GeomDetUnit& gdu( specificGeomDet());
+    if (!accept(cluster)) return true;
+    VLocalValues const & vlv = cpe()->localParametersV( *cluster, gdu, ltp);
+    bool isCompatible(false);
+    for(auto vl : vlv) {
+      auto && recHit  = TSiStripRecHit2DLocalPos::build( vl.first, vl.second, &fastGeomDet(), cluster, cpe()); 
+      std::pair<bool,double> diffEst = est.estimate(ltp, *recHit);
+      if ( diffEst.first ) {
+	result.push_back(std::move(recHit));
+	diffs.push_back(diffEst.second);
+	isCompatible = true;
+      }
+    }
+    return isCompatible;
+  }
+
+
   
   /** \brief Turn on/off the module for reconstruction, for the full run or lumi (using info from DB, usually).
       This also resets the 'setActiveThisEvent' to true */
@@ -163,15 +196,23 @@ private:
     return theDets().isMasked(index(), cluster);
   }
   
+
   template<class ClusterRefT>
   void buildSimpleRecHit( const ClusterRefT& cluster,
 			  const TrajectoryStateOnSurface& ltp,
-			  std::vector<SiStripRecHit2D>& res) const;
+			  std::vector<SiStripRecHit2D>& res) const {
+    const GeomDetUnit& gdu( specificGeomDet());
+    VLocalValues const & vlv = cpe()->localParametersV( *cluster, gdu, ltp);
+    for(VLocalValues::const_iterator it=vlv.begin();it!=vlv.end();++it){
+      res.push_back(SiStripRecHit2D( it->first, it->second, rawId(), cluster));
+    }
+  }
+ 
   
   
   
 public:
-  inline bool accept(SiStripClusterRef & r) const {
+  inline bool accept(SiStripClusterRef const & r) const {
     if(skipClusters().empty()) return true;
     if (r.key()>=skipClusters().size()){
       edm::LogError("WrongStripMasking")<<r.key()<<" is larger than: "<<skipClusters().size()<<" no skipping done";
@@ -179,7 +220,7 @@ public:
     }
     return (not (skipClusters()[r.key()]));
   }
-  inline bool accept(SiStripRegionalClusterRef &r) const{
+  inline bool accept(SiStripRegionalClusterRef const &r) const{
     if(skipClusters().empty()) return true;
     if (r.key()>=skipClusters().size()){
       LogDebug("TkStripMeasurementDet")<<r.key()<<" is larger than: "<<skipClusters().size()

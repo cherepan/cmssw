@@ -26,6 +26,7 @@
 
 #include "DataFormats/HcalDetId/interface/HcalCastorDetId.h"
 #include "DataFormats/HcalDetId/interface/HcalZDCDetId.h"
+#include "DataFormats/HcalDetId/interface/HcalDetId.h"
 
 #include "Geometry/EcalAlgo/interface/EcalBarrelGeometry.h"
 #include "Geometry/EcalAlgo/interface/EcalEndcapGeometry.h"
@@ -36,6 +37,10 @@
 #include "Geometry/EcalAlgo/interface/EcalPreshowerGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "Geometry/CaloGeometry/interface/CaloGenericDetId.h"
+#include "Geometry/CaloTopology/interface/HcalTopology.h"
+#include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
+
+#include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
 
 #include "DataFormats/EcalDetId/interface/EcalScDetId.h"
 
@@ -68,7 +73,13 @@ class CaloGeometryAnalyzer : public edm::EDAnalyzer
 
    private:
       // ----------member data ---------------------------
-      void build( const CaloGeometry& cg , 
+      void build( const CaloGeometry& cg , const HcalTopology& ht,
+		  DetId::Detector     det, 
+		  int                 subdetn, 
+		  const char*         name,
+		  unsigned int        histi   );
+
+      void buildHcal( const CaloGeometry& cg , const HcalTopology& ht,
 		  DetId::Detector     det, 
 		  int                 subdetn, 
 		  const char*         name,
@@ -431,7 +442,7 @@ CaloGeometryAnalyzer::checkDiff( int            i1      ,
 	       <<"i1="<<i1<<" & i2="<<i2<<" & i3="<<i3
 	       <<", ***BIG DISAGREEMENT FOUND. D"
 	       <<( kX == iXYZ ? "X" : ( kY == iXYZ ? "Y" : "Z" ) )
-	       <<diff
+	       <<"=" << diff
 	       <<" microns"<<std::endl ;
       m_allOK = false ;
    }
@@ -493,7 +504,8 @@ CaloGeometryAnalyzer::ctrcor( const DetId&            did     ,
       oldCtr>>oldiy>>oldst ;
       oldCor>>oldip>>oldst ;
    }
-   if( cgid.isHcal() ) 
+   int depth = 0;
+   if( cgid.det() == DetId::Hcal) 
    {
       const HcalDetId hcid ( did ) ;
       const int ie ( hcid.ieta() ) ;
@@ -509,6 +521,7 @@ CaloGeometryAnalyzer::ctrcor( const DetId&            did     ,
       int  oldde ;
       oldCtr>>oldde ;
       oldCor>>oldde ;
+      depth = de; 
    }
    if( cgid.isZDC() ) 
    {
@@ -557,9 +570,9 @@ CaloGeometryAnalyzer::ctrcor( const DetId&            did     ,
    h_diffs[histi][1]->Fill( dy ) ;
    h_diffs[histi][2]->Fill( dz ) ;
 
-   checkDiff( oldie, oldip, 0, kCenter, kX, dx ) ;
-   checkDiff( oldie, oldip, 0, kCenter, kY, dy ) ;
-   checkDiff( oldie, oldip, 0, kCenter, kZ, dz ) ;
+   checkDiff( oldie, oldip, depth, kCenter, kX, dx ) ;
+   checkDiff( oldie, oldip, depth, kCenter, kY, dy ) ;
+   checkDiff( oldie, oldip, depth, kCenter, kZ, dz ) ;
 
    fCtr << std::fixed << std::setw(12) << std::setprecision(4)
 	<< x
@@ -604,7 +617,158 @@ CaloGeometryAnalyzer::ctrcor( const DetId&            did     ,
 }
 
 void 
+CaloGeometryAnalyzer::buildHcal( const CaloGeometry& cg      , 
+				 const HcalTopology& ht      ,
+				 DetId::Detector     det     , 
+				 int                 subdetn , 
+				 const char*         name    ,
+				 unsigned int        histi     ) 
+{
+    std::cout<<"Now checking detector "<<name<<std::endl ;
+    const std::string oldnameCtr  ( "old" + std::string( name ) + ".ctr" ) ;
+    const std::string oldnameCor  ( "old" + std::string( name ) + ".cor" ) ;
+    const std::string fnameCtr  ( std::string( name ) + ".ctr" ) ;
+    const std::string fnameCor  ( std::string( name ) + ".cor" ) ;
+    const std::string fnameOvr  ( std::string( name ) + ".ovr" ) ;
+    const std::string fnameRoot ( std::string( name ) + ".C" ) ;
+    std::fstream oldCtr(oldnameCtr.c_str() ,std::ios_base::in);
+    std::fstream oldCor(oldnameCor.c_str() ,std::ios_base::in);
+    std::fstream fCtr(fnameCtr.c_str() ,std::ios_base::out);
+    std::fstream fCor(fnameCor.c_str() ,std::ios_base::out);
+    std::fstream fOvr(fnameOvr.c_str() ,std::ios_base::out);
+    std::fstream f   (fnameRoot.c_str(),std::ios_base::out);
+
+    const CaloSubdetectorGeometry* geom ( cg.getSubdetectorGeometry( det, subdetn ) );
+
+    f << "{" << std::endl;
+    f << "  TGeoManager* geoManager = new TGeoManager(\"ROOT\", \"" << name << "\");" << std::endl;
+    f << "  TGeoMaterial* dummyMaterial = new TGeoMaterial(\"Vacuum\", 0,0,0); " << std::endl;
+    f << "  TGeoMedium* dummyMedium =  new TGeoMedium(\"Vacuum\",1,dummyMaterial);" << std::endl;
+    f << "  TGeoVolume* world=geoManager->MakeBox(\"world\",dummyMedium, 8000.0, 8000.0, 14000.0); " << std::endl;
+    f << "  geoManager->SetTopVolume(world); " << std::endl;
+    f << "  TGeoVolume* box; " << std::endl;
+    int n=0;
+    const std::vector< DetId >& ids ( geom->getValidDetIds( det, subdetn ) ) ;
+
+    const std::vector< DetId >& ids2 ( cg.getValidDetIds( det, subdetn ) ) ;
+
+    if( ids != ids2 )
+    {
+	std::cout<<"Methods differ! One gives size "
+		 << ids.size()
+		 <<" and the other gives size "
+		 << ids2.size()
+		 << std::endl ;
+    }
+    assert( ids == ids2 ) ;
+
+    for( std::vector<DetId>::const_iterator i ( ids.begin() ) ; i != ids.end(); ++i ) 
+    {
+	++n;
+	const CaloCellGeometry* cell ( geom->getGeometry(*i) ) ;
+
+	assert( cg.present( *i ) ) ;
+
+	ctrcor( *i,
+		*cell,
+		fCtr,
+		fCor,
+		oldCtr,
+		oldCor,
+		histi ) ;
+
+	const DetId      id ( *i ) ;
+
+	const HcalDetId hcId ( *i ) ;
+
+	const GlobalPoint pos ( cell->getPosition() ) ; 
+	const double posmag ( pos.mag() ) ;
+
+	const double disin ( DetId::Ecal   == det     &&
+			     EcalPreshower == subdetn     ? 0.000001 : 0.001 ) ;
+
+	const GlobalPoint pointIn ( pos.x() + disin*pos.x()/posmag ,
+				    pos.y() + disin*pos.y()/posmag ,
+				    pos.z() + disin*pos.z()/posmag   ) ;
+	const GlobalPoint pointFr ( pos.x() - 0.1*pos.x()/posmag ,
+				    pos.y() - 0.1*pos.y()/posmag ,
+				    pos.z() - 0.1*pos.z()/posmag   ) ;
+
+	if( cell->inside( pointFr ) ) std::cout<<"Bad outside: "<<pointIn<<", " <<pointFr<<std::endl ;
+	assert( cell->inside( pointIn ) ) ;
+	assert( !cell->inside( pointFr ) ) ;
+
+	const double deltaPhi ( geom->deltaPhi( id ) ) ;
+      
+	const double deltaEta ( geom->deltaEta( id ) ) ;
+
+	const unsigned int detIndex (3);
+	const GlobalPoint ggp ( cell->getPosition() ) ;
+						
+	h_dPhi [detIndex]->Fill( ht.detId2denseId(hcId), deltaPhi ) ;
+	h_dPhiR[detIndex]->Fill( ggp.perp(), deltaPhi ) ;
+
+	h_dEta [detIndex]->Fill( ht.detId2denseId(hcId), deltaEta ) ;
+	h_dEtaR[detIndex]->Fill( ggp.perp(), deltaEta ) ;
+      
+	const unsigned int i1 ( HcalGeometry::alignmentTransformIndexLocal( hcId ) ) ;
+
+	const DetId d1 ( HcalGeometry::detIdFromLocalAlignmentIndex( i1 ) ) ;
+
+	const unsigned int i2 ( HcalGeometry::alignmentTransformIndexLocal( d1 ) ) ;
+
+	assert( i1 == i2 ) ;
+
+	f << "  // " << HcalDetId(*i) << std::endl;
+	    
+	const GlobalPoint gp ( cell->getPosition() ) ;
+	f << "  // Checking getClosestCell for position " 
+	  << gp
+	  << std::endl;
+
+	const HcalDetId closestCell ( geom->getClosestCell( gp ) ) ;
+
+	f << "  // Return position is " << closestCell << std::endl;
+	if( closestCell != HcalDetId(*i) )
+	{
+	    const double rr ( reco::deltaR( gp.eta(), gp.phi(), 
+					    geom->getGeometry( closestCell )->getPosition().eta(),
+					    geom->getGeometry( closestCell )->getPosition().phi()   ) ) ; 
+	    if( rr> 1.e-5 ) std::cout<<"For "<<HcalDetId(*i)<<" closest is "<<closestCell
+				     << " HCAL dR=" << rr <<std::endl ;
+	}
+	// test getCells against base class version every so often
+	if( 0 == ht.detId2denseId(closestCell)%30)
+	{
+	    cmpset( geom, gp,  2*deg ) ;
+	    cmpset( geom, gp,  5*deg ) ;
+	    cmpset( geom, gp,  7*deg ) ;
+	    cmpset( geom, gp, 25*deg ) ;
+	    cmpset( geom, gp, 45*deg ) ;
+	}
+    
+	if (det == DetId::Hcal && subdetn==HcalForward) 
+	    f << "  box=geoManager->MakeBox(\"point\",dummyMedium,1.0,1.0,1.0);" << std::endl;
+	else
+	    f << "  box=geoManager->MakeBox(\"point\",dummyMedium,3.0,3.0,3.0);" << std::endl;
+	f << "  world->AddNode(box,"<< n << ",new TGeoHMatrix(TGeoTranslation(" << 
+	    cell->getPosition().x() << "," << cell->getPosition().y() << "," << cell->getPosition().z() << ")));" << std::endl;
+	//   f << (HcalDetId)(*i) << " " << cell->getPosition() << std::endl;
+    }
+    
+    f << "  geoManager->CloseGeometry();" << std::endl;
+    f << "world->Voxelize(\"\"); // now the new geometry is valid for tracking, so you can do \n // even raytracing \n //  if (!canvas) { \n    TCanvas* canvas=new TCanvas(\"EvtDisp\",\"EvtDisp\",500,500); \n //  } \n  canvas->Modified(); \n  canvas->Update();      \n  world->Draw(); \n";
+    f << "}" << std::endl;
+    f.close();
+    fCtr.close();
+    fCor.close();
+}
+   
+
+
+void 
 CaloGeometryAnalyzer::build( const CaloGeometry& cg      , 
+			     const HcalTopology& ht      ,
 			     DetId::Detector     det     , 
 			     int                 subdetn , 
 			     const char*         name    ,
@@ -672,6 +836,7 @@ CaloGeometryAnalyzer::build( const CaloGeometry& cg      ,
 	      histi ) ;
 
       const DetId      id ( *i ) ;
+
       const CaloGenericDetId cid ( id ) ;
 
       assert( cid.validDetId() ) ;
@@ -679,7 +844,7 @@ CaloGeometryAnalyzer::build( const CaloGeometry& cg      ,
       assert( CaloGenericDetId( id.det(),
 				id.subdetId(),
 				cid.denseIndex() ) == id ) ;
-
+      
       const GlobalPoint pos ( cell->getPosition() ) ; 
       const double posmag ( pos.mag() ) ;
 
@@ -964,6 +1129,16 @@ CaloGeometryAnalyzer::build( const CaloGeometry& cg      ,
       }
       else if (det == DetId::Hcal)
       {
+	 const HcalDetId hcId ( *i ) ;
+
+	 const unsigned int i1 ( HcalGeometry::alignmentTransformIndexLocal( hcId ) ) ;
+
+	 const DetId d1 ( HcalGeometry::detIdFromLocalAlignmentIndex( i1 ) ) ;
+
+	 const unsigned int i2 ( HcalGeometry::alignmentTransformIndexLocal( d1 ) ) ;
+
+	 assert( i1 == i2 ) ;
+
 	 f << "  // " << HcalDetId(*i) << std::endl;
 	    
 	 const GlobalPoint gp ( cell->getPosition() ) ;
@@ -984,7 +1159,7 @@ CaloGeometryAnalyzer::build( const CaloGeometry& cg      ,
 				     << " HCAL dR=" << rr <<std::endl ;
 	 }
 	 // test getCells against base class version every so often
-	 if( 0 == closestCell.denseIndex()%30 )
+	 if( 0 == ht.detId2denseId(closestCell)%30)
 	 {
 	    cmpset( geom, gp,  2*deg ) ;
 	    cmpset( geom, gp,  5*deg ) ;
@@ -1095,6 +1270,8 @@ CaloGeometryAnalyzer::analyze( const edm::Event& /*iEvent*/, const edm::EventSet
 
    edm::ESHandle<CaloGeometry> pG;
    iSetup.get<CaloGeometryRecord>().get(pG);     
+   edm::ESHandle<HcalTopology> pT;
+   iSetup.get<IdealGeometryRecord>().get(pT);     
 
    const std::vector<DetId> allDetId ( pG->getValidDetIds() ) ;
 //   std::cout<<"Total number of DetIds in all subdets is = "<<allDetId.size()<<std::endl ;
@@ -1153,16 +1330,16 @@ CaloGeometryAnalyzer::analyze( const edm::Event& /*iEvent*/, const edm::EventSet
 
       m_allOK = true ;
 
-      build(*pG,DetId::Ecal,EcalBarrel                     ,"eb",0);
-      build(*pG,DetId::Ecal,EcalEndcap                     ,"ee",1);
-      build(*pG,DetId::Ecal,EcalPreshower                  ,"es",2);
-      build(*pG,DetId::Hcal,HcalBarrel                     ,"hb",3);
-      build(*pG,DetId::Hcal,HcalEndcap                     ,"he",4);
-      build(*pG,DetId::Hcal,HcalOuter                      ,"ho",5);
-      build(*pG,DetId::Hcal,HcalForward                    ,"hf",6);
-      build(*pG,DetId::Calo,CaloTowerDetId::SubdetId       ,"ct",7);
-      build(*pG,DetId::Calo,HcalCastorDetId::SubdetectorId ,"ca",8);
-      build(*pG,DetId::Calo,HcalZDCDetId::SubdetectorId    ,"zd",9);
+      build(*pG,*pT,DetId::Ecal,EcalBarrel                     ,"eb",0);
+      build(*pG,*pT,DetId::Ecal,EcalEndcap                     ,"ee",1);
+      build(*pG,*pT,DetId::Ecal,EcalPreshower                  ,"es",2);
+      buildHcal(*pG,*pT,DetId::Hcal,HcalBarrel                     ,"hb",3);
+      buildHcal(*pG,*pT,DetId::Hcal,HcalEndcap                     ,"he",4);
+      buildHcal(*pG,*pT,DetId::Hcal,HcalOuter                      ,"ho",5);
+      buildHcal(*pG,*pT,DetId::Hcal,HcalForward                    ,"hf",6);
+      build(*pG,*pT,DetId::Calo,CaloTowerDetId::SubdetId       ,"ct",7);
+      build(*pG,*pT,DetId::Calo,HcalCastorDetId::SubdetectorId ,"ca",8);
+      build(*pG,*pT,DetId::Calo,HcalZDCDetId::SubdetectorId    ,"zd",9);
      //Test eeGetClosestCell in Florian Point
 //      std::cout << "Checking getClosestCell for position" << GlobalPoint(-38.9692,-27.5548,-317) << std::endl;
 //      std::cout << "Position of Closest Cell in EE " << dynamic_cast<const TruncatedPyramid*>(pG->getGeometry(EEDetId((*pG).getSubdetectorGeometry(DetId::Ecal,EcalEndcap)->getClosestCell(GlobalPoint(-38.9692,-27.5548,-317)))))->getPosition(0.) << std::endl;

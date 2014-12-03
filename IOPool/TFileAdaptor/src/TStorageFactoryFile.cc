@@ -2,6 +2,8 @@
 #include "Utilities/StorageFactory/interface/Storage.h"
 #include "Utilities/StorageFactory/interface/StorageFactory.h"
 #include "Utilities/StorageFactory/interface/StorageAccount.h"
+#include "Utilities/StorageFactory/interface/StatisticsSenderService.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
 #include "FWCore/Utilities/interface/EDMException.h"
 #include "ReadRepacker.h"
 #include "TFileCacheRead.h"
@@ -13,6 +15,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <iostream>
+#include <cassert>
 
 #if 0
 #include "TTreeCache.h"
@@ -169,6 +172,8 @@ TStorageFactoryFile::Initialize(const char *path,
     create = kTRUE;
   }
 
+  assert(read || update || create);
+
   int           openFlags = IOFlags::OpenRead;
   if (!read)    openFlags |= IOFlags::OpenWrite;
   if (create)   openFlags |= IOFlags::OpenCreate;
@@ -181,6 +186,18 @@ TStorageFactoryFile::Initialize(const char *path,
      gDirectory = gROOT;
      throw cms::Exception("TStorageFactoryFile::TStorageFactoryFile()")
        << "Cannot open file '" << path << "'";
+  }
+
+  // Record the statistics.
+  try {
+    edm::Service<edm::storage::StatisticsSenderService> statsService;
+    if (statsService.isAvailable()) {
+      statsService->setSize(storage_->size());
+    }
+  } catch (edm::Exception e) {
+    if (e.categoryCode() != edm::errors::NotFound) {
+      throw;
+    }
   }
 
   fRealName = path;
@@ -316,7 +333,7 @@ TStorageFactoryFile::ReadBufferAsync(Long64_t off, Int_t len)
     ;
   }
 
-  IOPosBuffer iov(off, (void *) 0, len ? len : 4096);
+  IOPosBuffer iov(off, (void *) 0, len ? len : PREFETCH_PROBE_LENGTH);
   if (storage_->prefetch(&iov, 1))
   {
     stats.tick(len);

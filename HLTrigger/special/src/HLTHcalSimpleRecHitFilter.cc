@@ -13,7 +13,7 @@
 //
 // Original Author:  Bryan DAHMES
 //         Created:  Wed Sep 19 16:21:29 CEST 2007
-// $Id: HLTHcalSimpleRecHitFilter.cc,v 1.4 2010/09/06 18:23:04 cer Exp $
+// $Id: HLTHcalSimpleRecHitFilter.cc,v 1.7 2012/11/15 23:21:20 dlange Exp $
 //
 //
 
@@ -51,7 +51,7 @@ private:
     int minNHitsNeg_;
     int minNHitsPos_;
     bool doCoincidence_;
-    std::vector<int> maskedList_;
+    std::vector<unsigned int> maskedList_;
     
 };
 
@@ -65,7 +65,17 @@ HLTHcalSimpleRecHitFilter::HLTHcalSimpleRecHitFilter(const edm::ParameterSet& iC
     minNHitsNeg_     = iConfig.getParameter<int>("minNHitsNeg");
     minNHitsPos_     = iConfig.getParameter<int>("minNHitsPos");
     doCoincidence_     = iConfig.getParameter<bool>("doCoincidence");
-    maskedList_    = iConfig.getParameter<std::vector<int> >("maskedChannels"); //this is using the hashed index
+    if (iConfig.existsAs<std::vector<unsigned int> >("maskedChannels"))
+      maskedList_    = iConfig.getParameter<std::vector<unsigned int> >("maskedChannels"); //this is using the raw DetId index
+    else
+      //worry about possible user menus with the old interface
+      if (iConfig.existsAs<std::vector<int> >("maskedChannels")) {
+	std::vector<int> tVec=iConfig.getParameter<std::vector<int> >("maskedChannels"); 
+	if ( tVec.size() > 0 ) {
+	  edm::LogError("cfg error")  << "masked list of channels missing from HLT menu. Migration from vector of ints to vector of uints needed for this release";
+	  cms::Exception("Invalid/obsolete masked list of channels");
+	}
+      }
     HcalRecHitCollection_ = iConfig.getParameter<edm::InputTag>("HFRecHitCollection");
     
 }
@@ -104,8 +114,8 @@ HLTHcalSimpleRecHitFilter::hltFilter(edm::Event& iEvent, const edm::EventSetup& 
        HFRecHit hit = (*hitItr);
      
        // masking noisy channels
-       std::vector<int>::iterator result;
-       result = find( maskedList_.begin(), maskedList_.end(), HcalDetId(hit.id()).hashed_index() );    
+       std::vector<unsigned int>::iterator result;
+       result = find( maskedList_.begin(), maskedList_.end(), hit.id().rawId());    
        if  (result != maskedList_.end()) 
            continue; 
        

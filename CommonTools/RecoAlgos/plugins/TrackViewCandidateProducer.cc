@@ -8,7 +8,7 @@
  *
  * \version $Revision: 1.2 $
  *
- * $Id: TrackViewCandidateProducer.cc,v 1.2 2007/12/04 09:15:03 llista Exp $
+ * $Id: TrackViewCandidateProducer.cc,v 1.2 2013/02/28 00:17:19 wmtan Exp $
  *
  */
 

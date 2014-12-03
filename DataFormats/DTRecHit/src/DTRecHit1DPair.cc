@@ -1,7 +1,7 @@
 /** \file
  *
- *  $Date: 2006/04/05 16:43:55 $
- *  $Revision: 1.4 $
+ *  $Date: 2012/07/04 16:20:31 $
+ *  $Revision: 1.6 $
  *  \author G. Cerminara - INFN Torino
  */
 
@@ -135,9 +135,9 @@ void DTRecHit1DPair::setPositionAndError(DTCellSide lrside,
 // Return the left/right DTRecHit1D
 const DTRecHit1D* DTRecHit1DPair::componentRecHit(DTCellSide lrSide) const {
   if(lrSide == Left) {
-    return const_cast<const DTRecHit1D*>(&theLeftHit);
+    return &theLeftHit;
   } else if(lrSide == Right) {
-    return const_cast<const DTRecHit1D*>(&theRightHit);
+    return &theRightHit;
   } else {
     throw cms::Exception("DTRecHit1DPair::recHit with undefined LR");
   }

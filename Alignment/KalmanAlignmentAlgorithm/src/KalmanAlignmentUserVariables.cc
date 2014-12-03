@@ -15,10 +15,9 @@ using namespace std;
 
 
 const TrackerAlignableId* KalmanAlignmentUserVariables::theAlignableId = new TrackerAlignableId;
-const AlignableObjectId* KalmanAlignmentUserVariables::theObjectId = new AlignableObjectId;
-
 
 KalmanAlignmentUserVariables::KalmanAlignmentUserVariables( Alignable* parent,
+                                                            const TrackerTopology* tTopo,
 							    int frequency ) :
     theParentAlignable( parent ),
     theNumberOfHits( 0 ),
@@ -29,13 +28,13 @@ KalmanAlignmentUserVariables::KalmanAlignmentUserVariables( Alignable* parent,
 {
   if ( parent )
   {
-    pair< int, int > typeAndLayer = theAlignableId->typeAndLayerFromDetId( parent->geomDetId() );
+    pair< int, int > typeAndLayer = theAlignableId->typeAndLayerFromDetId( parent->geomDetId(), tTopo );
 
     int iType = typeAndLayer.first;
     int iLayer = typeAndLayer.second;
     int iId = parent->id();
 
-    string strName = theObjectId->typeToName( parent->alignableObjectId() ) + string( "_" );
+    string strName = AlignableObjectId::idToString( parent->alignableObjectId() ) + string( "_" );
     string strType = string( "Type" ) + toString( iType ) + string( "_" );
     string strLayer = string( "Layer" ) + toString( iLayer ) + string( "_" );
     string strId =  string( "Id" ) + toString( iId );

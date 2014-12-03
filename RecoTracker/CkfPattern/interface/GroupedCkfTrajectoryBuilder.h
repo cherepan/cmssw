@@ -53,6 +53,14 @@ class GroupedCkfTrajectoryBuilder : public BaseCkfTrajectoryBuilder {
   /// trajectories building starting from a seed with a region
   void trajectories(const TrajectorySeed&, TrajectoryContainer &ret, const TrackingRegion&) const;
 
+  /// common part of both public trajectory building methods
+  // also new interface returning the start Trajectory...
+  TempTrajectory buildTrajectories (const TrajectorySeed&seed,
+				    TrajectoryContainer &ret,
+				    const TrajectoryFilter*) const;
+
+
+
   /** trajectories re-building in the seeding region.
       It looks for additional measurements in the seeding region of the 
       intial trajectories.
@@ -60,7 +68,12 @@ class GroupedCkfTrajectoryBuilder : public BaseCkfTrajectoryBuilder {
       collection.
   **/
   void  rebuildSeedingRegion(const TrajectorySeed&,
+			     TrajectoryContainer& result) const ;
+ 
+  // same as above using the precomputed startingTraj..
+  void  rebuildTrajectories(TempTrajectory const & startingTraj, const TrajectorySeed&,
 			     TrajectoryContainer& result) const ;  
+
 
   // Access to lower level components
   const TrajectoryStateUpdator&  updator() const    {return *theUpdator;}
@@ -102,10 +115,6 @@ private :
   /// no assignment operator
   GroupedCkfTrajectoryBuilder& operator= (const GroupedCkfTrajectoryBuilder&)  dso_internal;
 
-  /// common part of both public trajectory building methods
-  void buildTrajectories (const TrajectorySeed&,
-                                  TrajectoryContainer &ret,
-	                          const TrajectoryFilter*) const  dso_internal;
   
   inline bool tkxor(bool a, bool b) const  dso_internal {return (a||b) && !(a&&b);}
   // to be ported later
@@ -117,29 +126,29 @@ private :
 			TempTrajectoryContainer& newCand, 
 			TempTrajectoryContainer& result) const  dso_internal;
 
-  void groupedLimitedCandidates( TempTrajectory& startingTraj, 
+  void groupedLimitedCandidates( TempTrajectory const& startingTraj, 
 				 const TrajectoryFilter* regionalCondition,
 				 const Propagator* propagator, 
                                  bool inOut,
 				 TempTrajectoryContainer& result) const  dso_internal;
 
   /// try to find additional hits in seeding region
-  void rebuildSeedingRegion (TempTrajectory& startingTraj,
+  void rebuildSeedingRegion (const TrajectorySeed&seed,
+			     TempTrajectory const& startingTraj,
 			     TempTrajectoryContainer& result) const  dso_internal;
 
    //** try to find additional hits in seeding region for a candidate
    //* (returns number of trajectories added) *
-  int rebuildSeedingRegion (const std::vector<const TrackingRecHit*>& seedHits,
+  int rebuildSeedingRegion (const TrajectorySeed&seed,
+			    const std::vector<const TrackingRecHit*>& seedHits,
 			    TempTrajectory& candidate,
 			    TempTrajectoryContainer& result) const  dso_internal;
 
-  // ** Backward fit of trajectory candidate except seed. Fit result and
-  // *  remaining hits are returned in fittedTracks and remainingHits.
-  // *  FittedTracks is empty if no fit was done. *
-  void backwardFit (TempTrajectory& candidate, unsigned int nSeed,
-		    const TrajectoryFitter& fitter,
-		    TempTrajectoryContainer& fittedTracks,
-		    std::vector<const TrackingRecHit*>& remainingHits) const  dso_internal;
+  // ** Backward fit of trajectory candidate except seed. Fit result is returned. invalid if fit failed
+  // *  remaining hits are returned  remainingHits.
+  TempTrajectory backwardFit (TempTrajectory& candidate, unsigned int nSeed,
+			      const TrajectoryFitter& fitter,
+			      std::vector<const TrackingRecHit*>& remainingHits) const  dso_internal;
 
   /// Verifies presence of a RecHits in a range of TrajectoryMeasurements.
   bool verifyHits (TempTrajectory::DataContainer::const_iterator rbegin,
@@ -149,15 +158,11 @@ private :
   /// intermediate cleaning in the case of grouped measurements
   void groupedIntermediaryClean(TempTrajectoryContainer& theTrajectories) const  dso_internal;
 
-  /// fills in a list of layers from a container of TrajectoryMeasurements
-  /// the "fillme" vector is cleared beforehand.
-  void layers (const TempTrajectory::DataContainer& measurements,
-               std::vector<const DetLayer*> &fillme) const  dso_internal;
 
   /// change of propagation direction
-  inline PropagationDirection oppositeDirection (PropagationDirection dir) const  dso_internal{
+  static inline PropagationDirection oppositeDirection (PropagationDirection dir) {
     if ( dir==alongMomentum )  return oppositeToMomentum;
-    else if ( dir==oppositeToMomentum )  return alongMomentum;
+    if ( dir==oppositeToMomentum )  return alongMomentum;
     return dir;
   }
 
@@ -194,10 +199,12 @@ private:
                                      If ==0 the seeding part will remain untouched. */
   unsigned int theMinNrOf2dHitsForRebuild;   
                                 /**< Minimum nr. of non-seed 2D hits required for rebuild. */
+  bool theKeepOriginalIfRebuildFails;   
+                                /**< Keep original trajectory if rebuilding fails. */
 
   /** If the value is greater than zero, the reconstructions for looper is turned on for
       candidates with pt greater than maxPtForLooperReconstruction */
-  float maxPtForLooperReconstruction;
+  float maxPt2ForLooperReconstruction;
 
   float maxDPhiForLooperReconstruction;
 

@@ -12,9 +12,9 @@
 #include "TrackingTools/MaterialEffects/interface/MaterialEffectsUpdator.h"
 #include "FWCore/Utilities/interface/Visibility.h"
 
-class MultipleScatteringUpdator : public MaterialEffectsUpdator 
+class MultipleScatteringUpdator GCC11_FINAL : public MaterialEffectsUpdator 
 {
-  virtual MultipleScatteringUpdator* clone() const {
+  virtual dso_export MultipleScatteringUpdator* clone() const {
     return new MultipleScatteringUpdator(*this);
   }
 
@@ -28,14 +28,10 @@ public:
     thePtMin(ptMin) {}
   /// destructor
   ~MultipleScatteringUpdator() {}
-  /// reimplementation of deltaP (since always 0)
-  virtual double deltaP (const TrajectoryStateOnSurface&, const PropagationDirection) const {
-    return 0.;
-  }
 
-private:
+
   // here comes the actual computation of the values
-  virtual void compute (const TrajectoryStateOnSurface&, const PropagationDirection) const dso_internal;
+  virtual void compute (const TrajectoryStateOnSurface&, const PropagationDirection, Effect & effect) const;
 
 
 private:  

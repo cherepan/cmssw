@@ -49,12 +49,12 @@ public:
 
 private:
   const bool theSaveToDB; /// whether or not writing to DB
+  const bool theSaveFakeScenario; /// if theSaveToDB is true, save a fake scenario (empty alignments), irrespective of the misalignment scenario below
   const edm::ParameterSet theScenario; /// misalignment scenario
-
+  const edm::ParameterSet thePSet;
   const std::string theAlignRecordName, theErrorRecordName;
   
   boost::shared_ptr<TrackerGeometry> theTracker;
-
 };
 
 //__________________________________________________________________________________________________
@@ -66,11 +66,12 @@ private:
 //__________________________________________________________________________________________________
 MisalignedTrackerESProducer::MisalignedTrackerESProducer(const edm::ParameterSet& p) :
   theSaveToDB(p.getUntrackedParameter<bool>("saveToDbase")),
+  theSaveFakeScenario(p.getUntrackedParameter<bool>("saveFakeScenario")),
   theScenario(p.getParameter<edm::ParameterSet>("scenario")),
+  thePSet(p),
   theAlignRecordName("TrackerAlignmentRcd"),
   theErrorRecordName("TrackerAlignmentErrorRcd")
 {
-  
   setWhatProduced(this);
 
 }
@@ -84,6 +85,10 @@ MisalignedTrackerESProducer::~MisalignedTrackerESProducer() {}
 boost::shared_ptr<TrackerGeometry> 
 MisalignedTrackerESProducer::produce( const TrackerDigiGeometryRecord& iRecord )
 { 
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  iRecord.getRecord<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
 
   edm::LogInfo("MisalignedTracker") << "Producer called";
 
@@ -91,10 +96,10 @@ MisalignedTrackerESProducer::produce( const TrackerDigiGeometryRecord& iRecord )
   edm::ESHandle<GeometricDet> gD;
   iRecord.getRecord<IdealGeometryRecord>().get( gD );
   TrackerGeomBuilderFromGeometricDet trackerBuilder;
-  theTracker  = boost::shared_ptr<TrackerGeometry>( trackerBuilder.build(&(*gD)) );
-  
+  theTracker  = boost::shared_ptr<TrackerGeometry>( trackerBuilder.build(&(*gD), thePSet));
+ 
   // Create the alignable hierarchy
-  std::auto_ptr<AlignableTracker> theAlignableTracker(new AlignableTracker( &(*theTracker) ) );
+  std::auto_ptr<AlignableTracker> theAlignableTracker(new AlignableTracker( &(*theTracker), tTopo ) );
 
   // Create misalignment scenario, apply to geometry
   TrackerScenarioBuilder scenarioBuilder( &(*theAlignableTracker) );
@@ -114,7 +119,10 @@ MisalignedTrackerESProducer::produce( const TrackerDigiGeometryRecord& iRecord )
       edm::Service<cond::service::PoolDBOutputService> poolDbService;
       if( !poolDbService.isAvailable() ) // Die if not available
         throw cms::Exception("NotAvailable") << "PoolDBOutputService not available";
-	  
+      if (theSaveFakeScenario) { // make empty!
+        alignments->clear();
+        alignmentErrors->clear();
+      }      
       poolDbService->writeOne<Alignments>(alignments, poolDbService->currentTime(),
                                           theAlignRecordName);
       poolDbService->writeOne<AlignmentErrors>(alignmentErrors, poolDbService->currentTime(),

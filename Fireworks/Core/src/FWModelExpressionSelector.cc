@@ -8,14 +8,14 @@
 //
 // Original Author:  Chris Jones
 //         Created:  Wed Jan 23 10:37:22 EST 2008
-// $Id: FWModelExpressionSelector.cc,v 1.11 2011/11/18 02:57:08 amraktad Exp $
+// $Id: FWModelExpressionSelector.cc,v 1.14 2013/04/05 05:24:58 amraktad Exp $
 //
 
 // system include files
 #include <sstream>
 #include "TClass.h"
-#include "Reflex/Object.h"
-#include "Reflex/Type.h"
+#include "FWCore/Utilities/interface/ObjectWithDict.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 
 #include "CommonTools/Utils/src/Grammar.h"
 #include "CommonTools/Utils/interface/Exception.h"
@@ -75,8 +75,8 @@ FWModelExpressionSelector::select(FWEventItem* iItem, const std::string& iExpres
 {
    using namespace fireworks::expression;
 
-   ROOT::Reflex::Type type= ROOT::Reflex::Type::ByName(iItem->modelType()->GetName());
-   assert(type != ROOT::Reflex::Type());
+   edm::TypeWithDict type(edm::TypeWithDict::byName(iItem->modelType()->GetName()));
+   assert(type != edm::TypeWithDict());
 
    //Backwards compatibility with old format
    std::string temp = oldToNewFormat(iExpression);
@@ -99,11 +99,9 @@ FWModelExpressionSelector::select(FWEventItem* iItem, const std::string& iExpres
 
    FWChangeSentry sentry(*(iItem->changeManager()));
    for( unsigned int index = 0; index < iItem->size(); ++index ) {
-      ROOT::Reflex::Object o(type, const_cast<void *>(iItem->modelData(index)));
-
+      edm::ObjectWithDict o(type, const_cast<void *>(iItem->modelData(index)));
       if((*selectorPtr)(o)) {
          iItem->select(index);
-
 	 if (iColor > 0) {
             FWDisplayProperties props = iItem->modelInfo(index).displayProperties();
             props.setColor(iColor);

@@ -8,11 +8,18 @@ process.load("PhysicsTools.PatAlgos.selectionLayer1.muonSelector_cfi")
 ## make sure to keep the created objects
 process.out.outputCommands = ['keep *_selectedPat*_*_*',]
 
-## let it run
+## to run in scheduled mode uncomment the following lines
+#process.p = cms.Path(
+#    process.makePatMuons *
+#    process.selectedPatMuons
+#)
+
+## to run in un-scheduled mode uncomment the following lines
+process.options.allowUnscheduled = cms.untracked.bool(True)
+#process.Tracer = cms.Service("Tracer")
 process.p = cms.Path(
-    process.makePatMuons *
     process.selectedPatMuons
-)
+    )
 
 ## ------------------------------------------------------
 #  In addition you usually want to change the following
@@ -24,7 +31,7 @@ process.p = cms.Path(
 from PhysicsTools.PatAlgos.patInputFiles_cff import filesRelValProdTTbarAODSIM
 process.source.fileNames = filesRelValProdTTbarAODSIM
 #                                         ##
-process.maxEvents.input = 10
+process.maxEvents.input = 100
 #                                         ##
 #   process.out.outputCommands = [ ... ]  ##  (e.g. taken from PhysicsTools/PatAlgos/python/patEventContent_cff.py)
 #                                         ##

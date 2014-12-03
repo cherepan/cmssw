@@ -16,9 +16,9 @@ namespace edm {
     typedef value_ptr<TRandom3> TRandom3Ptr;
 
     // Constructors and destructor.
-    TRandomAdaptor() : trand_(new TRandom3()) {}
-    TRandomAdaptor( long seed ) : trand_(new TRandom3(seed)) {}
-    TRandomAdaptor( int rowIndex, int colIndex ) : trand_(new TRandom3(rowIndex*colIndex-1)) {}
+    TRandomAdaptor();
+    TRandomAdaptor( long seed );
+    TRandomAdaptor( int rowIndex, int colIndex );
     TRandomAdaptor( std::istream & is );
     virtual ~TRandomAdaptor();
 
@@ -29,11 +29,11 @@ namespace edm {
     void flatArray(int const size, double* vect) { trand_->RndmArray(size,vect); }
 
     // Sets the state of the algorithm according to seed.
-    void setSeed(long seed, int) { trand_->SetSeed(seed); }
+    void setSeed(long seed, int);
 
     // Sets the state of the algorithm according to the zero terminated
     // array of seeds. It is allowed to ignore one or many seeds in this array.
-    void setSeeds(long const* seeds, int) { trand_->SetSeed(seeds[0]); }
+    void setSeeds(long const* seeds, int);
 
     // Saves the current engine status in the named file
     void saveStatus(char const filename[] = "TRandom.conf") const { trand_->WriteRandom(filename); }
@@ -48,7 +48,7 @@ namespace edm {
     operator float() { return (float)(trand_->Rndm()); }
 
     // Returns an unsigned int (32-bit) flat 
-    operator unsigned int() { return (unsigned int)((trand_->Rndm())*exponent_bit_32); }
+    operator unsigned int() { return (unsigned int)((trand_->Rndm())*exponent_bit_32()); }
 
     virtual std::ostream & put (std::ostream & os) const;
     virtual std::istream & get (std::istream & is);

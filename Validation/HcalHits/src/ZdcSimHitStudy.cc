@@ -1,3 +1,26 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Package:    ZdcSimHitStudy
+// Class:      ZdcSimHitStudy
+//
+/*
+ Description: 
+              This code has been developed to be a check for the ZDC sim. In 2009, it was found that the ZDC Simulation was unrealistic and needed repair. The aim of this code is to show the user the input and output of a ZDC MinBias simulation.
+
+ Implementation:
+      First a MinBias simulation should be run, it could be pythia,hijin,or hydjet. This will output a .root file which should have information about recoGenParticles, and g4SimHits_ZDCHits. Use this .root file as the input into the cfg.py which is found in the main directory of this package. This output will be another .root file which is meant to be viewed in a TBrowser.
+
+*/
+//
+// Original Author: Jaime Gomez (U. of Maryland) with SIGNIFICANT assistance of Dr. Jefferey Temple (U. of Maryland) 
+// Adapted from: E. Garcia-Solis' (CSU) original code    
+//
+//         Created:  Summer 2012
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
 #include "Validation/HcalHits/interface/ZdcSimHitStudy.h"
 #include "DataFormats/HcalDetId/interface/HcalZDCDetId.h"
 
@@ -34,77 +57,408 @@ ZdcSimHitStudy::~ZdcSimHitStudy() {}
 
 void ZdcSimHitStudy::beginJob() {
   if (dbe_) {
-    dbe_->setCurrentFolder("ZdcHitsV/ZdcSimHitsTask");
+    dbe_->setCurrentFolder("ZDCValidation");
     //Histograms for Hits
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//# Below we are filling the histograms made in the .h file. The syntax is as follows:                                      #
+//# plot_code_name = dbe_->TypeofPlot[(1,2,3)-D,(F,I,D)]("Name as it will appear","Title",axis options);                    #
+//# They will be stored in the TFile subdirectory set by :    dbe_->setCurrentFolder("FolderIwant")                         #
+//# axis options are like (#ofbins,min,max)                                                                                 #
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
     if (checkHit_) {
-      meAllZdcNHit_ = dbe_->book1D("Hit01","Number of All Hits in Zdc",100,0.,100.);
-      meBadZdcDetHit_= dbe_->book1D("Hit02","Hits with wrong Det in Zdc",100,0.,100.);
-      meBadZdcSecHit_= dbe_->book1D("Hit03","Hits with wrong Section in Zdc",100,0.,100.);
-      meBadZdcIdHit_ = dbe_->book1D("Hit04","Hits with wrong ID in Zdc",100,0.,100.);
-      meZdcNHitEM_   = dbe_->book1D("Hit05","Number of Hits in Zdc EM",100,0.,100.);
-      meZdcNHitHad_   = dbe_->book1D("Hit06","Number of Hits in Zdc Had",100,0.,100.);
-      meZdcNHitLum_   = dbe_->book1D("Hit07","Number of Hits in Zdc Lum",100,0.,100.);
-      meZdcDetectHit_= dbe_->book1D("Hit08","Calo Detector ID",50,0.,50.);
-      meZdcSideHit_ = dbe_->book1D("Hit09","Side in Zdc",4,-2,2.);
-      meZdcSectionHit_   = dbe_->book1D("Hit10","Section in Zdc",4,0.,4.);
-      meZdcChannelHit_   = dbe_->book1D("Hit11","Channel in Zdc",10,0.,10.);
-      meZdcEnergyHit_= dbe_->book1D("Hit12","Hits Energy",4000,0.,8000.);
-      meZdcHadEnergyHit_= dbe_->book1D("Hit13","Hits Energy in Had Section",4000,0.,8000.);
-      meZdcEMEnergyHit_ = dbe_->book1D("Hit14","Hits Energy in EM Section",4000,0.,8000.);
-      meZdcTimeHit_  = dbe_->book1D("Hit15","Time in Zdc",300,0.,600.);
-      meZdcTimeWHit_ = dbe_->book1D("Hit16","Time in Zdc (E wtd)", 300,0.,600.);
-      meZdc10Ene_ = dbe_->book1D("Hit17","Log10Energy in Zdc", 140, -20., 20. );
-      meZdcHadL10EneP_ = dbe_->bookProfile("Hit18","Log10Energy in Had Zdc vs Hit contribution", 140, -1., 20., 100, 0., 1. );
-      meZdcEML10EneP_ = dbe_->bookProfile("Hit19","Log10Energy in EM Zdc vs Hit contribution", 140, -1., 20., 100, 0., 1. );
-      meZdcEHadCh_ = dbe_->book2D("Hit20","Zdc Had Section Energy vs Channel", 4000, 0., 8000., 6, 0., 6. );
-      meZdcEEMCh_ = dbe_->book2D("Hit21","Zdc EM Section Energy vs Channel", 4000, 0., 8000., 6, 0., 6. );
-      meZdcETime_ = dbe_->book2D("Hit22","Hits Zdc Energy vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneEmN1_  = dbe_->book1D("HitVal01","Energy EM module N1",4000,0.,8000.);
-      meZdcEneEmN2_  = dbe_->book1D("HitVal02","Energy EM module N2",4000,0.,8000.);
-      meZdcEneEmN3_  = dbe_->book1D("HitVal03","Energy EM module N3",4000,0.,8000.);
-      meZdcEneEmN4_  = dbe_->book1D("HitVal04","Energy EM module N4",4000,0.,8000.);
-      meZdcEneEmN5_  = dbe_->book1D("HitVal05","Energy EM module N5",4000,0.,8000.);
-      meZdcEneHadN1_ = dbe_->book1D("HitVal06","Energy HAD module N1",4000,0.,8000.);
-      meZdcEneHadN2_ = dbe_->book1D("HitVal07","Energy HAD module N2",4000,0.,8000.);
-      meZdcEneHadN3_ = dbe_->book1D("HitVal08","Energy HAD module N3",4000,0.,8000.);
-      meZdcEneHadN4_ = dbe_->book1D("HitVal09","Energy HAD module N4",4000,0.,8000.);
-      meZdcEneTEmN1_ = dbe_->book2D("HitVal11","Energy EM mod N1 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTEmN2_ = dbe_->book2D("HitVal12","Energy EM mod N2 vs Time", 4000, 0., 8000., 300, 0., 600. ); 
-      meZdcEneTEmN3_ = dbe_->book2D("HitVal13","Energy EM mod N3 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTEmN4_ = dbe_->book2D("HitVal14","Energy EM mod N4 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTEmN5_ = dbe_->book2D("HitVal15","Energy EM mod N5 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTHadN1_ = dbe_->book2D("HitVal16","Energy HAD mod N1 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTHadN2_ = dbe_->book2D("HitVal17","Energy HAD mod N2 vs Time", 4000, 0., 8000., 300, 0., 600. ); 
-      meZdcEneTHadN3_ = dbe_->book2D("HitVal18","Energy HAD mod N3 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTHadN4_ = dbe_->book2D("HitVal19","Energy HAD mod N4 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneHadNTot_ = dbe_->book1D("HitVal20","Total HAD Energy N",4000,0.,8000.);
-      meZdcEneEmNTot_  = dbe_->book1D("HitVal21","Total EM Energy N",4000,0.,8000.);
-      meZdcEneNTot_    = dbe_->book1D("HitVal22","Total Energy N",4000,0.,8000.);
-      meZdcEneEmP1_  = dbe_->book1D("HitVal23","Energy EM module P1",4000,0.,8000.);
-      meZdcEneEmP2_  = dbe_->book1D("HitVal24","Energy EM module P2",4000,0.,8000.);
-      meZdcEneEmP3_  = dbe_->book1D("HitVal25","Energy EM module P3",4000,0.,8000.);
-      meZdcEneEmP4_  = dbe_->book1D("HitVal26","Energy EM module P4",4000,0.,8000.);
-      meZdcEneEmP5_  = dbe_->book1D("HitVal27","Energy EM module P5",4000,0.,8000.);
-      meZdcEneHadP1_ = dbe_->book1D("HitVal29","Energy HAD module P1",4000,0.,8000.);
-      meZdcEneHadP2_ = dbe_->book1D("HitVal29","Energy HAD module P2",4000,0.,8000.);
-      meZdcEneHadP3_ = dbe_->book1D("HitVal30","Energy HAD module P3",4000,0.,8000.);
-      meZdcEneHadP4_ = dbe_->book1D("HitVal31","Energy HAD module P4",4000,0.,8000.);
-      meZdcEneTEmP1_ = dbe_->book2D("HitVal32","Energy EM mod P1 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTEmP2_ = dbe_->book2D("HitVal33","Energy EM mod P2 vs Time", 4000, 0., 8000., 300, 0., 600. ); 
-      meZdcEneTEmP3_ = dbe_->book2D("HitVal34","Energy EM mod P3 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTEmP4_ = dbe_->book2D("HitVal35","Energy EM mod P4 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTEmP5_ = dbe_->book2D("HitVal36","Energy EM mod P5 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTHadP1_ = dbe_->book2D("HitVal37","Energy HAD mod P1 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTHadP2_ = dbe_->book2D("HitVal38","Energy HAD mod P2 vs Time", 4000, 0., 8000., 300, 0., 600. ); 
-      meZdcEneTHadP3_ = dbe_->book2D("HitVal39","Energy HAD mod P3 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneTHadP4_ = dbe_->book2D("HitVal40","Energy HAD mod P4 vs Time", 4000, 0., 8000., 300, 0., 600. );
-      meZdcEneHadPTot_ = dbe_->book1D("HitVal41","Total HAD Energy P",4000,0.,8000.);
-      meZdcEneEmPTot_  = dbe_->book1D("HitVal42","Total EM Energy P",4000,0.,8000.);
-      meZdcEnePTot_    = dbe_->book1D("HitVal43","Total Energy P",4000,0.,8000.);
-      meZdcCorEEmNEHadN_= dbe_->book2D("HitVal47","Energy EMN vs HADN", 4000, 0., 8000.,4000, 0., 8000.);
-      meZdcCorEEmPEHadP_= dbe_->book2D("HitVal44","Energy EMP vs HADP", 4000, 0., 8000.,4000, 0., 8000.);
-      meZdcCorEtotNEtotP_ = dbe_->book2D("HitVal45","Energy N vs P", 4000, 0., 8000.,4000, 0., 8000.);
-      meZdcEneTot_ = dbe_->book1D("HitVal46","Total Energy ZDCs",4000,0.,8000.);
+/////////////////////////1///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits");
+      meAllZdcNHit_ = dbe_->book1D("ZDC Hits","Number of All Hits in ZDC",100,0.,100.);
+      meAllZdcNHit_->setAxisTitle("Total Hits",1);
+      meAllZdcNHit_->setAxisTitle("Counts",2);
+/////////////////////////2///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/Excess_Info/Debug_Helper");
+      meBadZdcDetHit_= dbe_->book1D("Hiits with the wrong Det","Hits with wrong Det in ZDC",100,0.,100.);
+      meBadZdcDetHit_->setAxisTitle("Wrong Hits",1);
+      meBadZdcDetHit_->setAxisTitle("Counts",2);
+/////////////////////////3///////////////////////////
+      meBadZdcSecHit_= dbe_->book1D("Wrong Section Hits","Hits with wrong Section in ZDC",100,0.,100.);
+      meBadZdcSecHit_->setAxisTitle("Hits in wrong section",1);
+      meBadZdcSecHit_->setAxisTitle("Counts",2);
+/////////////////////////4///////////////////////////      
+      meBadZdcIdHit_ = dbe_->book1D("Wrong_ID_Hits","Hits with wrong ID in ZDC",100,0.,100.);
+      meBadZdcIdHit_->setAxisTitle("Hits with wrong ID",1);
+      meBadZdcIdHit_->setAxisTitle("Counts",2);
+/////////////////////////5///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/Excess_Info/BasicHitInfo");      
+      meZdcNHitEM_   = dbe_->book1D("Hits in EM","Number of Hits in ZDC EM",100,0.,100.);
+      meZdcNHitEM_->setAxisTitle("EM Hits",1);
+      meZdcNHitEM_->setAxisTitle("Counts",2);
+/////////////////////////6///////////////////////////      
+      meZdcNHitHad_   = dbe_->book1D("Hits in HAD","Number of Hits in ZDC Had",100,0.,100.);
+      meZdcNHitHad_->setAxisTitle("HAD Hits",1);
+      meZdcNHitHad_->setAxisTitle("Counts",2);
+/////////////////////////7///////////////////////////      
+      meZdcNHitLum_   = dbe_->book1D("Hits in LUM","Number of Hits in ZDC Lum",100,0.,100.);
+      meZdcNHitLum_->setAxisTitle("LUM Hits",1);
+      meZdcNHitLum_->setAxisTitle("Counts",2);
+/////////////////////////8///////////////////////////      
+      meZdcDetectHit_= dbe_->book1D("Calo Detector ID","Calo Detector ID",50,0.,50.);
+      meZdcDetectHit_->setAxisTitle("Detector Hits",1);
+      meZdcDetectHit_->setAxisTitle("Counts",2);
+      /////////////////////////9///////////////////////////      
+      meZdcSideHit_ = dbe_->book1D("ZDC Side","Side in ZDC",4,-2,2.);
+      meZdcSideHit_->setAxisTitle("ZDC Side",1);
+      meZdcSideHit_->setAxisTitle("Counts",2);
+/////////////////////////10///////////////////////////      
+      meZdcSectionHit_   = dbe_->book1D("ZDC Section","Section in ZDC",4,0.,4.);
+      meZdcSectionHit_->setAxisTitle("ZDC Section",1);
+      meZdcSectionHit_->setAxisTitle("Counts",2);
+/////////////////////////11///////////////////////////      
+      meZdcChannelHit_   = dbe_->book1D("ZDC Channel","Channel in ZDC",10,0.,10.);
+      meZdcChannelHit_->setAxisTitle("ZDC Channel",1);
+      meZdcChannelHit_->setAxisTitle("Counts",2);
+/////////////////////////12///////////////////////////      
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/");
+      meZdcEnergyHit_= dbe_->book1D("Hit Energy","Hits Energy",4000,0.,8000.);
+      meZdcEnergyHit_->setAxisTitle("Counts",2);
+      meZdcEnergyHit_->setAxisTitle("Energy (GeV)",1);
+/////////////////////////13///////////////////////////      
+      meZdcHadEnergyHit_= dbe_->book1D("Hit Energy HAD","Hits Energy in Had Section",4000,0.,8000.);
+      meZdcHadEnergyHit_->setAxisTitle("Counts",2);
+      meZdcHadEnergyHit_->setAxisTitle("Energy (GeV)",1);
+/////////////////////////14///////////////////////////      
+      meZdcEMEnergyHit_ = dbe_->book1D("Hit Energy EM","Hits Energy in EM Section",4000,0.,8000.);
+      meZdcEMEnergyHit_->setAxisTitle("Counts",2);
+      meZdcEMEnergyHit_->setAxisTitle("Energy (GeV)",1);
+/////////////////////////15///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/Excess_Info/BasicHitInfo");      
+      meZdcTimeHit_  = dbe_->book1D("Time in ZDC","Time in ZDC",300,0.,600.);
+      meZdcTimeHit_->setAxisTitle("Time (ns)",1);
+      meZdcTimeHit_->setAxisTitle("Counts",2);
+/////////////////////////16///////////////////////////      
+      meZdcTimeWHit_ = dbe_->book1D("Energy Weighted Time in ZDC","Time in ZDC (E wtd)", 300,0.,600.);
+      meZdcTimeWHit_->setAxisTitle("Time (ns)",1);
+      meZdcTimeWHit_->setAxisTitle("Counts",2);
+/////////////////////////17///////////////////////////      
+      meZdc10Ene_ = dbe_->book1D("ZDC Log(E)","Log10Energy in ZDC", 140, -20., 20. );
+      meZdc10Ene_->setAxisTitle("Log(E) (GeV)",1);
+      meZdc10Ene_->setAxisTitle("Counts",2);
+/////////////////////////18///////////////////////////      
+      meZdcHadL10EneP_ = dbe_->bookProfile("Log(EHAD) vs Contribution","Log10Energy in Had ZDC vs Hit contribution", 140, -1., 20., 100, 0., 1. );
+      meZdcHadL10EneP_->setAxisTitle("Log(EHAD) (GeV)",1);
+      meZdcHadL10EneP_->setAxisTitle("Counts",2);
+/////////////////////////19///////////////////////////      
+      meZdcEML10EneP_ = dbe_->bookProfile("Log(EEM) vs Contribution","Log10Energy in EM ZDC vs Hit contribution", 140, -1., 20., 100, 0., 1. );
+      meZdcEML10EneP_->setAxisTitle("Log(EEM) (GeV)",1);
+      meZdcEML10EneP_->setAxisTitle("Counts",2);
+/////////////////////////20///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits");      
+      meZdcEHadCh_ = dbe_->book2D("ZDC EHAD vs Channel","ZDC Had Section Energy vs Channel", 4000, 0., 8000., 6, 0., 6. );
+      meZdcEHadCh_->setAxisTitle("Hadronic Channel Number",2);
+      meZdcEHadCh_->setAxisTitle("Energy (GeV)",1);
+/////////////////////////21///////////////////////////      
+      meZdcEEMCh_ = dbe_->book2D("ZDC EEM vs Channel","ZDC EM Section Energy vs Channel", 4000, 0., 8000., 6, 0., 6. );
+      meZdcEEMCh_->setAxisTitle("EM Channel Number",2);
+      meZdcEEMCh_->setAxisTitle("Energy (GeV)",1);
+/////////////////////////22///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/Excess_Info/BasicHitInfo");
+      meZdcETime_ = dbe_->book2D("E vs T","Hits ZDC Energy vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcETime_->setAxisTitle("Energy (GeV)",1);
+      meZdcETime_->setAxisTitle("Time (ns)",2);
+/////////////////////////23///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/ENERGY_SUMS/Individual_Channels/NZDC");
+      meZdcEneEmN1_  = dbe_->book1D("NZDC EM1 Energy","Energy EM module N1",4000,0.,8000.);
+      meZdcEneEmN1_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmN1_->setAxisTitle("Counts",2);
+/////////////////////////24///////////////////////////
+      meZdcEneEmN2_  = dbe_->book1D("NZDC EM2 Energy","Energy EM module N2",4000,0.,8000.);
+      meZdcEneEmN2_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmN2_->setAxisTitle("Counts",2);
+/////////////////////////25///////////////////////////
+      meZdcEneEmN3_  = dbe_->book1D("NZDC EM3 Energy","Energy EM module N3",4000,0.,8000.);
+      meZdcEneEmN3_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmN3_->setAxisTitle("Counts",2);
+/////////////////////////26///////////////////////////
+      meZdcEneEmN4_  = dbe_->book1D("NZDC EM4 Energy","Energy EM module N4",4000,0.,8000.);
+      meZdcEneEmN4_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmN4_->setAxisTitle("Counts",2);
+/////////////////////////27///////////////////////////
+      meZdcEneEmN5_  = dbe_->book1D("NZDC EM5 Energy","Energy EM module N5",4000,0.,8000.);
+      meZdcEneEmN5_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmN5_->setAxisTitle("Counts",2);
+/////////////////////////28///////////////////////////
+      meZdcEneHadN1_ = dbe_->book1D("NZDC HAD1 Energy","Energy HAD module N1",4000,0.,8000.);
+      meZdcEneHadN1_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneHadN1_->setAxisTitle("Counts",2);
+/////////////////////////29///////////////////////////
+      meZdcEneHadN2_ = dbe_->book1D("NZDC HAD2 Energy","Energy HAD module N2",4000,0.,8000.);
+      meZdcEneHadN2_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneHadN2_->setAxisTitle("Counts",2);
+/////////////////////////30///////////////////////////
+      meZdcEneHadN3_ = dbe_->book1D("NZDC HAD3 Energy","Energy HAD module N3",4000,0.,8000.);
+      meZdcEneHadN3_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneHadN3_->setAxisTitle("Counts",2);
+/////////////////////////31///////////////////////////
+      meZdcEneHadN4_ = dbe_->book1D("NZDC HAD4 Energy","Energy HAD module N4",4000,0.,8000.);
+      meZdcEneHadN4_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneHadN4_->setAxisTitle("Counts",2);
+/////////////////////////32///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/Excess_Info/Individual_ChannelvsTime/NZDC");
+      meZdcEneTEmN1_ = dbe_->book2D("NZDC EM1 Energy vs Time","Energy EM mod N1 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTEmN1_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTEmN1_->setAxisTitle("Time (ns)",2);
+/////////////////////////33///////////////////////////
+      meZdcEneTEmN2_ = dbe_->book2D("NZDC EM2 Energy vs Time","Energy EM mod N2 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTEmN2_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTEmN2_->setAxisTitle("Time (ns)",2); 
+/////////////////////////34///////////////////////////
+      meZdcEneTEmN3_ = dbe_->book2D("NZDC EM3 Energy vs Time","Energy EM mod N3 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTEmN3_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTEmN3_->setAxisTitle("Time (ns)",2);
+/////////////////////////35///////////////////////////
+      meZdcEneTEmN4_ = dbe_->book2D("NZDC EM4 Energy vs Time","Energy EM mod N4 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTEmN4_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTEmN4_->setAxisTitle("Time (ns)",2);
+/////////////////////////36///////////////////////////
+      meZdcEneTEmN5_ = dbe_->book2D("NZDC EM5 Energy vs Time","Energy EM mod N5 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTEmN5_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTEmN5_->setAxisTitle("Time (ns)",2);
+/////////////////////////37///////////////////////////
+      meZdcEneTHadN1_ = dbe_->book2D("NZDC HAD1 Energy vs Time","Energy HAD mod N1 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTHadN1_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTHadN1_->setAxisTitle("Time (ns)",2);
+/////////////////////////38///////////////////////////
+      meZdcEneTHadN2_ = dbe_->book2D("NZDC HAD2 Energy vs Time","Energy HAD mod N2 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTHadN2_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTHadN2_->setAxisTitle("Time (ns)",2); 
+/////////////////////////39///////////////////////////
+      meZdcEneTHadN3_ = dbe_->book2D("NZDC HAD3 Energy vs Time","Energy HAD mod N3 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTHadN3_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTHadN3_->setAxisTitle("Time (ns)",2);
+/////////////////////////40///////////////////////////
+      meZdcEneTHadN4_ = dbe_->book2D("NZDC HAD4 Energy vs Time","Energy HAD mod N4 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTHadN4_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTHadN4_->setAxisTitle("Time (ns)",2);
+/////////////////////////41///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/ENERGY_SUMS/NZDC");
+      meZdcEneHadNTot_ = dbe_->book1D("NZDC EHAD","Total N-ZDC HAD Energy",4000,0.,4000.);
+      meZdcEneHadNTot_->setAxisTitle("Counts",2);
+      meZdcEneHadNTot_->setAxisTitle("Energy (GeV)",1);
+/////////////////////////42///////////////////////////
+      meZdcEneEmNTot_ = dbe_->book1D("NZDC EEM","Total N-ZDC EM Energy",3000,0.,3000.);
+      meZdcEneEmNTot_->setAxisTitle("Counts",2);
+      meZdcEneEmNTot_->setAxisTitle("Energy (GeV)",1);
+/////////////////////////43///////////////////////////
+      meZdcEneNTot_ = dbe_->book1D("NZDC ETOT","Total N-ZDC Energy ",7000,0.,7000.);
+      meZdcEneNTot_->setAxisTitle("Counts",2);
+      meZdcEneNTot_->setAxisTitle("Energy (GeV)",1);
+/////////////////////////44///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/ENERGY_SUMS/Individual_Channels/PZDC");
+      meZdcEneEmP1_ = dbe_->book1D("PZDC EM1 Energy","Energy EM module P1",3000,0.,3000.);
+      meZdcEneEmP1_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmP1_->setAxisTitle("Counts",2);
+/////////////////////////45///////////////////////////
+      meZdcEneEmP2_ = dbe_->book1D("PZDC EM2 Energy","Energy EM module P2",3000,0.,3000.);
+      meZdcEneEmP2_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmP2_->setAxisTitle("Counts",2);
+/////////////////////////46///////////////////////////
+      meZdcEneEmP3_ = dbe_->book1D("PZDC EM3 Energy","Energy EM module P3",3000,0.,3000.);
+      meZdcEneEmP3_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmP3_->setAxisTitle("Counts",2);
+/////////////////////////47///////////////////////////
+      meZdcEneEmP4_ = dbe_->book1D("PZDC EM4 Energy","Energy EM module P4",3000,0.,3000.);
+      meZdcEneEmP4_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmP4_->setAxisTitle("Counts",2);
+/////////////////////////48///////////////////////////
+      meZdcEneEmP5_ = dbe_->book1D("PZDC EM5 Energy","Energy EM module P5",3000,0.,3000.);
+      meZdcEneEmP5_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmP5_->setAxisTitle("Counts",2);
+/////////////////////////49///////////////////////////
+      meZdcEneHadP1_ = dbe_->book1D("PZDC HAD1 Energy","Energy HAD module P1",3000,0.,3000.);
+      meZdcEneHadP1_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneHadP1_->setAxisTitle("Counts",2);
+/////////////////////////50///////////////////////////
+      meZdcEneHadP2_ = dbe_->book1D("PZDC HAD2 Energy","Energy HAD module P2",3000,0.,3000.);
+      meZdcEneHadP2_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneHadP2_->setAxisTitle("Counts",2);
+/////////////////////////51///////////////////////////
+      meZdcEneHadP3_ = dbe_->book1D("PZDC HAD3 Energy","Energy HAD module P3",3000,0.,3000.);
+      meZdcEneHadP3_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneHadP3_->setAxisTitle("Counts",2);
+/////////////////////////52///////////////////////////
+      meZdcEneHadP4_ = dbe_->book1D("PZDC HAD4 Energy","Energy HAD module P4",3000,0.,3000.);
+      meZdcEneHadP4_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneHadP4_->setAxisTitle("Counts",2);
+/////////////////////////53///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/Excess_Info/Individual_ChannelvsTime/PZDC");
+      meZdcEneTEmP1_ = dbe_->book2D("PZDC EM1 Energy vs Time","Energy EM mod P1 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTEmP1_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTEmP1_->setAxisTitle("Time (ns)",2);
+/////////////////////////54///////////////////////////
+      meZdcEneTEmP2_ = dbe_->book2D("PZDC EM2 Energy vs Time","Energy EM mod P2 vs Time", 4000, 0., 8000., 300, 0., 600. ); 
+      meZdcEneTEmP2_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTEmP2_->setAxisTitle("Time (ns)",2);
+/////////////////////////55///////////////////////////
+      meZdcEneTEmP3_ = dbe_->book2D("PZDC EM3 Energy vs Time","Energy EM mod P3 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTEmP3_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTEmP3_->setAxisTitle("Time (ns)",2);
+/////////////////////////56///////////////////////////
+      meZdcEneTEmP4_ = dbe_->book2D("PZDC EM4 Energy vs Time","Energy EM mod P4 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTEmP4_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTEmP4_->setAxisTitle("Time (ns)",2);
+/////////////////////////57///////////////////////////
+      meZdcEneTEmP5_ = dbe_->book2D("PZDC EM5 Energy vs Time","Energy EM mod P5 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTEmP5_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTEmP5_->setAxisTitle("Time (ns)",2);
+/////////////////////////58///////////////////////////
+      meZdcEneTHadP1_ = dbe_->book2D("PZDC HAD1 Energy vs Time","Energy HAD mod P1 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTHadP1_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTHadP1_->setAxisTitle("Time (ns)",2);
+/////////////////////////59///////////////////////////
+      meZdcEneTHadP2_ = dbe_->book2D("PZDC HAD2 Energy vs Time","Energy HAD mod P2 vs Time", 4000, 0., 8000., 300, 0., 600. ); 
+      meZdcEneTHadP2_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTHadP2_->setAxisTitle("Time (ns)",2);
+/////////////////////////60///////////////////////////
+      meZdcEneTHadP3_ = dbe_->book2D("PZDC HAD3 Energy vs Time","Energy HAD mod P3 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTHadP3_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTHadP3_->setAxisTitle("Time (ns)",2);
+/////////////////////////61///////////////////////////
+      meZdcEneTHadP4_ = dbe_->book2D("PZDC HAD4 Energy vs Time","Energy HAD mod P4 vs Time", 4000, 0., 8000., 300, 0., 600. );
+      meZdcEneTHadP4_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneTHadP4_->setAxisTitle("Time (ns)",2);
+/////////////////////////62/////////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/ENERGY_SUMS/PZDC");
+      meZdcEneHadPTot_ = dbe_->book1D("PZDC EHAD","Total P-ZDC HAD Energy",10000,0.,10000.);
+      meZdcEneHadPTot_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneHadPTot_->setAxisTitle("Counts",2);
+/////////////////////////63///////////////////////////
+      meZdcEneEmPTot_ = dbe_->book1D("PZDC EEM","Total P-ZDC EM Energy",10000,0.,10000.);
+      meZdcEneEmPTot_->setAxisTitle("Energy (GeV)",1);
+      meZdcEneEmPTot_->setAxisTitle("Counts",2);
+/////////////////////////64///////////////////////////
+      meZdcEnePTot_ = dbe_->book1D("PZDC ETOT","Total P-ZDC Energy",10000,0.,10000.);
+      meZdcEnePTot_->setAxisTitle("Energy (GeV)",1);
+      meZdcEnePTot_->setAxisTitle("Counts",2);
+/////////////////////////65///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/ENERGY_SUMS/NZDC");
+      meZdcCorEEmNEHadN_= dbe_->book2D("NZDC EMvHAD","N-ZDC Energy EM vs HAD", 3000, 0., 3000.,3000, 0., 3000.);
+      meZdcCorEEmNEHadN_->setAxisTitle("EM Energy (GeV)",1);
+      meZdcCorEEmNEHadN_->setAxisTitle("HAD Energy (GeV)",2);
+/////////////////////////66///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/ENERGY_SUMS/PZDC");
+      meZdcCorEEmPEHadP_= dbe_->book2D("PZDC EMvHAD","P-ZDC Energy EM vs HAD", 3000, 0., 3000.,3000, 0., 3000.);
+      meZdcCorEEmPEHadP_->setAxisTitle("EM Energy (GeV)",1);
+      meZdcCorEEmPEHadP_->setAxisTitle("HAD Energy (GeV)",2);
+/////////////////////////67///////////////////////////
+      dbe_->setCurrentFolder("ZDCValidation/ZdcSimHits/ENERGY_SUMS");
+      meZdcCorEtotNEtotP_ = dbe_->book2D("PZDC vs NZDC","Energy N-ZDC vs P-ZDC", 3000, 0., 3000.,3000, 0., 3000.);
+      meZdcCorEtotNEtotP_->setAxisTitle("N-ZDC Total Energy (GeV)",1);
+      meZdcCorEtotNEtotP_->setAxisTitle("P-ZDC Total Energy (GeV)",2);
+/////////////////////////68///////////////////////////
+      meZdcEneTot_ = dbe_->book1D("ETOT ZDCs","Total Energy ZDCs",3000,0.,3000.);
+      meZdcEneTot_->setAxisTitle("Counts",2);
+      meZdcEneTot_->setAxisTitle("Energy (GeV)",1);
+///////////////////////////////////////////////////////////
+
+
+
+
+//////////////////New Plots////////////////////////////////
+
+////////////////////// GenParticle Plots///////////////////////////////////////
+   dbe_->setCurrentFolder("ZDCValidation/GenParticles/Forward");
+//////////////////////////////////////////////////////////////////////////////
+///////////////////////////////69/////////////////////////////////////////////
+    genpart_Pi0F = dbe_->book2D("Pi0_Forward","Forward Generated Pi0s",200,7.5,13,100,-3.15,3.15);
+   //   genpart_Pi0F = dbe_->bookProfile2D("blah","balh",200,4.5,7,100,-3.15,3.15,2000,0,3000,"s");
+   genpart_Pi0F->setAxisTitle("Eta",1);
+   genpart_Pi0F->setAxisTitle("Phi (radians)",2);
+   genpart_Pi0F->setAxisTitle("Energy (GeV)",3);
+   genpart_Pi0F->getTH2F()->SetOption("lego2z,prof");
+   genpart_Pi0F->getTH2F()->SetTitleOffset(1.4,"x");
+   genpart_Pi0F->getTH2F()->SetTitleOffset(1.4,"y");
+/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////70/////////////////////////////////////////////
+   genpart_NeutF = dbe_->book2D("Neutron_Forward","Forward Generated Neutrons",200,7.5,13,100,-3.15,3.15);
+   genpart_NeutF->setAxisTitle("Eta",1);
+   genpart_NeutF->setAxisTitle("Phi (radians)",2);
+   genpart_NeutF->setAxisTitle("Energy (GeV)",3);
+   genpart_NeutF->getTH2F()->SetOption("lego2z,prof");
+   genpart_NeutF->getTH2F()->SetTitleOffset(1.4,"x");
+   genpart_NeutF->getTH2F()->SetTitleOffset(1.4,"y");
+/////////////////////////////////////////////////////////////////////////////////
+   ///////////////////////////////71/////////////////////////////////////////////
+   genpart_GammaF = dbe_->book2D("Gamma_Forward","Forward Generated Gammas",200,7.5,13,100,-3.15,3.15);
+   genpart_GammaF->setAxisTitle("Eta",1);
+   genpart_GammaF->setAxisTitle("Phi (radians)",2);
+   genpart_GammaF->setAxisTitle("Energy (GeV)",3);
+   genpart_GammaF->getTH2F()->SetOption("lego2z,prof");
+   genpart_GammaF->getTH2F()->SetTitleOffset(1.4,"x");
+   genpart_GammaF->getTH2F()->SetTitleOffset(1.4,"y");
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+genpart_Pi0F_energydist = dbe_->book1D("Pi0_Forward_EDistribution","Gen-Level Forward Pi0 Energy",1500,0,1500);
+   genpart_Pi0F_energydist->setAxisTitle("Energy (GeV)",1);
+   genpart_Pi0F_energydist->setAxisTitle("Counts",2);
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+   genpart_NeutF_energydist = dbe_->book1D("N_Forward_EDistribution","Gen-Level Forward Neutron Energy",1500,0,1500);
+   genpart_NeutF_energydist->setAxisTitle("Energy (GeV)",1);
+   genpart_NeutF_energydist->setAxisTitle("Counts",2);
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+   genpart_GammaF_energydist = dbe_->book1D("Gamma_Forward_EDistribution","Gen-Level Fowarad Gamma Energy",1500,0,1500);
+   genpart_GammaF_energydist->setAxisTitle("Energy (GeV)",1);
+   genpart_GammaF_energydist->setAxisTitle("Counts",2);
+/////////////////////////////////////////////////////////////////////////////////
+  dbe_->setCurrentFolder("ZDCValidation/GenParticles/Backward");
+////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////72/////////////////////////////////////////////
+   genpart_Pi0B = dbe_->book2D("Pi0_Backward","Backward Generated Pi0s",1000,-13,-7.5,100,-3.15,3.15);
+   genpart_Pi0B->setAxisTitle("Eta",1);
+   genpart_Pi0B->setAxisTitle("Phi (radians)",2);
+   genpart_Pi0B->setAxisTitle("Energy (GeV)",3);
+   genpart_Pi0B->getTH2F()->SetOption("lego2z,prof");
+   genpart_Pi0B->getTH2F()->SetTitleOffset(1.4,"x");
+   genpart_Pi0B->getTH2F()->SetTitleOffset(1.4,"y");
+/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////73/////////////////////////////////////////////
+   genpart_NeutB = dbe_->book2D("Neutron_Backward","Backward Generated Neutrons",1000,-13,-7.5,100,-3.15,3.15);
+   genpart_NeutB->setAxisTitle("Eta",1);
+   genpart_NeutB->setAxisTitle("Phi (radians)",2);
+   genpart_NeutB->setAxisTitle("Energy (GeV)",3);
+   genpart_NeutB->getTH2F()->SetOption("lego2z,prof");
+   genpart_NeutB->getTH2F()->SetTitleOffset(1.4,"x");
+   genpart_NeutB->getTH2F()->SetTitleOffset(1.4,"y");
+/////////////////////////////////////////////////////////////////////////////////
+   ///////////////////////////////74/////////////////////////////////////////////
+   genpart_GammaB = dbe_->book2D("Gamma_Backward","Backward Generated Gammas",1000,-13,-7.5,100,-3.15,3.15);
+   genpart_GammaB->setAxisTitle("Eta",1);
+   genpart_GammaB->setAxisTitle("Phi (radians)",2);
+   genpart_GammaB->setAxisTitle("Energy (GeV)",3);
+   genpart_GammaB->getTH2F()->SetOption("lego2z,prof");
+   genpart_GammaB->getTH2F()->SetTitleOffset(1.4,"x");
+   genpart_GammaB->getTH2F()->SetTitleOffset(1.4,"y");
+/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////GEN Particle Energy Distributions/////////////////////
+   ///////////////////////////////////////////////////////////////////////////////////////////////
+   genpart_Pi0B_energydist = dbe_->book1D("Pi0_Backward_EDistribution","Gen-Level Backward Pi0 Energy",1500,0,1500);
+   genpart_Pi0B_energydist->setAxisTitle("Energy (GeV)",1);
+   genpart_Pi0B_energydist->setAxisTitle("Counts",2);
+   //////////////////////////////////////////////////////////////////////////////////////////////
+   //////////////////////////////////////////////////////////////////////////////////////////////////////////
+   genpart_NeutB_energydist = dbe_->book1D("N_Backward_EDistribution","Gen-Level Foward Neutron Energy",1500,0,1500);
+   genpart_NeutB_energydist->setAxisTitle("Energy (GeV)",1);
+   genpart_NeutB_energydist->setAxisTitle("Counts",2);
+   ///////////////////////////////////////////////////////////////////////////////////////////
+   //////////////////////////////////////////////////////////////////////////////////////////
+   genpart_GammaB_energydist = dbe_->book1D("Gamma_Backward_EDistribution","Gen-Level Backward Gamma Energy",1500,0,1500);
+   genpart_GammaB_energydist->setAxisTitle("Energy (GeV)",1);
+   genpart_GammaB_energydist->setAxisTitle("Counts",2);
+   /////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
     }
   }
 }
@@ -113,12 +467,111 @@ void ZdcSimHitStudy::endJob() {
   if (dbe_ && outFile_.size() > 0) dbe_->save(outFile_);
 }
 
-void ZdcSimHitStudy::analyze(const edm::Event& e, const edm::EventSetup& ) {
+//void ZdcSimHitStudy::analyze(const edm::Event& e, const edm::EventSetup& ) {
+void ZdcSimHitStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup ) {
+//////////NEW STUFF//////////////////////
+
+   using namespace edm;
+   bool gotGenParticles=true;
+   
+ 
+   Handle<reco::GenParticleCollection> genhandle;
+   
+   if (!(iEvent.getByLabel("genParticles",genhandle)))
+   {
+    gotGenParticles=false; //this is the same kind of boolean except for the genparticles collection
+   }
+   if (!(genhandle.isValid()))
+   {
+    gotGenParticles=false;
+   }
+   
+
+   //Handle<edm::PCaloHitContainer> zdcsimhandle;
+   //iEvent.getByLabel("g4SimHits_ZDCHITS",zdcsimhandle);
+ 
+ 
+   
+
+ 
+   ////////////////////////////////////GEN PARTICLE HISTOS///////////////////////////////////
+
+
+      if (gotGenParticles==true){ //if the boolean was able to find the leaf "genparticles" then do this
+   for (reco::GenParticleCollection::const_iterator gen = genhandle->begin();
+	  gen!=genhandle->end();
+	  ++gen) //here we iterate over all generated particles
+       {
+	 //         double energy=gen->energy();
+	 reco::GenParticle thisParticle = (reco::GenParticle)(*gen); //get the particle "gen" points to
+         double energy_2= thisParticle.energy(); //here I grab some of the attributes of the generated particle....like its energy, its phi and its eta and what kind of particle it is
+         double gen_phi = thisParticle.phi();
+         double gen_eta = thisParticle.eta();
+         int gen_id = thisParticle.pdgId();	
+   
+	 if (gen_id==111){ //here i require a pi0
+	   if (gen_eta>8.3){ //eta requirement
+
+//////////////////////////////////////////////////////////////////////////////////////
+//# IMPORTANT     IMPORTANT         IMPORTANT            IMPORTANT                  #
+//# The real eta of the ZDC is |eta| > 8.3, I have only changed it here to 3 because#
+//# in the PG simulation the ZDC is at an eta of about 4.5-7, in the real GEANT the #
+//# ZDC is in its appropriate place at the very foward region...please edit this if #
+//# looking at MinBias data or the like                                             #
+//#                                                                                 #
+//# IMPORTANT     IMPORTANT      IMPORTANT       IMPORTANT                          #
+/////////////////////////////////////////////////////////////////////////////////////
+
+
+
+	   genpart_Pi0F->Fill(gen_eta,gen_phi,energy_2); //fill the lego plot
+           genpart_Pi0F_energydist->Fill(energy_2); //fill the 1D distribution
+	                 }
+           if (gen_eta<-8.3){ //neg eta requirement
+	     genpart_Pi0B->Fill(gen_eta,gen_phi,energy_2);
+             genpart_Pi0B_energydist->Fill(energy_2);
+	                   }
+                                       }
+	 if (gen_id==2112){ //require neutron
+	   if (gen_eta>8.3){
+         genpart_NeutF->Fill(gen_eta,gen_phi,energy_2);
+         genpart_NeutF_energydist->Fill(energy_2);
+	                  }
+	   if (gen_eta<-8.3){
+	     genpart_NeutB->Fill(gen_eta,gen_phi,energy_2);
+             genpart_NeutB_energydist->Fill(energy_2);
+	                   }
+                          }
+
+	 if (gen_id==22){ //require gamma
+	   if (gen_eta>8.3){
+           genpart_GammaF->Fill(gen_eta,gen_phi,energy_2);
+           genpart_GammaF_energydist->Fill(energy_2);
+	                 }
+           if (gen_eta<-8.3){
+	     genpart_GammaB->Fill(gen_eta,gen_phi,energy_2);
+             genpart_GammaB_energydist->Fill(energy_2);
+	                   }
+                         }
+
+       } //end of GEN loop
+      }
+
+
+
+/////////////////////////////////////////////////////////////////////
+
+//Below is the old script which I will comment later
+
+
 
   LogDebug("ZdcSimHitStudy") 
     //std::cout
-    << "Run = " << e.id().run() << " Event = " 
-    << e.id().event();
+    //std::cout
+    << "Run = " << iEvent.id().run() << " Event = " 
+    << iEvent.id().event();
+/*    << "Run = " << e.id().run() << " Event = " 
+    << e.id().event();*/
   //std::cout<<std::endl;
   
   std::vector<PCaloHit>               caloHits;
@@ -126,7 +579,8 @@ void ZdcSimHitStudy::analyze(const edm::Event& e, const edm::EventSetup& ) {
 
   bool getHits = false;
   if (checkHit_) {
-    e.getByLabel(g4Label,zdcHits,hitsZdc); 
+    iEvent.getByLabel(g4Label,zdcHits,hitsZdc);
+//    e.getByLabel(g4Label,zdcHits,hitsZdc); 
     if (hitsZdc.isValid()) getHits = true;
   }
 
@@ -231,6 +685,7 @@ void ZdcSimHitStudy::analyzeHits(std::vector<PCaloHit>& hits){
     meZdcNHitHad_->Fill(double(nZdcHad));
     meZdcNHitLum_->Fill(double(nZdcLum)); 
     meZdcEnePTot_->Fill(enetotP);
+    meZdcEneNTot_->Fill(enetotN);
     meZdcEneHadNTot_->Fill(enetotHadN);
     meZdcEneHadPTot_->Fill(enetotHadP);
     meZdcEneEmNTot_->Fill(enetotEmN);
@@ -353,7 +808,9 @@ int ZdcSimHitStudy::FillHitValHist(int side,int section,int channel,double energ
   
  
 
-
+void ZdcSimHitStudy::endRun(const edm::Run& run, const edm::EventSetup& c)
+{
+}
 
 
 

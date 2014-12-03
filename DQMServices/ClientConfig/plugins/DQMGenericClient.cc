@@ -2,8 +2,8 @@
  *  Class:DQMGenericClient 
  *
  *
- *  $Date: 2012/02/12 16:19:29 $
- *  $Revision: 1.32 $
+ *  $Date: 2013/05/23 16:16:28 $
+ *  $Revision: 1.35 $
  * 
  *  \author Junghwan Goh - SungKyunKwan University
  */
@@ -782,7 +782,8 @@ void DQMGenericClient::limitedFit(MonitorElement * srcME, MonitorElement * meanM
 
 //=================================
 
-void DQMGenericClient::findAllSubdirectories (std::string dir, std::set<std::string> * myList, TString pattern = "") {
+void DQMGenericClient::findAllSubdirectories (std::string dir, std::set<std::string> * myList, const TString& _pattern = TString("")) {
+  TString pattern = _pattern;
   if (!theDQM->dirExists(dir)) {
     LogError("DQMGenericClient") << " DQMGenericClient::findAllSubdirectories ==> Missing folder " << dir << " !!!"; 
     return;
@@ -850,6 +851,7 @@ void DQMGenericClient::generic_eff (TH1* denom, TH1* numer, MonitorElement* effi
         
         efficiencyHist->setBinContent(globalBinNum, effVal);
         efficiencyHist->setBinError(globalBinNum, errVal);
+        efficiencyHist->setEfficiencyFlag();
       }
     }
   }

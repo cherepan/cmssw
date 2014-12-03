@@ -1,6 +1,7 @@
 #include "SimG4CMS/Muon/interface/MuonSensitiveDetector.h"
 #include "SimG4CMS/Muon/interface/MuonSlaveSD.h"
 #include "SimG4CMS/Muon//interface/MuonEndcapFrameRotation.h"
+#include "SimG4CMS/Muon/interface/MuonGemFrameRotation.h"
 #include "SimG4CMS/Muon/interface/MuonRpcFrameRotation.h"
 #include "Geometry/MuonNumbering/interface/MuonSubDetector.h"
 
@@ -24,7 +25,6 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include <iostream>
-
 
 MuonSensitiveDetector::MuonSensitiveDetector(std::string name, 
 					     const DDCompactView & cpv,
@@ -55,6 +55,9 @@ MuonSensitiveDetector::MuonSensitiveDetector(std::string name,
   } else if (detector->isRpc()) {
     //    cout << "MuonFrameRotation create MuonRpcFrameRotation"<<endl;
     theRotation=new MuonRpcFrameRotation( cpv );
+  } else if (detector->isGem()) {
+    //    cout << "MuonFrameRotation create MuonGemFrameRotation"<<endl;
+    theRotation=new MuonGemFrameRotation( cpv );
   }  else {
     theRotation = 0;
   }
@@ -170,8 +173,7 @@ Global3DPoint MuonSensitiveDetector::toOrcaUnits(Global3DPoint in){
   return Global3DPoint(in.x()/cm,in.y()/cm,in.z()/cm);
 }
 
-void MuonSensitiveDetector::storeVolumeAndTrack(G4Step * aStep)
-{
+void MuonSensitiveDetector::storeVolumeAndTrack(G4Step * aStep) {
   G4VPhysicalVolume* pv = aStep->GetPreStepPoint()->GetPhysicalVolume();
   G4Track * t  = aStep->GetTrack();
   thePV=pv;
@@ -223,7 +225,7 @@ void MuonSensitiveDetector::createHit(G4Step * aStep){
   //  int theParticleType     = theTrack->GetDefinition()->GetPDGEncoding();
   int theParticleType     = myG4TrackToParticleID->particleID(theTrack);
   G4ThreeVector gmd  = aStep->GetPreStepPoint()->GetMomentumDirection();
-  G4ThreeVector lmd = ((G4TouchableHistory *)(aStep->GetPreStepPoint()->GetTouchable()))->GetHistory()
+  G4ThreeVector lmd = ((const G4TouchableHistory *)(aStep->GetPreStepPoint()->GetTouchable()))->GetHistory()
     ->GetTopTransform().TransformAxis(gmd);
   Local3DPoint lnmd = toOrcaRef(ConvertToLocal3DPoint(lmd),aStep);
   float theThetaAtEntry = lnmd.theta();
@@ -238,8 +240,8 @@ void MuonSensitiveDetector::createHit(G4Step * aStep){
     theGlobalEntry = toOrcaUnits(Global3DPoint (theGlobalHelp.x(),theGlobalHelp.y(),theGlobalHelp.z()));
 
     G4StepPoint * preStepPoint = aStep->GetPreStepPoint();
-    G4TouchableHistory * theTouchable=(G4TouchableHistory *)
-                                      (preStepPoint->GetTouchable());
+    const G4TouchableHistory * theTouchable=(const G4TouchableHistory *)
+                                            (preStepPoint->GetTouchable());
     theGlobalHelp=ConvertToLocal3DPoint(theTouchable->GetTranslation());
     theGlobalPos = toOrcaUnits(Global3DPoint (theGlobalHelp.x(),theGlobalHelp.y(),theGlobalHelp.z()));
     //    const G4RotationMatrix * theGlobalRot = theTouchable->GetRotation();
@@ -405,7 +407,7 @@ Local3DPoint MuonSensitiveDetector::InitialStepPositionVsParent(G4Step * current
   G4StepPoint * preStepPoint = currentStep->GetPreStepPoint();
   G4ThreeVector globalCoordinates = preStepPoint->GetPosition();
   
-  G4TouchableHistory * theTouchable=(G4TouchableHistory *)
+  const G4TouchableHistory * theTouchable=(const G4TouchableHistory *)
     (preStepPoint->GetTouchable());
 
   G4int depth = theTouchable->GetHistory()->GetDepth();
@@ -421,7 +423,7 @@ Local3DPoint MuonSensitiveDetector::FinalStepPositionVsParent(G4Step * currentSt
   G4StepPoint * preStepPoint  = currentStep->GetPreStepPoint();
   G4ThreeVector globalCoordinates = postStepPoint->GetPosition();
     
-  G4TouchableHistory * theTouchable = (G4TouchableHistory *)
+  const G4TouchableHistory * theTouchable = (const G4TouchableHistory *)
     (preStepPoint->GetTouchable());
 
   G4int depth = theTouchable->GetHistory()->GetDepth();

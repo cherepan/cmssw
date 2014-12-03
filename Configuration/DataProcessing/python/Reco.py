@@ -9,13 +9,9 @@ Scenario supporting proton collisions
 import os
 import sys
 
-from Configuration.DataProcessing.Scenario import Scenario
+from Configuration.DataProcessing.Scenario import *
 from Configuration.DataProcessing.Utils import stepALCAPRODUCER,addMonitoring,dictIO,dqmIOSource,harvestingMode,dqmSeq
 import FWCore.ParameterSet.Config as cms
-from Configuration.PyReleaseValidation.ConfigBuilder import ConfigBuilder
-from Configuration.PyReleaseValidation.ConfigBuilder import Options
-from Configuration.PyReleaseValidation.ConfigBuilder import defaultOptions
-from Configuration.PyReleaseValidation.ConfigBuilder import installFilteredStream
 from Configuration.DataProcessing.RecoTLR import customisePrompt,customiseExpress
 
 class Reco(Scenario):
@@ -152,7 +148,7 @@ class Reco(Scenario):
         configBuilder = ConfigBuilder(options, process = process)
         configBuilder.prepare()
 
-        harvestingMode(process,datasetName,args,rANDl=True)
+        harvestingMode(process,datasetName,args,rANDl=False)
         return process
 
 
@@ -185,6 +181,25 @@ class Reco(Scenario):
         
         return process
 
+    def skimming(self, skims, globalTag,**options):
+        """
+        _skimming_
+
+        skimming method overload for the prompt skiming
+        
+        """
+        options = defaultOptions
+        options.scenario = self.cbSc if hasattr(self,'cbSc') else self.__class__.__name__
+        options.step = "SKIM:"+('+'.join(skims))
+        options.name = "SKIM"
+        options.conditions = globalTag
+        process = cms.Process("SKIM")
+        process.source = cms.Source("PoolSource")
+        configBuilder = ConfigBuilder(options, process = process)
+        configBuilder.prepare()
+
+        return process
+        
     """
     def repack(self, **args):
         options = defaultOptions

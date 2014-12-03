@@ -13,7 +13,7 @@
 //
 // Original Author:  Michail Bachtis,32 3-B16,+41227675567,
 //         Created:  Thu Jun  9 01:36:17 CEST 2011
-// $Id$
+// $Id: MuPFIsoEmbedder.cc,v 1.3 2013/02/25 21:46:26 chrjones Exp $
 //
 //
 
@@ -45,15 +45,8 @@ class MuPFIsoEmbedder : public edm::EDProducer {
       static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
    private:
-      virtual void beginJob() ;
       virtual void produce(edm::Event&, const edm::EventSetup&);
-      virtual void endJob() ;
       
-      virtual void beginRun(edm::Run&, edm::EventSetup const&);
-      virtual void endRun(edm::Run&, edm::EventSetup const&);
-      virtual void beginLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&);
-      virtual void endLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&);
-
 
       // ----------member data ---------------------------
   edm::InputTag muons_;
@@ -70,7 +63,25 @@ MuPFIsoEmbedder::MuPFIsoEmbedder(const edm::ParameterSet& iConfig):
   muons_(iConfig.getParameter<edm::InputTag>("src"))
 {
 
-  helper_ = new MuPFIsoHelper(iConfig);
+  //decide what to read
+    //Define a map between the isolation and the PSet for the PFHelper
+    std::map<std::string,edm::ParameterSet> psetMap;
+
+    //First declare what isolation you are going to read
+    std::vector<std::string> isolationLabels;
+    isolationLabels.push_back("pfIsolationR03");
+    isolationLabels.push_back("pfIsoMeanDRProfileR03");
+    isolationLabels.push_back("pfIsoSumDRProfileR03");
+    isolationLabels.push_back("pfIsolationR04");
+    isolationLabels.push_back("pfIsoMeanDRProfileR04");
+    isolationLabels.push_back("pfIsoSumDRProfileR04");
+
+    //Fill the label,pet map and initialize MuPFIsoHelper
+    for( std::vector<std::string>::const_iterator label = isolationLabels.begin();label != isolationLabels.end();++label)
+      psetMap[*label] =iConfig.getParameter<edm::ParameterSet >(*label); 
+
+    helper_ = new MuPFIsoHelper(psetMap);
+
   produces<reco::MuonCollection>();
 }
 
@@ -112,41 +123,6 @@ MuPFIsoEmbedder::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
    }
 
    iEvent.put(out);
-}
-
-// ------------ method called once each job just before starting event loop  ------------
-void 
-MuPFIsoEmbedder::beginJob()
-{
-}
-
-// ------------ method called once each job just after ending the event loop  ------------
-void 
-MuPFIsoEmbedder::endJob() {
-}
-
-// ------------ method called when starting to processes a run  ------------
-void 
-MuPFIsoEmbedder::beginRun(edm::Run&, edm::EventSetup const&)
-{
-}
-
-// ------------ method called when ending the processing of a run  ------------
-void 
-MuPFIsoEmbedder::endRun(edm::Run&, edm::EventSetup const&)
-{
-}
-
-// ------------ method called when starting to processes a luminosity block  ------------
-void 
-MuPFIsoEmbedder::beginLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&)
-{
-}
-
-// ------------ method called when ending the processing of a luminosity block  ------------
-void 
-MuPFIsoEmbedder::endLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&)
-{
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------

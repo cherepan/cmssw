@@ -1,7 +1,7 @@
 /** \file
  *
- * $Date: 2009/10/05 10:40:17 $
- * $Revision: 1.4 $
+ * $Date: 2012/12/26 14:10:36 $
+ * $Revision: 1.6 $
  * \author Stefano Lacaprara - INFN Legnaro <stefano.lacaprara@pd.infn.it>
  */
 
@@ -51,7 +51,7 @@ HLTMuonPointingFilter::HLTMuonPointingFilter(const edm::ParameterSet& pset) :
   // Get a surface (here a cylinder of radius 1290mm) ECAL
   Cylinder::PositionType pos0;
   Cylinder::RotationType rot0;
-  theCyl = Cylinder::build(pos0, rot0, theRadius);
+  theCyl = Cylinder::build(theRadius, pos0, rot0);
     
   Plane::PositionType posPos(0,0,theMaxZ);
   Plane::PositionType posNeg(0,0,-theMaxZ);

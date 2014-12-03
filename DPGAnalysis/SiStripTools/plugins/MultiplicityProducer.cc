@@ -41,7 +41,7 @@
 #include "DataFormats/SiStripDigi/interface/SiStripDigi.h"
 #include "DataFormats/SiPixelCluster/interface/SiPixelCluster.h"
 
-#include "DPGAnalysis/SiStripTools/interface/DetIdSelector.h"
+#include "CommonTools/UtilAlgos/interface/DetIdSelector.h"
 //
 // class decleration
 //
@@ -54,7 +54,7 @@ public:
   
 private:
   virtual void beginJob() ;
-  virtual void produce(edm::Event&, const edm::EventSetup&);
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
   virtual void endJob() ;
   int multiplicity(typename T::const_iterator det) const;
   int detSetMultiplicity(typename T::const_iterator det) const;

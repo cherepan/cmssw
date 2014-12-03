@@ -4,8 +4,8 @@
 /*
  * \file TrackerHitAnalyzer.h
  *
- * $Date: 2009/03/12 15:56:21 $
- * $Revision: 1.5 $
+ * $Date: 2012/09/04 21:50:26 $
+ * $Revision: 1.7 $
  * \author F. Cossutti
  *
 */
@@ -76,6 +76,7 @@ private:
   edm::InputTag PxlBrlHighSrc_;
   edm::InputTag PxlFwdLowSrc_;
   edm::InputTag PxlFwdHighSrc_;
+  edm::InputTag G4TrkSrc_;
 
 //  edm::ParameterSet config_;
  

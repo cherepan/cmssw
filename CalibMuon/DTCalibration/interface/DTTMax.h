@@ -5,8 +5,8 @@
  *  Class to calculate the different TMax values according to
  *  the track path
  *
- *  $Date: 2007/07/11 12:21:00 $
- *  $Revision: 1.1 $
+ *  $Date: 2013/05/23 15:28:44 $
+ *  $Revision: 1.2 $
 
  *  \author Marina Giunta
  */
@@ -61,7 +61,7 @@ class DTTMax {
 
   // All information on one of the layers crossed by the segment
   struct InfoLayer {
-    InfoLayer(DTRecHit1D rh_, const DTSuperLayer & isl, GlobalVector dir, 
+    InfoLayer(const DTRecHit1D& rh_, const DTSuperLayer & isl, GlobalVector dir, 
 	      GlobalPoint pos, DTTTrigBaseSync* sync);
     DTRecHit1D rh;
     DTWireId idWire;

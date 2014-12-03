@@ -11,9 +11,12 @@
 #include <iosfwd>
 
 template <class T> class TkRotation;
+template <class T> class TkRotation2D;
 
 template <class T>
 std::ostream & operator<<( std::ostream& s, const TkRotation<T>& r);
+template <class T>
+std::ostream & operator<<( std::ostream& s, const TkRotation2D<T>& r);
 
 namespace geometryDetails {
   void TkRotationErr1();
@@ -143,25 +146,25 @@ public:
   }
 
   Basic3DVector<T> operator*( const Basic3DVector<T>& v) const {
+    return rotate(v);
+  }
+
+  Basic3DVector<T> rotate( const Basic3DVector<T>& v) const {
     return Basic3DVector<T>( R11*v.x() + R12*v.y() + R13*v.z(),
 			     R21*v.x() + R22*v.y() + R23*v.z(),
 			     R31*v.x() + R32*v.y() + R33*v.z());
   }
 
   Basic3DVector<T> multiplyInverse( const Basic3DVector<T>& v) const {
+       return rotateBack(v);
+   }
+
+  Basic3DVector<T> rotateBack( const Basic3DVector<T>& v) const {
     return Basic3DVector<T>( R11*v.x() + R21*v.y() + R31*v.z(),
 			     R12*v.x() + R22*v.y() + R32*v.z(),
 			     R13*v.x() + R23*v.y() + R33*v.z());
   }
 
-#ifndef CMS_NO_TEMPLATE_MEMBERS
-  template <class Scalar>
-  Basic3DVector<Scalar> multiplyInverse( const Basic3DVector<Scalar>& v) const {
-    return Basic3DVector<Scalar>( R11*v.x() + R21*v.y() + R31*v.z(),
-				  R12*v.x() + R22*v.y() + R32*v.z(),
-				  R13*v.x() + R23*v.y() + R33*v.z());
-  }
-#endif
 
   Basic3DVector<T> operator*( const Basic2DVector<T>& v) const {
     return Basic3DVector<T>( R11*v.x() + R12*v.y(),
@@ -288,6 +291,77 @@ operator*( const TkRotation<T>& a, const TkRotation<U>& b) {
 	       a.zx()*b.xy() + a.zy()*b.yy() + a.zz()*b.zy(),
 	       a.zx()*b.xz() + a.zy()*b.yz() + a.zz()*b.zz());
 }
+
+
+template <class T>
+class TkRotation2D {
+public:
+
+  typedef Basic2DVector<T> BasicVector;
+
+
+
+  TkRotation2D( ){}
+  
+  TkRotation2D( T xx, T xy, T yx, T yy) {
+    axis[0] = BasicVector(xx,xy);
+    axis[1] =BasicVector(yx, yy);
+  }
+
+  TkRotation2D( const T* p) { 
+    axis[0] = BasicVector(p[0],p[1]);
+    axis[1] = BasicVector(p[2],p[3]);
+  }
+
+  TkRotation2D( const BasicVector & aX)  {
+    
+    BasicVector uX = aX.unit();
+    BasicVector uY(-uX.y(),uX.x());
+    
+    axis[0]= uX;
+    axis[1]= uY;
+    
+  }
+
+  
+  TkRotation2D( const BasicVector & uX, const BasicVector & uY) {
+    axis[0]= uX;
+    axis[1]= uY;
+  }
+  
+  BasicVector x() const { return axis[0];}
+  BasicVector y() const { return axis[1];}
+
+
+  TkRotation2D transposed() const {
+    return TkRotation2D(axis[0][0], axis[1][0],
+			axis[0][1], axis[1][1]
+			);
+  }
+  
+  BasicVector rotate( const BasicVector& v) const {
+    return transposed().rotateBack(v);
+  }
+
+  BasicVector rotateBack( const BasicVector& v) const {
+    return v[0]*axis[0] +  v[1]*axis[1];
+  }
+
+
+
+ private:
+  
+  BasicVector axis[2];
+ 
+};
+
+
+template<>
+std::ostream & operator<< <float>( std::ostream& s, const TkRotation2D<float>& r);
+
+template<>
+std::ostream & operator<< <double>( std::ostream& s, const TkRotation2D<double>& r);
+
 
 #endif
 

@@ -1,7 +1,7 @@
 #ifndef PLOTMILLEPEDE_H
 #define PLOTMILLEPEDE_H
 // Original Author: Gero Flucke
-// last change    : $Date: 2012/02/10 12:31:36 $
+// last change    : $Date: 2013/03/07 11:22:10 $
 // by             : $Author: flucke $
 //
 // PlotMillePede is a class to interprete the content of the ROOT
@@ -30,13 +30,37 @@
 // contains 'add', canvases from previous Draw-commands are kept (in fact they
 // are re-drawn).
 //
+// General Options
+// ===============
 // A title can be set by 'void SetTitle(const char *title)':
 // The title will appear as part of all histogram titles.
 //
-// The x-axis ranges of many histograms can be controlled by calling
-//   Float_t SetMaxDev(Float_t maxDev); // set x-axis range for result plots
-// before calling s Draw-method.  SetMaxDev returns the previous set value.
+// The x-axis ranges of many histograms can be controlled by calling one of
+//   void SetMaxDev(Float_t maxDevDown, Float_t maxDevUp); // set x-axis range for result plots
+//   void SetMaxDev(Float_t maxDev); // set symmetric x-axis range for result plots
+// before calling a Draw-method. Similarly, the number of bins can be controlled via
+//   Int_t SetNbins(Int_t nBins); // set number of bins for some result plots
+// that returns the previous setting (default: 101)
 //
+// When drawing pede parameters using DrawPede<...>, the class cannot know
+// what type of parameters that are, e.g. RigidBodyParameters or 
+// (Two)BowedSurface(s)Parameters. To get correct axis labels and units you
+// can switch between these two using p.SetBowsParameters(bool).
+// If you do not choose, RigidBodyParameters are expected.
+// 
+// If something is plotted versus the radius, you can choose to use the signed
+// radius instead that uses the sign of the y-coordinate:
+// p.SetUseSignedR(bool)
+//
+// When drawing surface deformation values of double sensor modules (TOB, TEC R5-7),
+// by default the bow parameters as stored in TwoBowedSurfacesDeformations are plotted,
+// i.e. the average w_20, w_11, w_02 and their differences. You might want to see
+// instead the full bow of sensor one and two instead, e.g. w_20^1 and w_20^2.
+// This can be chosen by calling p.SetSurfDefDeltaBows(false).
+//
+//
+// Alignable Selections
+// ====================
 // Several cuts can be set and are active until reset for all drawing routines
 // called after setting them. Active selections are mentioned in histogram titles.
 // The possibilites to set cuts are:
@@ -89,6 +113,7 @@
 //  This method makes internal use of the above "AddAdditionalSel(const char *)".
 //  Selects quantity 'xyzrPhiNhit' between 'min' and 'max' where
 //  'xyzrPhiNhit' can be any of x, y, z, r, phi, Nhit.
+//  (Concerning 'Nhit' see also the comment about IOV handling below.)
 //  Also cleared by 'ClearAdditionalSel()'.
 //
 // 5) Selecting predefined detector layers
@@ -106,6 +131,8 @@
 // In case of IOV dependent alignment, results are stored for each IOV.
 // The second argument of the constructor decides which IOV is used.
 // The default is 1 that is also valid in case there is no IOV dependence. 
+// To draw the time dependence of parameters vs IOV numbers, use the class
+// PlotMillePedeIOV.
 //
 // Note that the hit statistics is (unfortunately) counted without
 // taking care of IOV boundaries, i.e. whatever IOV is chosen, the number of
@@ -134,8 +161,13 @@ class PlotMillePede : public MillePedeTrees
   void DrawParam(bool addPlots = false, const TString &sel = ""); // default: not fixed params
   void DrawPedeParam(Option_t *option = "", unsigned int nNonRigidParam = 12);//"add": add plots, "vs": p_i vs p_j; params beyond rigid body 
   void DrawPedeParamVsLocation(Option_t *option = "", unsigned int nNonRigidParam = 12);//"add" to add plots; params beyond rigid body 
-  void DrawSurfaceDeformations(const TString &whichOne = "result start",
-			       Option_t *option = "", unsigned int maxNumPars = 12);//"start result diff"; "add" to add plots, "all" to erase selection to be valid
+  void DrawSurfaceDeformations(const TString &whichOne = "result start", Option_t *option = "",
+			       unsigned int maxNumPars = 12, unsigned int firstPar = 0);//"start result diff"; "add" to add plots, "all" to erase selection to be valid, "nolimit" w/o axis limits
+  void DrawSurfaceDeformationsVsLocation(const TString &whichOne = "result",
+					 Option_t *option = "",
+					 unsigned int maxNumPar = 11,
+					 unsigned int firstPar = 0); //
+
   void DrawSurfaceDeformationsLayer(Option_t *option = "", const unsigned int firstDetLayer = 22,
 				    const unsigned int lastDetLayer = 33,
 				    const TString &whichOne = "result",
@@ -169,8 +201,12 @@ class PlotMillePede : public MillePedeTrees
   void DrawCheck();
   TString Unique(const char *name) const;
 
-  Float_t SetMaxDev(Float_t maxDev); // set x-axis range for some result plots
-  Float_t GetMaxDev() const {return fMaxDev;}  // x-axis range for some result plots
+  void SetMaxDev(Float_t maxDev); // set symmetric x-axis range around 0 for some result plots
+  void SetMaxDev(Float_t maxDevDown, Float_t maxDevUp); // set x-axis range for some result plots
+  Int_t SetNbins(Int_t nBins) {const Int_t buf = fNbins; fNbins = nBins; return buf;} // set number of bins for some result plots
+  Float_t GetMaxDevDown() const {return fMaxDevDown;}// lower x-axis range for some result plots
+  Float_t GetMaxDevUp()   const {return fMaxDevUp;}  // upper x-axis range for some result plots
+  Int_t GetNbins() const {return fNbins;} // number of bins for some result plots
   const TArrayI* GetSubDetIds() const { return &fSubDetIds;} // selected subdets
   void SetSubDetId(Int_t subDetId); // 1-6 are TPB, TPE, TIB, TID, TOB, TEC, -1 means: take all
   void AddSubDetId(Int_t subDetId); // 1-6 are TPB, TPE, TIB, TID, TOB, TEC
@@ -191,6 +227,7 @@ class PlotMillePede : public MillePedeTrees
 
   TString FinalMisAlignment(UInt_t iPar) const;
   TString TitleAdd() const; // for subdet settings etc.
+  TString AlignableObjIdString(Int_t objId) const;
 
   void CopyAddBinning(TString &name, const TH1 *hist) const;// extend 'name' taking binning from hist
  private: 
@@ -205,7 +242,9 @@ class PlotMillePede : public MillePedeTrees
   Int_t          fAlignableTypeId; // select ony alignables of type det,detunit,rod,etc.(-1: take all)
   TString       fAdditionalSel; // selection to be set by user, used in AddBasicSelection
   TString       fAdditionalSelTitle; // title add-on for fAdditionalSel
-  Float_t        fMaxDev;   // max deviation in result plot - so far only there...
+  Float_t        fMaxDevUp;   // max deviation in result plot (upwards)
+  Float_t        fMaxDevDown; // max deviation in result plot (downwards)
+  Int_t          fNbins;      // number of bins between fMaxDevDown and fMaxDevUp
 };
 
 #endif

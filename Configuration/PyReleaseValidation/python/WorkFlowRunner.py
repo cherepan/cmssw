@@ -3,6 +3,7 @@ from threading import Thread
 
 from Configuration.PyReleaseValidation import WorkFlow
 import os,time
+import shutil
 from subprocess import Popen 
 
 class WorkFlowRunner(Thread):
@@ -48,6 +49,10 @@ class WorkFlowRunner(Thread):
 
         if not os.path.exists(self.wfDir):
             os.makedirs(self.wfDir)
+        elif not self.dryRun: # clean up to allow re-running in the same overall devel area, then recreate the dir to make sure it exists
+            print "cleaning up ", self.wfDir, ' in ', os.getcwd()
+            shutil.rmtree(self.wfDir) 
+            os.makedirs(self.wfDir)
 
         preamble = 'cd '+self.wfDir+'; '
        
@@ -89,6 +94,7 @@ class WorkFlowRunner(Thread):
                     self.stat.append('NOTRUN')
                     aborted=True
                     continue
+                #create lumiRange file first so if dbs fails we get its error code
                 cmd2 = com.lumiRanges()
                 if cmd2:
                     cmd2 =cmd+cmd2+closeCmd(istep,'lumiRanges')

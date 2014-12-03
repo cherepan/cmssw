@@ -1,11 +1,11 @@
 // -*- C++ -*-
 //
-// Package:    FFTJetProducers
+// Package:    RecoJets/FFTJetProducers
 // Class:      FFTJetPileupEstimator
 // 
 /**\class FFTJetPileupEstimator FFTJetPileupEstimator.cc RecoJets/FFTJetProducers/plugins/FFTJetPileupEstimator.cc
 
- Description: estimates the actual pileup
+ Description: applies calibration curve and estimates the actual pileup
 
  Implementation:
      [Notes on implementation]
@@ -13,7 +13,7 @@
 //
 // Original Author:  Igor Volobouev
 //         Created:  Wed Apr 20 13:52:23 CDT 2011
-// $Id: FFTJetPileupEstimator.cc,v 1.0 2011/04/20 00:19:43 igv Exp $
+// $Id: FFTJetPileupEstimator.cc,v 1.3 2012/11/21 03:13:26 igv Exp $
 //
 //
 
@@ -28,10 +28,14 @@
 // Data formats
 #include "DataFormats/Common/interface/View.h"
 #include "DataFormats/Common/interface/Handle.h"
-#include "DataFormats/Histograms/interface/MEtoEDMFormat.h"
+// #include "DataFormats/Histograms/interface/MEtoEDMFormat.h"
 #include "DataFormats/JetReco/interface/FFTJetPileupSummary.h"
+#include "DataFormats/JetReco/interface/DiscretizedEnergyFlow.h"
 
 #include "RecoJets/FFTJetProducers/interface/FFTJetParameterParser.h"
+
+// Loader for the lookup tables
+#include "JetMETCorrections/FFTJetObjects/interface/FFTJetLookupTableSequenceLoader.h"
 
 #define init_param(type, varname) varname (ps.getParameter< type >( #varname ))
 
@@ -57,6 +61,12 @@ private:
     FFTJetPileupEstimator(const FFTJetPileupEstimator&);
     FFTJetPileupEstimator& operator=(const FFTJetPileupEstimator&);
 
+    std::auto_ptr<reco::FFTJetPileupSummary> calibrateFromConfig(
+        double uncalibrated) const;
+
+    std::auto_ptr<reco::FFTJetPileupSummary> calibrateFromDB(
+        double uncalibrated, const edm::EventSetup& iSetup) const;
+
     template<class Ptr>
     inline void checkConfig(const Ptr& ptr, const char* message)
     {
@@ -72,6 +82,26 @@ private:
     std::vector<double> uncertaintyZones;
     std::auto_ptr<fftjet::Functor1<double,double> > calibrationCurve;
     std::auto_ptr<fftjet::Functor1<double,double> > uncertaintyCurve;
+
+    // Alternative method to calibrate the pileup.
+    // We will fetch three lookup tables from the database:
+    //
+    // 1. calibration curve table
+    //
+    // 2. uncertainty curve table
+    //
+    // 3. the table that will lookup the uncertainty code
+    //    given the uncalibrated pileup value
+    //
+    // It will be assumed that all these tables will have
+    // the same record and category but different names.
+    //
+    std::string calibTableRecord;
+    std::string calibTableCategory;
+    std::string uncertaintyZonesName;
+    std::string calibrationCurveName;
+    std::string uncertaintyCurveName;
+    bool loadCalibFromDB;
 };
 
 //
@@ -83,7 +113,13 @@ FFTJetPileupEstimator::FFTJetPileupEstimator(const edm::ParameterSet& ps)
       init_param(double, cdfvalue),
       init_param(double, ptToDensityFactor),
       init_param(unsigned, filterNumber),
-      init_param(std::vector<double>, uncertaintyZones)
+      init_param(std::vector<double>, uncertaintyZones),
+      init_param(std::string, calibTableRecord),
+      init_param(std::string, calibTableCategory),
+      init_param(std::string, uncertaintyZonesName),
+      init_param(std::string, calibrationCurveName),
+      init_param(std::string, uncertaintyCurveName),
+      init_param(bool, loadCalibFromDB)
 {
     calibrationCurve = fftjet_Function_parser(
         ps.getParameter<edm::ParameterSet>("calibrationCurve"));
@@ -109,12 +145,12 @@ FFTJetPileupEstimator::~FFTJetPileupEstimator()
 void FFTJetPileupEstimator::produce(edm::Event& iEvent,
                                     const edm::EventSetup& iSetup)
 {
-    edm::Handle<TH2D> input;
+    edm::Handle<reco::DiscretizedEnergyFlow> input;
     iEvent.getByLabel(inputLabel, input);
 
-    const TH2D& h(*input);
-    const unsigned nScales = h.GetXaxis()->GetNbins();
-    const unsigned nCdfvalues = h.GetYaxis()->GetNbins();
+    const reco::DiscretizedEnergyFlow& h(*input);
+    const unsigned nScales = h.nEtaBins();
+    const unsigned nCdfvalues = h.nPhiBins();
 
     const unsigned fixedCdfvalueBin = static_cast<unsigned>(
         std::floor(cdfvalue*nCdfvalues));
@@ -130,8 +166,30 @@ void FFTJetPileupEstimator::produce(edm::Event& iEvent,
     }
 
     // Simple fixed-point pile-up estimate
-    const double curve = h.GetBinContent(filterNumber+1U,
-                                         fixedCdfvalueBin+1U);
+    const double curve = h.data()[filterNumber*nCdfvalues + fixedCdfvalueBin];
+
+    std::auto_ptr<reco::FFTJetPileupSummary> summary;
+    if (loadCalibFromDB)
+        summary = calibrateFromDB(curve, iSetup);
+    else
+        summary = calibrateFromConfig(curve);
+    iEvent.put(summary, outputLabel);
+}
+
+
+void FFTJetPileupEstimator::beginJob()
+{
+}
+
+
+void FFTJetPileupEstimator::endJob()
+{
+}
+
+
+std::auto_ptr<reco::FFTJetPileupSummary>
+FFTJetPileupEstimator::calibrateFromConfig(const double curve) const
+{
     const double pileupRho = ptToDensityFactor*(*calibrationCurve)(curve);
     const double rhoUncert = ptToDensityFactor*(*uncertaintyCurve)(curve);
 
@@ -161,20 +219,33 @@ void FFTJetPileupEstimator::produce(edm::Event& iEvent,
             }
     }
 
-    std::auto_ptr<reco::FFTJetPileupSummary> summary(
+    return std::auto_ptr<reco::FFTJetPileupSummary>(
         new reco::FFTJetPileupSummary(curve, pileupRho,
                                       rhoUncert, uncertaintyCode));
-    iEvent.put(summary, outputLabel);
 }
 
 
-void FFTJetPileupEstimator::beginJob()
+std::auto_ptr<reco::FFTJetPileupSummary>
+FFTJetPileupEstimator::calibrateFromDB(
+    const double curve, const edm::EventSetup& iSetup) const
 {
-}
+    edm::ESHandle<FFTJetLookupTableSequence> h;
+    StaticFFTJetLookupTableSequenceLoader::instance().load(
+        iSetup, calibTableRecord, h);
+    boost::shared_ptr<npstat::StorableMultivariateFunctor> uz =
+        (*h)[calibTableCategory][uncertaintyZonesName];
+    boost::shared_ptr<npstat::StorableMultivariateFunctor> cc =
+        (*h)[calibTableCategory][calibrationCurveName];
+    boost::shared_ptr<npstat::StorableMultivariateFunctor> uc =
+        (*h)[calibTableCategory][uncertaintyCurveName];
 
+    const double pileupRho = ptToDensityFactor*(*cc)(&curve, 1U);
+    const double rhoUncert = ptToDensityFactor*(*uc)(&curve, 1U);
+    const int uncertaintyCode = round((*uz)(&curve, 1U));
 
-void FFTJetPileupEstimator::endJob()
-{
+    return std::auto_ptr<reco::FFTJetPileupSummary>(
+        new reco::FFTJetPileupSummary(curve, pileupRho,
+                                      rhoUncert, uncertaintyCode));
 }
 
 

@@ -1,12 +1,13 @@
 #ifndef TkDetLayers_TkDetUtil_h
 #define TkDetLayers_TkDetUtil_h
 
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
+#include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 
 #pragma GCC visibility push(hidden)
 
 class GeomDet;
-class BoundPlane;
+class Plane;
 class TrajectoryStateOnSurface;
 
 namespace tkDetUtil {
@@ -21,7 +22,7 @@ namespace tkDetUtil {
   float 
   calculatePhiWindow( const MeasurementEstimator::Local2DVector& maxDistance, 
 		      const TrajectoryStateOnSurface& ts, 
-		      const BoundPlane& plane);
+		      const Plane& plane);
 
 
 }

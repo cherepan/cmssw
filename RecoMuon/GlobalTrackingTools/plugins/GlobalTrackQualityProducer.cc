@@ -5,7 +5,7 @@
 //
 //
 // Original Author:  Adam Everett
-// $Id: GlobalTrackQualityProducer.cc,v 1.6 2010/06/08 19:27:08 aeverett Exp $
+// $Id: GlobalTrackQualityProducer.cc,v 1.9 2013/01/06 19:16:52 dlange Exp $
 //
 //
 
@@ -15,6 +15,7 @@
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
 #include "RecoMuon/GlobalTrackingTools/plugins/GlobalTrackQualityProducer.h"
@@ -24,6 +25,9 @@
 #include "DataFormats/MuonReco/interface/MuonQuality.h"
 #include "DataFormats/MuonReco/interface/MuonTrackLinks.h"
 #include "DataFormats/MuonReco/interface/MuonFwd.h"
+
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
 
 GlobalTrackQualityProducer::GlobalTrackQualityProducer(const edm::ParameterSet& iConfig):
   inputCollection_(iConfig.getParameter<edm::InputTag>("InputCollection")),inputLinksCollection_(iConfig.getParameter<edm::InputTag>("InputLinksCollection")),theService(0),theGlbRefitter(0),theGlbMatcher(0)
@@ -71,6 +75,12 @@ GlobalTrackQualityProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
   edm::Handle<reco::MuonTrackLinksCollection>    linkCollectionHandle;
   iEvent.getByLabel(inputLinksCollection_, linkCollectionHandle);
 
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHand;
+  iSetup.get<IdealGeometryRecord>().get(tTopoHand);
+  const TrackerTopology *tTopo=tTopoHand.product();
+
+
   // reserve some space
   std::vector<reco::MuonQuality> valuesQual;
   valuesQual.reserve(glbMuons->size());
@@ -80,7 +90,7 @@ GlobalTrackQualityProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
     reco::TrackRef glbRef(glbMuons,trackIndex);
     reco::TrackRef staTrack = reco::TrackRef();
 
-    std::vector<Trajectory> refitted=theGlbRefitter->refit(*track,1);
+    std::vector<Trajectory> refitted=theGlbRefitter->refit(*track,1,tTopo);
 
     LogTrace(theCategory)<<"GLBQual N refitted " << refitted.size();
     
@@ -199,12 +209,9 @@ std::pair<double,double> GlobalTrackQualityProducer::kink(Trajectory& muon) cons
 
 
     if ( tsos.isValid() && rhit->isValid() && rhit->hit()->isValid()
-	 && !std::isinf(rhit->localPositionError().xx()) //this is paranoia induced by reported case
-	 && !std::isinf(rhit->localPositionError().xy()) //it's better to track down the origin of bad numbers
-	 && !std::isinf(rhit->localPositionError().yy())
-	 && !std::isnan(rhit->localPositionError().xx()) //this is paranoia induced by reported case
-	 && !std::isnan(rhit->localPositionError().xy()) //it's better to track down the origin of bad numbers
-	 && !std::isnan(rhit->localPositionError().yy())
+	 && !edm::isNotFinite(rhit->localPositionError().xx()) //this is paranoia induced by reported case
+	 && !edm::isNotFinite(rhit->localPositionError().xy()) //it's better to track down the origin of bad numbers
+	 && !edm::isNotFinite(rhit->localPositionError().yy())
 	 ) {
 
       double phi1 = tsos.globalPosition().phi();

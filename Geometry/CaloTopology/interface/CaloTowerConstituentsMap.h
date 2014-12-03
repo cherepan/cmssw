@@ -7,15 +7,17 @@
 #include <vector>
 #include <map>
 
+class HcalTopology;
+
 /** \class CaloTowerConstituentsMap
   *  
-  * $Date: 2006/07/14 18:06:25 $
-  * $Revision: 1.2 $
+  * $Date: 2012/08/15 14:56:18 $
+  * $Revision: 1.4 $
   * \author J. Mans - Minnesota
   */
 class CaloTowerConstituentsMap {
 public:
-  CaloTowerConstituentsMap();
+  CaloTowerConstituentsMap(const HcalTopology * topology);
 
   /// Get the tower id for this det id (or null if not known)
   CaloTowerDetId towerOf(const DetId& id) const;
@@ -41,6 +43,8 @@ public:
   void useStandardEB(bool use=true);
 
 private:
+  const HcalTopology * m_topology;
+    
   bool standardHB_;
   bool standardHE_;
   bool standardHF_;

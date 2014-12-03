@@ -2,7 +2,7 @@
 #define GENFILTEREFFICIENCYPRODUCER_H
 
 // F. Cossutti
-// $Date:$
+// $Date: 2013/05/17 18:35:02 $
 // $Revision://
 
 // producer of a summary information product on filter efficiency for a user specified path
@@ -14,7 +14,7 @@
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/one/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -32,17 +32,19 @@
 // class declaration
 //
 
-class GenFilterEfficiencyProducer : public edm::EDProducer {
+class GenFilterEfficiencyProducer : public edm::one::EDProducer<edm::EndLuminosityBlockProducer,
+                                                                edm::one::WatchLuminosityBlocks> {
 public:
   explicit GenFilterEfficiencyProducer(const edm::ParameterSet&);
   ~GenFilterEfficiencyProducer();
   
   
 private:
-  virtual void produce(edm::Event&, const edm::EventSetup&);
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
 
-  virtual void beginLuminosityBlock(edm::LuminosityBlock &, const edm::EventSetup &);
-  virtual void endLuminosityBlock(edm::LuminosityBlock &, const edm::EventSetup &);
+  virtual void beginLuminosityBlock(edm::LuminosityBlock const&, const edm::EventSetup &) override;
+  virtual void endLuminosityBlock(edm::LuminosityBlock const&, const edm::EventSetup &) override;
+  virtual void endLuminosityBlockProduce(edm::LuminosityBlock &, const edm::EventSetup &) override;
 
   // ----------member data ---------------------------
   

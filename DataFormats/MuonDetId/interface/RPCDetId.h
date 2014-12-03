@@ -5,9 +5,9 @@
  * 
  *  DetUnit identifier for RPCs
  *
- *  $Date: 2008/08/25 16:35:58 $
- *  \version $Id: RPCDetId.h,v 1.23 2008/08/25 16:35:58 piet Exp $
- *  $Revision: 1.23 $
+ *  $Date: 2012/10/19 08:00:32 $
+ *  \version $Id: RPCDetId.h,v 1.25 2012/10/19 08:00:32 innocent Exp $
+ *  $Revision: 1.25 $
  *  \author Ilaria Segoni
  */
 
@@ -15,7 +15,6 @@
 #include <FWCore/Utilities/interface/Exception.h>
 
 #include <iosfwd>
-#include <iostream>
 
 class RPCDetId :public DetId {
   

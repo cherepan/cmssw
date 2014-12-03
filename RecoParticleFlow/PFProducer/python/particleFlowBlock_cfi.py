@@ -14,11 +14,22 @@ particleFlowBlock = cms.EDProducer("PFBlockProducer",
     PFClustersECAL = cms.InputTag("particleFlowClusterECAL"),
     PFClustersHCAL = cms.InputTag("particleFlowClusterHCAL"),
     PFClustersHO = cms.InputTag("particleFlowClusterHO"),	
+    # For upgrade studies:
+#    PFClustersHCAL = cms.InputTag("particleFlowHCALSuperClusterDualTime"),
     PFClustersHFEM = cms.InputTag("particleFlowClusterHFEM"),
     PFClustersHFHAD = cms.InputTag("particleFlowClusterHFHAD"),
     PFClustersPS = cms.InputTag("particleFlowClusterPS"),
-    EGPhotons = cms.InputTag("photons"),                                   
-
+    EGPhotons = cms.InputTag("photons"),  
+    #disable dierct import of SuperCluster collections for now until effect on blocks can be
+    #evaluated
+    useSuperClusters = cms.bool(False),
+    #current egamma superclusters
+    SCBarrel = cms.InputTag("correctedHybridSuperClusters"),
+    SCEndcap = cms.InputTag("correctedMulti5x5SuperClustersWithPreshower"),    
+    #pfbox superclusters, will switch to this in the near future
+    #SCBarrel = cms.InputTag("particleFlowSuperClusterECAL:particleFlowSuperClusterECALBarrel"),                                   
+    #SCEndcap = cms.InputTag("particleFlowSuperClusterECAL:particleFlowSuperClusterECALEndcapWithPreshower"), 
+    
     # input tracks
     GsfRecTracks = cms.InputTag("pfTrackElec"),
     ConvBremGsfRecTracks = cms.InputTag("pfTrackElec","Secondary"),

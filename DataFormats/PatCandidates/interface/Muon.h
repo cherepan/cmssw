@@ -15,7 +15,7 @@
    Please post comments and questions to the Physics Tools hypernews:
    https://hypernews.cern.ch/HyperNews/CMS/get/physTools.html
 
-  \author   Steven Lowette, Giovanni Petrucciani, Frederic Ronga, Colin Bernet, Riccardo Bellan
+  \author   Steven Lowette, Giovanni Petrucciani, Frederic Ronga, Colin Bernet
 
   \version  $Id: Muon.h,v 1.39 2012/09/27 09:14:38 bellan Exp $
 */
@@ -51,9 +51,6 @@ namespace pat {
   class Muon : public Lepton<reco::Muon> {
 
     public:
-
-      enum TunePType{defaultTuneP, improvedTuneP};
-
 
       /// default constructor
       Muon();
@@ -153,12 +150,7 @@ namespace pat {
       bool isTightMuon(const reco::Vertex&) const;
       bool isLooseMuon() const;
       bool isSoftMuon(const reco::Vertex&) const;
-
-      /// For 53X series this method requires an additional mandatory argument: the tuneP type
-      /// make sure you know what you are doing. If you use the default tuneP for the momentum assignment 
-      /// then use defaultTuneP. Insted if you use the newly optimized version (present in release 537 and above)
-      /// then use improvedTuneP. 
-      bool isHighPtMuon(const reco::Vertex&, TunePType) const;
+      bool isHighPtMuon(const reco::Vertex&) const;
 
       // ---- overload of isolation functions ----
       /// Overload of pat::Lepton::trackIso(); returns the value of

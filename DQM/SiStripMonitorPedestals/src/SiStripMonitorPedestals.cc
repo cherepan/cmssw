@@ -13,7 +13,7 @@
 //
 // Original Author:  Simone Gennai and Suchandra Dutta
 //         Created:  Sat Feb  4 20:49:10 CET 2006
-// $Id: SiStripMonitorPedestals.cc,v 1.36 2009/11/05 21:08:29 dutta Exp $
+// $Id: SiStripMonitorPedestals.cc,v 1.39 2013/01/03 18:59:36 wmtan Exp $
 //
 //
 
@@ -94,7 +94,7 @@ void SiStripMonitorPedestals::beginRun(edm::Run const& run, edm::EventSetup cons
     eSetup.get<SiStripDetCablingRcd>().get( detcabling );
     edm::LogInfo("SiStripMonitorPedestals") <<"SiStripMonitorPedestals::beginRun: " 
 					  << " Creating MEs for new Cabling ";     
-    createMEs();
+    createMEs(eSetup);
   } else {
     edm::LogInfo("SiStripMonitorPedestals") <<"SiStripMonitorPedestals::beginRun: " 
 					  << " Resetting MEs ";        
@@ -107,7 +107,13 @@ void SiStripMonitorPedestals::beginRun(edm::Run const& run, edm::EventSetup cons
 //
 // -- Create Monitor Elements
 //
-void SiStripMonitorPedestals::createMEs() {
+void SiStripMonitorPedestals::createMEs(const edm::EventSetup& es) {
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  es.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+
   std::vector<uint32_t> SelectedDetIds;
   
   //ApvAnalysisFactory
@@ -167,7 +173,7 @@ void SiStripMonitorPedestals::createMEs() {
 
       std::string hid;
       // set appropriate folder using SiStripFolderOrganizer
-      folder_organizer.setDetectorFolder(detid); // pass the detid to this method
+      folder_organizer.setDetectorFolder(detid, tTopo); // pass the detid to this method
       
       // if the deid already exists in the map, then reset MEs otherwise create them
       resetMEs(detid);

@@ -1,4 +1,3 @@
-#include "DQM/SiStripMonitorClient/interface/SiStripTrackerMapCreator.h"
 #include "CommonTools/TrackerMap/interface/TrackerMap.h"
 #include "CalibTracker/SiStripCommon/interface/TkDetMap.h"
 #include "DQM/SiStripCommon/interface/SiStripFolderOrganizer.h"
@@ -14,8 +13,9 @@
 #include "CalibTracker/Records/interface/SiStripQualityRcd.h"
 
 #include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIDDetId.h"
-#include "DataFormats/SiStripDetId/interface/TECDetId.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
+#include "DQM/SiStripMonitorClient/interface/SiStripTrackerMapCreator.h"
 
 #include <iostream>
 
@@ -35,10 +35,13 @@ SiStripTrackerMapCreator::SiStripTrackerMapCreator() {
   tkDetMap_=edm::Service<TkDetMap>().operator->();
 }
 */
-SiStripTrackerMapCreator::SiStripTrackerMapCreator(const edm::EventSetup& eSetup): meanToMaxFactor_(2.5),eSetup_(eSetup) {
+SiStripTrackerMapCreator::SiStripTrackerMapCreator(const edm::EventSetup& eSetup): meanToMaxFactor_(2.5),eSetup_(eSetup)
+						  //, psumap_() 
+{
   trackerMap_ = 0;
   stripTopLevelDir_="";
   eSetup_.get<SiStripDetCablingRcd>().get(detcabling_);
+  //  psumap_.BuildMap("CalibTracker/SiStripDCS/data/StripPSUDetIDMap_FromJan132010.dat",false);
   if(!edm::Service<TkDetMap>().isAvailable()){
     edm::LogError("TkHistoMap") <<
       "\n------------------------------------------"
@@ -58,7 +61,8 @@ SiStripTrackerMapCreator::~SiStripTrackerMapCreator() {
 // -- Create Geometric and Fed Tracker Map
 //
 void SiStripTrackerMapCreator::create(const edm::ParameterSet & tkmapPset, 
-				      DQMStore* dqm_store, std::string& map_type) {
+				      DQMStore* dqm_store, std::string& map_type,
+                                      const edm::EventSetup& eSetup) {
 
   const SiStripFedCabling* fedcabling = detcabling_->fedCabling();
 
@@ -78,7 +82,7 @@ void SiStripTrackerMapCreator::create(const edm::ParameterSet & tkmapPset,
   stripTopLevelDir_="SiStrip";
 
   if (map_type == "QTestAlarm") {
-    setTkMapFromAlarm(dqm_store);
+    setTkMapFromAlarm(dqm_store, eSetup);
     /*
     trackerMap_->fillc_all_blank();
     const std::vector<uint16_t>& feds = fedcabling->feds(); 
@@ -110,7 +114,8 @@ void SiStripTrackerMapCreator::create(const edm::ParameterSet & tkmapPset,
 // -- Create Tracker Map for Offline process
 //
 void SiStripTrackerMapCreator::createForOffline(const edm::ParameterSet & tkmapPset, 
-						DQMStore* dqm_store, std::string& map_type){
+						DQMStore* dqm_store, std::string& map_type,
+                                                const edm::EventSetup& eSetup) {
 
   // Determine the strip top level dirctory in the DQM file: it is the path where MechanicalView is minus one directory
 
@@ -145,7 +150,7 @@ void SiStripTrackerMapCreator::createForOffline(const edm::ParameterSet & tkmapP
   trackerMap_->setTitle(tmap_title);
 
   if (map_type == "QTestAlarm") {
-    setTkMapFromAlarm(dqm_store);
+    setTkMapFromAlarm(dqm_store, eSetup);
   }
   else {
     setTkMapFromHistogram(dqm_store, map_type);
@@ -166,8 +171,8 @@ void SiStripTrackerMapCreator::createForOffline(const edm::ParameterSet & tkmapP
   if(tkMapPSU) {
 
     edm::LogInfo("PSUMapToBeSaved") << "Ready to save PSU TkMap " << map_type << namesuffix << " with range set to " << tkMapMin_ << " - " << tkMapMax_;
-    trackerMap_->save_as_psutrackermap(true, tkMapMin_,tkMapMax_, map_type+namesuffix+"_psu.svg");
-    trackerMap_->save_as_psutrackermap(true, tkMapMin_,tkMapMax_, map_type+namesuffix+"_psu.png",6000,3200);
+    //    trackerMap_->save_as_psutrackermap(true, tkMapMin_,tkMapMax_, map_type+namesuffix+"_psu.svg");
+    trackerMap_->save_as_psutrackermap(true, tkMapMin_,tkMapMax_, map_type+namesuffix+"_psu.png");
 
   }
 
@@ -184,7 +189,12 @@ void SiStripTrackerMapCreator::createForOffline(const edm::ParameterSet & tkmapP
 }
 //
 // -- Fill Tracker Map with QTest Alarms and SiStripQuality bad modules
-void SiStripTrackerMapCreator::setTkMapFromAlarm(DQMStore* dqm_store) {
+void SiStripTrackerMapCreator::setTkMapFromAlarm(DQMStore* dqm_store, const edm::EventSetup& eSetup) {
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  eSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
 
   nDet     = 0;
   tkMapMax_ = 0.0; 
@@ -208,18 +218,23 @@ void SiStripTrackerMapCreator::setTkMapFromAlarm(DQMStore* dqm_store) {
       if (detId_save != detId) {
 	detId_save = detId;
 	bool isBad = useSSQuality_ && ssq->IsModuleBad(detId);
-	paintTkMapFromAlarm(detId, dqm_store,isBad,badmodmap);
+	paintTkMapFromAlarm(detId, tTopo, dqm_store,isBad,badmodmap);
       } 
       else {
 	edm::LogWarning("TwiceTheSameDetId") << "The detid " << detId << " was found already in the loop on SiStripDetCabling";
       }
     }
     //
-    printBadModuleList(badmodmap);
+    printBadModuleList(badmodmap, eSetup);
     delete badmodmap;
 }
 //
-void SiStripTrackerMapCreator::printBadModuleList(std::map<unsigned int,std::string>* badmodmap) {
+void SiStripTrackerMapCreator::printBadModuleList(std::map<unsigned int,std::string>* badmodmap, const edm::EventSetup& eSetup) {
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  eSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
 
   bool tibDone=false,tidSide1Done=false,tidSide2Done=false,tobDone=false,tecSide1Done=false,tecSide2Done=false;
   unsigned int tibFirst=369120277-1,
@@ -233,15 +248,15 @@ void SiStripTrackerMapCreator::printBadModuleList(std::map<unsigned int,std::str
     SiStripDetId ssdetid(badmod->first);
     if(ssdetid.subDetector()==SiStripDetId::TIB) ntib++;
     if(ssdetid.subDetector()==SiStripDetId::TID) {
-      TIDDetId tiddetid(ssdetid);
-      if(tiddetid.side()==1) ntids1++;
-      if(tiddetid.side()==2) ntids2++;
+      
+      if(tTopo->tidSide(ssdetid)==1) ntids1++;
+      if(tTopo->tidSide(ssdetid)==2) ntids2++;
     }
     if(ssdetid.subDetector()==SiStripDetId::TOB) ntob++;
     if(ssdetid.subDetector()==SiStripDetId::TEC) {
-      TECDetId tecdetid(ssdetid);
-      if(tecdetid.side()==1) ntecs1++;
-      if(tecdetid.side()==2) ntecs2++;
+      
+      if(tTopo->tecSide(ssdetid)==1) ntecs1++;
+      if(tTopo->tecSide(ssdetid)==2) ntecs2++;
     }
   }
 
@@ -302,11 +317,11 @@ void SiStripTrackerMapCreator::printBadModuleList(std::map<unsigned int,std::str
 //
 // -- Paint Tracker Map with QTest Alarms 
 //
-void SiStripTrackerMapCreator::paintTkMapFromAlarm(uint32_t det_id, DQMStore* dqm_store, bool isBad, std::map<unsigned int,std::string>* badmodmap) {
-  
+void SiStripTrackerMapCreator::paintTkMapFromAlarm(uint32_t det_id, const TrackerTopology* tTopo,
+                                                   DQMStore* dqm_store, bool isBad, std::map<unsigned int,std::string>* badmodmap) {
   std::ostringstream comment;
   uint16_t flag = 0; 
-  flag = getDetectorFlagAndComment(dqm_store, det_id, comment);
+  flag = getDetectorFlagAndComment(dqm_store, det_id, tTopo, comment);
 
   int rval, gval, bval;
   SiStripUtility::getDetectorStatusColor(flag, rval, gval, bval);
@@ -442,7 +457,8 @@ void SiStripTrackerMapCreator::setTkMapRangeOffline() {
 //
 // -- Get Flag and status Comment
 //
-uint16_t SiStripTrackerMapCreator::getDetectorFlagAndComment(DQMStore* dqm_store, uint32_t det_id, std::ostringstream& comment) {
+uint16_t SiStripTrackerMapCreator::getDetectorFlagAndComment(DQMStore* dqm_store, uint32_t det_id,
+                                                             const TrackerTopology* tTopo, std::ostringstream& comment) {
   //  comment << " DetId " << det_id << " : ";
   comment << "Module " << det_id;
   uint16_t flag = 0;
@@ -465,13 +481,20 @@ uint16_t SiStripTrackerMapCreator::getDetectorFlagAndComment(DQMStore* dqm_store
   if(conns.size()==2) {	comment << "       ";      }
     //  }
 
+  // get PSU channel corresponding to the det_id
+  /*
+  comment << " PSU: ";
+  comment << psumap_.getPSUName(det_id);
+  */
+  //
+
   SiStripFolderOrganizer folder_organizer;
   std::string subdet_folder, badmodule_folder;
 
   dqm_store->cd();
 
   folder_organizer.setSiStripFolderName(stripTopLevelDir_);
-  folder_organizer.getSubDetFolder(det_id, subdet_folder);
+  folder_organizer.getSubDetFolder(det_id, tTopo, subdet_folder);
 
   LogDebug("SearchBadModule") << det_id << " " << subdet_folder << " " << stripTopLevelDir_;
 

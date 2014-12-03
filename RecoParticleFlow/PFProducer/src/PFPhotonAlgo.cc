@@ -62,7 +62,7 @@ PFPhotonAlgo::PFPhotonAlgo(std::string mvaweightfile,
   x0inner_(0.0), x0middle_(0.0), x0outer_(0.0),
   excluded_(0.0), Mustache_EtRatio_(0.0), Mustache_Et_out_(0.0)
 {  
-    primaryVertex_=primary;  
+
     //Book MVA  
     tmvaReader_ = new TMVA::Reader("!Color:Silent");  
     tmvaReader_->AddVariable("del_phi",&del_phi);  
@@ -236,7 +236,7 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
 	   
 	  // first check if is it's still active  
 	  if( ! (active[track->second]) ) continue;  
-	  hasSingleleg=EvaluateSingleLegMVA(blockRef,  primaryVertex_, track->second);  
+	  hasSingleleg=EvaluateSingleLegMVA(blockRef,  *primaryVertex_, track->second);  
 	  //check if it is the closest linked track  
 	  std::multimap<double, unsigned int> closecheck;  
 	  blockRef->associatedElements(track->second,  
@@ -361,7 +361,7 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
 	
 	//Check if track is a Single leg from a Conversion  
 	mvaValue=-999;  
-	hasSingleleg=EvaluateSingleLegMVA(blockRef,  primaryVertex_, track->second);  
+	hasSingleleg=EvaluateSingleLegMVA(blockRef,  *primaryVertex_, track->second);  
 
 	// Daniele; example for mvaValues, do the same for single leg trackRef and convRef
 	//          
@@ -736,7 +736,7 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
 	    if(elements[*it].type()==reco::PFBlockElement::TRACK){
 	      reco::TrackRef t_ref=elements[*it].trackRef();
 	      singleLegRef.push_back(t_ref);
-	      EvaluateSingleLegMVA(blockRef,  primaryVertex_, *it);  
+	      EvaluateSingleLegMVA(blockRef,  *primaryVertex_, *it);  
 	      MVA_values.push_back(mvaValue);	      
 	    }
 	  }
@@ -763,8 +763,12 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
     math::XYZVector photonPosition(photonX_,
 				   photonY_,
 				   photonZ_);
-
-    math::XYZVector photonDirection=photonPosition.Unit();
+    math::XYZVector photonPositionwrtVtx(
+					 photonX_- primaryVertex_->x(),
+					 photonY_-primaryVertex_->y(),
+					 photonZ_-primaryVertex_->z()
+					 );
+    math::XYZVector photonDirection=photonPositionwrtVtx.Unit();
     
     math::XYZTLorentzVector photonMomentum(photonEnergy_* photonDirection.X(),
 					   photonEnergy_* photonDirection.Y(),
@@ -792,14 +796,13 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
     */
 
     reco::PFCandidate photonCand(0,photonMomentum, reco::PFCandidate::gamma);
-    
     photonCand.setPs1Energy(ps1TotEne);
     photonCand.setPs2Energy(ps2TotEne);
     photonCand.setEcalEnergy(RawEcalEne,photonEnergy_);
     photonCand.setHcalEnergy(0.,0.);
     photonCand.set_mva_nothing_gamma(1.);  
     photonCand.setSuperClusterRef(sc->superClusterRef());
-    math::XYZPoint v(primaryVertex_.x(), primaryVertex_.y(), primaryVertex_.z());
+    math::XYZPoint v(primaryVertex_->x(), primaryVertex_->y(), primaryVertex_->z());
     photonCand.setVertex( v  );
     if(hasConvTrack || hasSingleleg)photonCand.setFlag( reco::PFCandidate::GAMMA_TO_GAMMACONV, true);
     int matches=match_ind.size();
@@ -811,7 +814,6 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
 	  count++;
 	}
     }
-    //photonCand.setPositionAtECALEntrance(math::XYZPointF(photonMom_.position()));
     // set isvalid_ to TRUE since we've found at least one photon candidate
     isvalid_ = true;
     // push back the candidate into the collection ...
@@ -819,7 +821,6 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
     for(std::vector<unsigned int>::const_iterator it = 
 	  AddFromElectron_.begin();
 	it != AddFromElectron_.end(); ++it)photonCand.addElementInBlock(blockRef,*it);
-    
     
     // ... and lock all elemts used
     for(std::vector<unsigned int>::const_iterator it = elemsToLock.begin();
@@ -864,6 +865,18 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
 						 GCorr * photonEnergy_           );
       photonCand.setP4(photonCorrMomentum);
     }
+    
+    std::multimap<float, unsigned int>OrderedClust;
+    for(unsigned int i=0; i<PFClusters.size(); ++i){  
+      float et=PFClusters[i].energy()*sin(PFClusters[i].position().theta());
+      OrderedClust.insert(make_pair(et, i));
+    }
+    std::multimap<float, unsigned int>::reverse_iterator rit;
+    rit=OrderedClust.rbegin();
+    unsigned int highEindex=(*rit).second;
+    //store Position at ECAL Entrance as Position of Max Et PFCluster
+    photonCand.setPositionAtECALEntrance(math::XYZPointF(PFClusters[highEindex].position()));
+    
     //Mustache ID variables
     Mustache Must;
     Must.FillMustacheVar(PFClusters);
@@ -1228,7 +1241,7 @@ float PFPhotonAlgo::EvaluateLCorrMVA(reco::PFClusterRef clusterRef ){
   e2x5Max_=e2x5Max_/clusterRef->energy();
   //GetCrysCoordinates(clusterRef);
   //fill5x5Map(clusterRef);
-  VtxZ_=primaryVertex_.z();
+  VtxZ_=primaryVertex_->z();
   ClusPhi_=clusterRef->position().phi(); 
   ClusEta_=fabs(clusterRef->position().eta());
   EB=fabs(clusterRef->position().eta())/clusterRef->position().eta();

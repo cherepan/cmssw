@@ -8,13 +8,20 @@
 #include "CondTools/Hcal/interface/HcalDbXml.h"
 #include "CondFormats/HcalObjects/interface/HcalPedestals.h"
 #include "CondFormats/HcalObjects/interface/HcalPedestalWidths.h"
+#include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloCellGeometry.h"
+#include "Geometry/CaloTopology/interface/HcalTopology.h"
 
 
 /*
  * \file HcalPedestalAnalyzer.cc
  * 
- * $Date: 2009/12/17 21:09:32 $
- * $Revision: 1.13 $
+ * $Date: 2012/11/13 03:30:20 $
+ * $Revision: 1.16 $
  * \author S Stoynev / W Fisher
  *
 */
@@ -102,7 +109,10 @@ namespace {
   }
 }
 
-HcalPedestalAnalyzer::HcalPedestalAnalyzer(const edm::ParameterSet& ps){
+HcalPedestalAnalyzer::HcalPedestalAnalyzer(const edm::ParameterSet& ps) :
+  hbheDigiCollectionTag_(ps.getParameter<edm::InputTag>("hbheDigiCollectionTag")),
+  hoDigiCollectionTag_(ps.getParameter<edm::InputTag>("hoDigiCollectionTag")),
+  hfDigiCollectionTag_(ps.getParameter<edm::InputTag>("hfDigiCollectionTag")) {
 
   m_pedAnal = new HcalPedestalAnalysis(ps);
   m_pedAnal->setup(ps.getUntrackedParameter<std::string>("outputFileHist", "HcalPedestalAnalyzer.root"));
@@ -142,22 +152,22 @@ void HcalPedestalAnalyzer::endJob(void) {
   // get input objects
   HcalPedestals* inputPeds = 0;
   if (!m_inputPedestals_source.empty ()) {
-    inputPeds = new HcalPedestals ();
+    inputPeds = new HcalPedestals (m_topo);
     if (!getObject (inputPeds, m_inputPedestals_source, m_inputPedestals_tag, m_inputPedestals_run)) {
       std::cerr << "HcalPedestalAnalyzer-> Failed to get input Pedestals" << std::endl;
     }
   }
   HcalPedestalWidths* inputPedWids = 0;
   if (!m_inputPedestalWidths_source.empty ()) {
-    inputPedWids = new HcalPedestalWidths ();
+    inputPedWids = new HcalPedestalWidths (m_topo);
     if (!getObject (inputPedWids, m_inputPedestalWidths_source, m_inputPedestalWidths_tag, m_inputPedestalWidths_run)) {
       std::cerr << "HcalPedestalAnalyzer-> Failed to get input PedestalWidths" << std::endl;
     }
   }
 
   // make output objects
-  HcalPedestals* outputPeds = (m_outputPedestals_dest.empty () && !xmlFile (m_outputPedestals_dest)) ? 0 : new HcalPedestals ();
-  HcalPedestalWidths* outputPedWids = (m_outputPedestalWidths_dest.empty () && !xmlFile (m_outputPedestals_dest)) ? 0 : new HcalPedestalWidths ();
+  HcalPedestals* outputPeds = (m_outputPedestals_dest.empty () && !xmlFile (m_outputPedestals_dest)) ? 0 : new HcalPedestals (m_topo);
+  HcalPedestalWidths* outputPedWids = (m_outputPedestalWidths_dest.empty () && !xmlFile (m_outputPedestals_dest)) ? 0 : new HcalPedestalWidths (m_topo);
 
   // run algorithm
   int Flag=m_pedAnal->done(inputPeds, inputPedWids, outputPeds, outputPedWids);
@@ -196,13 +206,21 @@ void HcalPedestalAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& e
   m_ievt++;
 
   ///get digis
-  edm::Handle<HBHEDigiCollection> hbhe; e.getByType(hbhe);
-  edm::Handle<HODigiCollection> ho;     e.getByType(ho);
-  edm::Handle<HFDigiCollection> hf;     e.getByType(hf);
+  edm::Handle<HBHEDigiCollection> hbhe; e.getByLabel(hbheDigiCollectionTag_, hbhe);
+  edm::Handle<HODigiCollection> ho;     e.getByLabel(hoDigiCollectionTag_, ho);
+  edm::Handle<HFDigiCollection> hf;     e.getByLabel(hfDigiCollectionTag_, hf);
 
   // get conditions
   edm::ESHandle<HcalDbService> conditions;
   eventSetup.get<HcalDbRecord>().get(conditions);
+
+  if (m_topo==0) {
+    const IdealGeometryRecord& record = eventSetup.get<IdealGeometryRecord>();
+    edm::ESHandle<HcalTopology> topology;
+    record.get (topology);
+    m_topo=new HcalTopology(*topology);
+  }
+  
 
   m_pedAnal->processEvent(*hbhe, *ho, *hf, *conditions);
 

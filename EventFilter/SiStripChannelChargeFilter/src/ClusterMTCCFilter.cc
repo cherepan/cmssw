@@ -11,8 +11,9 @@
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Common/interface/DetSetVector.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
-#include "DataFormats/SiStripDetId/interface/TIBDetId.h"
-#include "DataFormats/SiStripDetId/interface/TOBDetId.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 using namespace std;
@@ -41,6 +42,12 @@ ClusterMTCCFilter::ClusterMTCCFilter(const edm::ParameterSet& ps){
 }
 
 bool ClusterMTCCFilter::filter(edm::Event & e, edm::EventSetup const& c) {
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  c.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+
   //get SiStripCluster
   edm::Handle< edm::DetSetVector<SiStripCluster> > h;
   e.getByLabel(clusterProducer,h);
@@ -72,17 +79,17 @@ bool ClusterMTCCFilter::filter(edm::Event & e, edm::EventSetup const& c) {
           ){
           // calculate generalized_layer:  31 = TIB1, 32 = TIB2, 33 = TIB3, 50 = TOB, 60 = TEC
           if(thedetId.subdetId()==StripSubdetector::TIB){
-             TIBDetId ptib = TIBDetId(thedetId.rawId());
-             generalized_layer = 10*thedetId.subdetId() + ptib.layer() + ptib.stereo();
-  	   if (ptib.layer()==2){
+             
+             generalized_layer = 10*thedetId.subdetId() + tTopo->tibLayer(thedetId.rawId()) + tTopo->tibStereo(thedetId.rawId());
+  	   if (tTopo->tibLayer(thedetId.rawId())==2){
   	     generalized_layer++;
-  	     if (ptib.glued()) edm::LogError("ClusterMTCCFilter")<<"WRONGGGG"<<endl;
+  	     if (tTopo->tibGlued(thedetId.rawId())) edm::LogError("ClusterMTCCFilter")<<"WRONGGGG"<<endl;
   	   }
           }else{
             generalized_layer = 10*thedetId.subdetId();
   	  if(thedetId.subdetId()==StripSubdetector::TOB){
-  	    TOBDetId ptob = TOBDetId(thedetId.rawId());
-  	    generalized_layer += ptob.layer();
+  	    
+  	    generalized_layer += tTopo->tobLayer(thedetId.rawId());
   	  }
           }
           // fill clusters_in_subcomponents

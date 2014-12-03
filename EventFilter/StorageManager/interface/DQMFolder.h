@@ -1,4 +1,4 @@
-// $Id: DQMFolder.h,v 1.1.4.2 2011/03/07 11:33:04 mommsen Exp $
+// $Id: DQMFolder.h,v 1.3 2013/04/22 16:19:36 wmtan Exp $
 /// @file: DQMFolder.h 
 
 #ifndef EventFilter_StorageManager_DQMFolder_h
@@ -17,9 +17,9 @@ namespace stor
   /**
    * A single DQM folder holding several histograms
    *
-   * $Author: mommsen $
-   * $Revision: 1.1.4.2 $
-   * $Date: 2011/03/07 11:33:04 $
+   * $Author: wmtan $
+   * $Revision: 1.3 $
+   * $Date: 2013/04/22 16:19:36 $
    */
 
   class DQMFolder
@@ -27,7 +27,7 @@ namespace stor
   public:
     DQMFolder();
     ~DQMFolder();
-    void addObjects(std::vector<TObject *>);
+    void addObjects(const std::vector<TObject *>&);
     void fillObjectVector(std::vector<TObject*>&) const;
 
   private:

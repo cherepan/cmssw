@@ -1,12 +1,11 @@
-#include "Utilities/General/interface/CMSexception.h"
-
 #include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
 #include "Geometry/CommonDetUnit/interface/GeomDetType.h"
+#include "FWCore/Utilities/interface/Exception.h"
 
-GeomDetUnit::GeomDetUnit( BoundPlane* sp) : GeomDet(sp)
+GeomDetUnit::GeomDetUnit( Plane* sp) : GeomDet(sp)
 {}
 
-GeomDetUnit::GeomDetUnit( const ReferenceCountingPointer<BoundPlane>& plane) :
+GeomDetUnit::GeomDetUnit( const ReferenceCountingPointer<Plane>& plane) :
   GeomDet(plane) {}
 
 GeomDetUnit::~GeomDetUnit()

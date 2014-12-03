@@ -1,5 +1,6 @@
-// $Id: FWTriggerTableViewTableManager.cc,v 1.3 2010/06/18 10:17:16 yana Exp $
+// $Id: FWTriggerTableViewTableManager.cc,v 1.5 2012/09/27 16:51:25 eulisse Exp $
 
+#include <cassert>
 #include "TGClient.h"
 #include "Fireworks/Core/interface/FWTriggerTableViewTableManager.h"
 #include "Fireworks/Core/interface/FWTriggerTableView.h"

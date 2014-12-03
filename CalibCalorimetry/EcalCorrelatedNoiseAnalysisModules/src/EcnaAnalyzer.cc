@@ -14,7 +14,7 @@
 //
 // Original Author:  Bernard Fabbro
 //         Created:  Fri Jun  2 10:27:01 CEST 2006
-// $Id: EcnaAnalyzer.cc,v 1.2 2011/03/21 14:57:41 fabbro Exp $
+// $Id: EcnaAnalyzer.cc,v 1.4 2013/04/05 20:17:20 wmtan Exp $
 //
 //          Update: 02/03/2011  
 
@@ -1281,7 +1281,7 @@ void EcnaAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 }
 // end of EcnaAnalyzer::analyse(...)
 
-Bool_t EcnaAnalyzer::AnalysisOutcome(const TString s_opt)
+Bool_t EcnaAnalyzer::AnalysisOutcome(const TString& s_opt)
 {
   //---- STOP if end of analysis
 

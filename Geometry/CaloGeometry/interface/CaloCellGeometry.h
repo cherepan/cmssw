@@ -9,6 +9,10 @@
 #include <vector>
 #include <string>
 
+#include "FWCore/Utilities/interface/GCC11Compatibility.h"
+
+
+
 /** \class CaloCellGeometry
 
 Abstract base class for an individual cell's geometry.
@@ -40,8 +44,8 @@ a default that the derived class author has to call deliberately if he wants it:
     };
 @endcode
 
-$Date: 2011/05/29 18:06:58 $
-$Revision: 1.19 $
+$Date: 2012/11/01 13:36:24 $
+$Revision: 1.22 $
 \author J. Mans, P. Meridiani
 */
 
@@ -71,14 +75,18 @@ public:
   virtual const CornersVec& getCorners() const = 0 ;
 
   /// Returns the position of reference for this cell 
-  const GlobalPoint& getPosition() const ;
+  const GlobalPoint& getPosition() const {return m_refPoint ; }
+  float etaPos() const { return m_eta;}
+  float phiPos() const { return m_phi;}
+
+
 
   /// Returns true if the specified point is inside this cell
   bool inside( const GlobalPoint & point ) const ;  
 
-  bool emptyCorners() const ;
+  bool emptyCorners() const { return m_corners.empty() ;}
 
-  const CCGFloat* param() const ;
+  const CCGFloat* param() const { return m_parms ;}
 
   static const CCGFloat* checkParmPtr( const std::vector<CCGFloat>& vd  ,
 				       ParVecVec&                   pvv   ) ;
@@ -108,13 +116,12 @@ protected:
   CornersVec& setCorners() const ;
 
   CaloCellGeometry( void );
-  CaloCellGeometry& operator=( const CaloCellGeometry& cell ) ;
-  CaloCellGeometry( const CaloCellGeometry& cell ) ;
 
 private:
   GlobalPoint         m_refPoint ;
   mutable CornersVec  m_corners  ;
   const CCGFloat*     m_parms    ;
+  float m_eta, m_phi;
 };
 
 std::ostream& operator<<( std::ostream& s, const CaloCellGeometry& cell ) ;

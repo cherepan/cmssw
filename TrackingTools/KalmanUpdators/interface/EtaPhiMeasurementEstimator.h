@@ -4,17 +4,17 @@
 /** \class EtaPhiMeasurementEstimator
  *  A EtaPhi Measurement Estimator. 
  *  Computhes the Chi^2 of a TrajectoryState with a RecHit or a 
- *  BoundPlane. The TrajectoryState must have errors.
+ *  Plane. The TrajectoryState must have errors.
  *  Works for any RecHit dimension. Ported from ORCA.
  *
- *  $Date: 2010/03/23 08:34:50 $
- *  $Revision: 1.4 $
+ *  $Date: 2013/01/10 12:12:19 $
+ *  $Revision: 1.3 $
  *  tschudi
  */
 
 #include "TrackingTools/KalmanUpdators/interface/Chi2MeasurementEstimator.h"
 
-class EtaPhiMeasurementEstimator : public Chi2MeasurementEstimatorBase {
+class EtaPhiMeasurementEstimator GCC11_FINAL : public Chi2MeasurementEstimatorBase {
 public:
 
   explicit EtaPhiMeasurementEstimator(double dEta, double dPhi) : 
@@ -28,10 +28,10 @@ public:
 				  const TransientTrackingRecHit&) const;
 
   virtual bool estimate(const TrajectoryStateOnSurface& tsos,
-			const BoundPlane& plane) const;
+			const Plane& plane) const;
 
   virtual Local2DVector maximalLocalDisplacement( const TrajectoryStateOnSurface& tsos,
-						   const BoundPlane& plane) const;
+						   const Plane& plane) const;
 
   EtaPhiMeasurementEstimator* clone() const {
     return new EtaPhiMeasurementEstimator(*this);

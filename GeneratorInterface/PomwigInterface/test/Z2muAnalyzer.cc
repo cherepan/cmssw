@@ -1,7 +1,7 @@
 //
 // Original Author:  Fabian Stoeckli
 //         Created:  Tue Nov 14 13:43:02 CET 2006
-// $Id: Z2muAnalyzer.cc,v 1.4 2009/05/25 14:10:16 fabiocos Exp $
+// $Id: Z2muAnalyzer.cc,v 1.6 2012/08/23 21:51:22 wdd Exp $
 //
 // Modified for PomwigInterface test for Z/gamma* -> 2mu
 // 02/2007
@@ -24,7 +24,9 @@
 
 
 
-Z2muAnalyzer::Z2muAnalyzer(const edm::ParameterSet& iConfig)
+Z2muAnalyzer::Z2muAnalyzer(const edm::ParameterSet& iConfig) :
+  hepMCProductTag_(iConfig.getParameter<edm::InputTag>("hepMCProductTag"))
+
 {
   outputFilename=iConfig.getUntrackedParameter<std::string>("OutputFilename","dummy.root");
   invmass_histo = new TH1D("invmass_histo","invmass_histo",100,0.,100.);
@@ -44,7 +46,7 @@ Z2muAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   
    // get HepMC::GenEvent ...
    Handle<HepMCProduct> evt_h;
-   iEvent.getByType(evt_h);
+   iEvent.getByLabel(hepMCProductTag_, evt_h);
    HepMC::GenEvent * evt = new  HepMC::GenEvent(*(evt_h->GetEvent()));
 
 

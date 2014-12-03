@@ -23,61 +23,27 @@ class HLTProcess(object):
   fastsimUnsupportedPaths = (
 
   # paths for which a recovery is not foreseen/possible
-    "AlCa_EcalEta_v*",
-    "AlCa_EcalPhiSym_v*",
-    "AlCa_EcalPi0_v*",
-    "AlCa_EcalPi0EBonly_v*",
-    "AlCa_EcalPi0EEonly_v*",
-    "AlCa_EcalEtaEBonly_v*",
-    "AlCa_EcalEtaEEonly_v*",
-    "AlCa_RPCMuonNoHits_v*",
-    "AlCa_RPCMuonNoTriggers_v*",
-    "AlCa_RPCMuonNormalisation_v*",
-    "AlCa_LumiPixels_v*",
-    "AlCa_LumiPixels_Random_v*",
-    "AlCa_LumiPixels_ZeroBias_v*",
-    "DQM_FEDIntegrity_v*",
-    "DQM_HcalEmptyEvents_v*",
-    "HLT_Calibration_v*",
-    "HLT_EcalCalibration_v*",
-    "HLT_HcalCalibration_v*",
-    "HLT_TrackerCalibration_v*",
+    "AlCa_*_v*",
+    "DQM_*_v*",
+    "HLT_*Calibration_v*",
     "HLT_DTErrors_v*",
-    "HLT_DTCalibration_v*",
     "HLT_Random_v*",
     "HLT_HcalNZS_v*",
     "HLT_HcalPhiSym_v*",
+    "HLT_Activity_Ecal*_v*",
     "HLT_IsoTrackHB_v*",
     "HLT_IsoTrackHE_v*",
     "HLT_L1SingleMuOpen_AntiBPTX_v*",
-    "HLT_JetE30_NoBPTX*_v*",
-    "HLT_JetE50_NoBPTX*_v*",
-    "HLT_JetE50_NoBPTX3BX_NoHalo_v*",
-    "HLT_JetE70_NoBPTX3BX_NoHalo_v*",
-    "HLT_L2Mu10_NoVertex_NoBPTX3BX_NoHalo_v*",
-    "HLT_L2Mu20_NoVertex_NoBPTX3BX_NoHalo_v*",
-    "HLT_L2Mu30_NoVertex_NoBPTX3BX_NoHalo_v*",
-    "HLT_JetE30_NoBPTX3BX_v*",
-    "HLT_JetE50_NoBPTX3BX_v*",
-    "HLT_JetE70_NoBPTX3BX_v*",
-    "HLT_L2Mu10_NoVertex_NoBPTX3BX_v*",
-    "HLT_L2Mu10_NoVertex_NoBPTX3BX_v*",
-    "HLT_L2Mu10_NoVertex_NoBPTX3BX_v*",
-    "HLT_L2Mu20_NoVertex_NoBPTX3BX_v*",
-    "HLT_L2Mu30_NoVertex_NoBPTX3BX_v*",
+    "HLT_JetE*_NoBPTX*_v*",
+    "HLT_L2Mu*_NoVertex_NoBPTX*_v*",
     "HLT_L2Mu20_NoVertex_2Cha_NoBPTX3BX_NoHalo_v*",
     "HLT_L2Mu30_NoVertex_2Cha_NoBPTX3BX_NoHalo_v*",
     "HLT_PixelTracks_Multiplicity70_v*",
     "HLT_PixelTracks_Multiplicity80_v*",
     "HLT_PixelTracks_Multiplicity90_v*",
-    "HLT_BeamGas_HF_Beam1_v*",
-    "HLT_BeamGas_HF_Beam2_v*",
-    "HLT_BeamHalo_v*",
-    "HLT_L1Tech_CASTOR_HaloMuon_v*",
-    "HLT_L1Tech_DT_GlobalOR_v*",
+    "HLT_Beam*_v*",
+#    "HLT_L1Tech_*_v*",
     "HLT_GlobalRunHPDNoise_v*",
-    "HLT_L1Tech_HBHEHO_totalOR_v*",
-    "HLT_L1Tech_HCAL_HF_single_channel_v*",
     "HLT_L1TrackerCosmics_v*",
     "HLT_HcalUTCA_v*",
     
@@ -90,6 +56,9 @@ class HLTProcess(object):
     "HLT_IsoMu18_eta2p1_MediumIsoPFTau25_Trk1_eta2p1_Reg_v*",
 # (not really needed for the five above, because the corresponding paths without regional
 #  tracking are already in the HLT menu)
+    "HLT_DoubleMediumIsoPFTau45_Trk1_eta2p1_Reg_Jet30_v*",
+    "HLT_DoubleMediumIsoPFTau50_Trk1_eta2p1_Prong1_Reg_v*",
+    "HLT_IsoMu26_eta2p1_MediumIsoPFTau30_Trk1_eta2p1_Reg_v*",
   
     )
 
@@ -226,147 +195,9 @@ class HLTProcess(object):
 import os
 cmsswVersion = os.environ['CMSSW_VERSION']
 
-# customization for CMSSW_5_2_X
-if cmsswVersion.startswith('CMSSW_5_2_'):
+# customization for 6_2_X
 
-    # force the use of the correct calo jet energy corrections
-    if 'hltESPL1FastJetCorrectionESProducer' in %(dict)s:
-        %(process)shltESPL1FastJetCorrectionESProducer.algorithm  = "AK5CaloHLT"
-
-    if 'hltESPL2RelativeCorrectionESProducer' in %(dict)s:
-        %(process)shltESPL2RelativeCorrectionESProducer.algorithm = "AK5CaloHLT"
-
-    if 'hltESPL3AbsoluteCorrectionESProducer' in %(dict)s:
-        %(process)shltESPL3AbsoluteCorrectionESProducer.algorithm = "AK5CaloHLT"
-
-
-# customization for CMSSW_5_3_X
-if cmsswVersion.startswith('CMSSW_5_3_'):
-
-    # do not override the calo jet energy corrections in 5.3.x for consistency with the current MC samples
-    pass
-
-
-# customization for CMSSW_6_1_X and 6_2_X
-if cmsswVersion.startswith('CMSSW_6_1_') or cmsswVersion.startswith('CMSSW_6_2_'):
-
-    # force the use of the correct calo jet energy corrections
-    if 'hltESPL1FastJetCorrectionESProducer' in %(dict)s:
-        %(process)shltESPL1FastJetCorrectionESProducer.algorithm  = "AK5CaloHLT"
-
-    if 'hltESPL2RelativeCorrectionESProducer' in %(dict)s:
-        %(process)shltESPL2RelativeCorrectionESProducer.algorithm = "AK5CaloHLT"
-
-    if 'hltESPL3AbsoluteCorrectionESProducer' in %(dict)s:
-        %(process)shltESPL3AbsoluteCorrectionESProducer.algorithm = "AK5CaloHLT"
-
-    # adapt the HLT menu to the "prototype for Event Interpretation" development
-    if 'hltPFPileUp' in %(dict)s:
-        # define new PFCandidateFwdPtrProducer module
-        %(process)shltParticleFlowPtrs = cms.EDProducer("PFCandidateFwdPtrProducer",
-            src = cms.InputTag('hltParticleFlow')
-        )
-        # add the new module before the hltPFPileUp module
-        _sequence = None
-        for _sequence in [ _sequence for _sequence in %(dict)s.itervalues() if isinstance(_sequence, cms._ModuleSequenceType)]:
-            try:
-                _sequence.insert( _sequence.index(%(process)shltPFPileUp), %(process)shltParticleFlowPtrs )
-            except ValueError:
-                pass
-        # reconfigure hltPFPileUp and hltPFNoPileUp to use the new module
-        %(process)shltPFPileUp.PFCandidates       = cms.InputTag( "hltParticleFlowPtrs" )
-        %(process)shltPFNoPileUp.bottomCollection = cms.InputTag( "hltParticleFlowPtrs" )
-
-    # postLS1 muon extension
-    # /CalibMuon/CSCCalibration/python/CSCIndexer_cfi.py
-    %(process)sCSCIndexerESSource = cms.ESSource("EmptyESSource",
-      recordName = cms.string("CSCIndexerRecord"),
-      firstValid = cms.vuint32(1),
-      iovIsRunNotTime = cms.bool(True)
-    )
-    %(process)sCSCIndexerESProducer = cms.ESProducer("CSCIndexerESProducer",
-      AlgoName = cms.string("CSCIndexerStartup")
-    )
-    # /CalibMuon/CSCCalibration/python/CSCChannelMapper_cfi.py
-    %(process)sCSCChannelMapperESSource = cms.ESSource("EmptyESSource",
-      recordName = cms.string("CSCChannelMapperRecord"),
-      firstValid = cms.vuint32(1),
-      iovIsRunNotTime = cms.bool(True)
-    )
-    %(process)sCSCChannelMapperESProducer = cms.ESProducer("CSCChannelMapperESProducer",
-      AlgoName = cms.string("CSCChannelMapperStartup")
-    )
-
-# customization for CMSSW_6_2_X only
-if cmsswVersion.startswith('CMSSW_6_2_'):
-    # /Geometry/TrackerNumberingBuilder/trackerTopologyConstants_cfi.py
-    %(process)strackerTopologyConstants = cms.ESProducer('TrackerTopologyEP',
-      pxb_layerStartBit = cms.uint32(16),
-      pxb_ladderStartBit = cms.uint32(8),
-      pxb_moduleStartBit = cms.uint32(2),
-      pxb_layerMask = cms.uint32(15),
-      pxb_ladderMask = cms.uint32(255),
-      pxb_moduleMask = cms.uint32(63),
-      pxf_sideStartBit = cms.uint32(23),
-      pxf_diskStartBit = cms.uint32(16),
-      pxf_bladeStartBit = cms.uint32(10),
-      pxf_panelStartBit = cms.uint32(8),
-      pxf_moduleStartBit = cms.uint32(2),
-      pxf_sideMask = cms.uint32(3),
-      pxf_diskMask = cms.uint32(15),
-      pxf_bladeMask = cms.uint32(63),
-      pxf_panelMask = cms.uint32(3),
-      pxf_moduleMask = cms.uint32(63),
-      tec_sideStartBit = cms.uint32(18),
-      tec_wheelStartBit = cms.uint32(14),
-      tec_petal_fw_bwStartBit = cms.uint32(12),
-      tec_petalStartBit = cms.uint32(8),
-      tec_ringStartBit = cms.uint32(5),
-      tec_moduleStartBit = cms.uint32(2),
-      tec_sterStartBit = cms.uint32(0),
-      tec_sideMask = cms.uint32(3),
-      tec_wheelMask = cms.uint32(15),
-      tec_petal_fw_bwMask = cms.uint32(3),
-      tec_petalMask = cms.uint32(15),
-      tec_ringMask = cms.uint32(7),
-      tec_moduleMask = cms.uint32(7),
-      tec_sterMask = cms.uint32(3),
-      tib_layerStartBit = cms.uint32(14),
-      tib_str_fw_bwStartBit = cms.uint32(12),
-      tib_str_int_extStartBit = cms.uint32(10),
-      tib_strStartBit = cms.uint32(4),
-      tib_moduleStartBit = cms.uint32(2),
-      tib_sterStartBit = cms.uint32(0),
-      tib_layerMask = cms.uint32(7),
-      tib_str_fw_bwMask = cms.uint32(3),
-      tib_str_int_extMask = cms.uint32(3),
-      tib_strMask = cms.uint32(63),
-      tib_moduleMask = cms.uint32(3),
-      tib_sterMask = cms.uint32(3),
-      tid_sideStartBit = cms.uint32(13),
-      tid_wheelStartBit = cms.uint32(11),
-      tid_ringStartBit = cms.uint32(9),
-      tid_module_fw_bwStartBit = cms.uint32(7),
-      tid_moduleStartBit = cms.uint32(2),
-      tid_sterStartBit = cms.uint32(0),
-      tid_sideMask = cms.uint32(3),
-      tid_wheelMask = cms.uint32(3),
-      tid_ringMask = cms.uint32(3),
-      tid_module_fw_bwMask = cms.uint32(3),
-      tid_moduleMask = cms.uint32(31),
-      tid_sterMask = cms.uint32(3),
-      tob_layerStartBit = cms.uint32(14),
-      tob_rod_fw_bwStartBit = cms.uint32(12),
-      tob_rodStartBit = cms.uint32(5),
-      tob_moduleStartBit = cms.uint32(2),
-      tob_sterStartBit = cms.uint32(0),
-      tob_layerMask = cms.uint32(7),
-      tob_rod_fw_bwMask = cms.uint32(3),
-      tob_rodMask = cms.uint32(127),
-      tob_moduleMask = cms.uint32(7),
-      tob_sterMask = cms.uint32(3),
-      appendToDataLabel = cms.string('')
-    )
+# none for now
 
 """
 
@@ -933,6 +764,7 @@ if 'GlobalTag' in %%(dict)s:
 %(process)sFastTimerService.enableDQMbyPathCounters   = True
 %(process)sFastTimerService.enableDQMbyPathExclusive  = True
 %(process)sFastTimerService.enableDQMbyModule         = True
+%(process)sFastTimerService.enableDQMbyModuleType     = True
 %(process)sFastTimerService.enableDQMSummary          = True
 %(process)sFastTimerService.enableDQMbyLuminosity     = True
 %(process)sFastTimerService.enableDQMbyLumiSection    = True
@@ -1131,16 +963,6 @@ if 'GlobalTag' in %%(dict)s:
 
       self.options['modules'].append( "hltL3MuonIsolations" )
       self.options['modules'].append( "hltPixelVertices" )
-      # 2011 start
-      self.options['modules'].append( "-hltCkfL1IsoTrackCandidates" )
-      self.options['modules'].append( "-hltCtfL1IsoWithMaterialTracks" )
-      self.options['modules'].append( "-hltCkfL1NonIsoTrackCandidates" )
-      self.options['modules'].append( "-hltCtfL1NonIsoWithMaterialTracks" )
-      self.options['modules'].append( "-hltCkf3HitL1IsoTrackCandidates" )
-      self.options['modules'].append( "-hltCtf3HitL1IsoWithMaterialTracks" )
-      self.options['modules'].append( "-hltCkf3HitL1NonIsoTrackCandidates" )
-      self.options['modules'].append( "-hltCtf3HitL1NonIsoWithMaterialTracks" )
-      # 2011 stop
       self.options['modules'].append( "-hltCkfL1SeededTrackCandidates" )
       self.options['modules'].append( "-hltCtfL1SeededithMaterialTracks" )
       self.options['modules'].append( "-hltCkf3HitL1SeededTrackCandidates" )
@@ -1210,33 +1032,7 @@ if 'GlobalTag' in %%(dict)s:
       self.options['modules'].append( "-hltBLifetimeDiBTagIP3D1stTrkRegionalPixelSeedGeneratorJet20HbbL1FastJet" )
       self.options['modules'].append( "-hltBLifetimeDiBTagIP3D1stTrkRegionalCkfTrackCandidatesJet20HbbL1FastJet" )
       self.options['modules'].append( "-hltBLifetimeDiBTagIP3D1stTrkRegionalCtfWithMaterialTracksJet20HbbL1FastJet" )
-
       # === hltBLifetimeRegional
-
-      # 2011 start
-      self.options['modules'].append( "-hltBLifetimeRegionalPixelSeedGeneratorSingleTop" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCtfWithMaterialTracksSingleTop" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCkfTrackCandidatesSingleTop" )
-      self.options['modules'].append( "-hltBLifetimeRegionalPixelSeedGeneratorEleJetSingleTop" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCkfTrackCandidatesEleJetSingleTop" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCtfWithMaterialTracksEleJetSingleTop" )
-      self.options['modules'].append( "-hltBLifetimeRegionalPixelSeedGeneratorIsoEleJetSingleTop" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCkfTrackCandidatesIsoEleJetSingleTop" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCtfWithMaterialTracksIsoEleJetSingleTop" )
-      self.options['modules'].append( "-hltBLifetimeRegionalPixelSeedGeneratorRA2b" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCkfTrackCandidatesRA2b" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCtfWithMaterialTracksRA2b" )
-      self.options['modules'].append( "-hltBLifetimeRegionalPixelSeedGeneratorRAzr" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCkfTrackCandidatesRAzr" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCtfWithMaterialTracksRAzr" )
-      self.options['modules'].append( "-hltBLifetimeRegionalPixel3DSeedGeneratorJet30Hbb" )
-      self.options['modules'].append( "-hltBLifetimeRegional3DCkfTrackCandidatesJet30Hbb" )
-      self.options['modules'].append( "-hltBLifetimeRegional3DCtfWithMaterialTracksJet30Hbb" )
-      self.options['modules'].append( "-hltBLifetimeRegionalPixelSeedGeneratorGammaB" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCkfTrackCandidatesGammaB" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCtfWithMaterialTracksGammaB" )
-      # 2011 stop
-                                                                                         
       self.options['modules'].append( "-hltBLifetimeRegionalPixelSeedGeneratorHbb" )
       self.options['modules'].append( "-hltBLifetimeRegionalCkfTrackCandidatesHbb" )
       self.options['modules'].append( "-hltBLifetimeRegionalCtfWithMaterialTracksHbb" )
@@ -1258,7 +1054,7 @@ if 'GlobalTag' in %%(dict)s:
       self.options['modules'].append( "-hltFastPixelBLifetimeRegionalPixelSeedGeneratorHbb" )
       self.options['modules'].append( "-hltFastPixelBLifetimeRegionalCkfTrackCandidatesHbb" )
       self.options['modules'].append( "-hltFastPixelBLifetimeRegionalCtfWithMaterialTracksHbb" )
-                  
+     
       self.options['modules'].append( "-hltPixelTracksForMinBias" )
       self.options['modules'].append( "-hltPixelTracksForHighMult" )
       self.options['modules'].append( "-hltRegionalPixelTracks" )
@@ -1292,10 +1088,6 @@ if 'GlobalTag' in %%(dict)s:
       self.options['modules'].append( "hltRpcRecHits" )
       self.options['modules'].append( "-hltScalersRawToDigi" )
 
-      # 2011 start
-      self.options['sequences'].append( "-HLTL1IsoEgammaRegionalRecoTrackerSequence" )
-      self.options['sequences'].append( "-HLTL1NonIsoEgammaRegionalRecoTrackerSequence" )
-      # 2011 stop
       self.options['sequences'].append( "-HLTL1SeededEgammaRegionalRecoTrackerSequence" )
       self.options['sequences'].append( "-HLTEcalActivityEgammaRegionalRecoTrackerSequence" )
       self.options['sequences'].append( "-HLTPixelMatchElectronActivityTrackingSequence" )

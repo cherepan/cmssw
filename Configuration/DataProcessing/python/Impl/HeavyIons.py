@@ -9,14 +9,9 @@ Scenario supporting heavy-ion collisions
 import os
 import sys
 
-from Configuration.DataProcessing.Scenario import Scenario
+from Configuration.DataProcessing.Scenario import *
 from Configuration.DataProcessing.Utils import stepALCAPRODUCER,addMonitoring,dictIO,dqmIOSource
 import FWCore.ParameterSet.Config as cms
-from Configuration.PyReleaseValidation.ConfigBuilder import ConfigBuilder
-from Configuration.PyReleaseValidation.ConfigBuilder import Options
-from Configuration.PyReleaseValidation.ConfigBuilder import defaultOptions
-from Configuration.PyReleaseValidation.ConfigBuilder import installFilteredStream
-from Configuration.PyReleaseValidation.ConfigBuilder import addOutputModule
 from Configuration.DataProcessing.RecoTLR import customisePromptHI,customiseExpressHI
 
 class HeavyIons(Scenario):

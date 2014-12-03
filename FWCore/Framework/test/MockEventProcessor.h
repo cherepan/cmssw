@@ -25,7 +25,6 @@ namespace edm {
                        statemachine::EmptyRunLumiMode const& emptyRunLumiMode);
 
     virtual StatusCode runToCompletion(bool onlineStateTransitions);
-    virtual StatusCode runEventCount(int numberOfEventsToProcess);
 
     virtual void readFile();
     virtual void closeInputFile(bool cleaningUpAfterException);
@@ -48,15 +47,17 @@ namespace edm {
     virtual void beginRun(statemachine::Run const& run);
     virtual void endRun(statemachine::Run const& run, bool cleaningUpAfterException);
 
-    virtual void beginLumi(ProcessHistoryID const& phid, int run, int lumi);
-    virtual void endLumi(ProcessHistoryID const& phid, int run, int lumi, bool cleaningUpAfterException);
+    virtual void beginLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi);
+    virtual void endLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi, bool cleaningUpAfterException);
 
-    virtual statemachine::Run readAndCacheRun(bool merge);
-    virtual int readAndCacheLumi(bool merge);
+    virtual statemachine::Run readAndCacheRun();
+    virtual statemachine::Run readAndMergeRun();
+    virtual int readAndCacheLumi();
+    virtual int readAndMergeLumi();
     virtual void writeRun(statemachine::Run const& run);
     virtual void deleteRunFromCache(statemachine::Run const& run);
-    virtual void writeLumi(ProcessHistoryID const& phid, int run, int lumi);
-    virtual void deleteLumiFromCache(ProcessHistoryID const& phid, int run, int lumi);
+    virtual void writeLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi);
+    virtual void deleteLumiFromCache(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi);
 
     virtual void readAndProcessEvent();
     virtual bool shouldWeStop() const;

@@ -9,7 +9,7 @@
 #include "TrackingTools/DetLayers/interface/PhiLess.h"
 #include "TrackingTools/GeomPropagators/interface/HelixArbitraryPlaneCrossing2Order.h"
 #include "TrackingTools/GeomPropagators/interface/HelixArbitraryPlaneCrossing.h"
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
 
 
 #include "LayerCrossingSide.h"
@@ -103,7 +103,7 @@ PixelForwardLayer::groupedCompatibleDetsV( const TrajectoryStateOnSurface& tsos,
     int crossingSide = LayerCrossingSide().endcapSide( tsos, prop);
     int theHelicity = computeHelicity(theComps[theBinFinder.binIndex(crossings.closestIndex)],
 					theComps[theBinFinder.binIndex(crossings.nextIndex)] );
-    DetGroupMerger::orderAndMergeTwoLevels( closestResult, nextResult, result, 
+    DetGroupMerger::orderAndMergeTwoLevels( std::move(closestResult), std::move(nextResult), result, 
 					    theHelicity, crossingSide);
   }
   else {
@@ -143,30 +143,30 @@ PixelForwardLayer::searchNeighbors( const TrajectoryStateOnSurface& tsos,
 
   int quarter = theComps.size()/4;
  
-  vector<DetGroup> tmp;
-  vector<DetGroup> newResult;
   for (int idet=negStart; idet >= negStart - quarter+1; idet--) {
-    tmp.clear();
-    newResult.clear();
+    vector<DetGroup> tmp1;
     const GeometricSearchDet* neighbor = theComps[theBinFinder.binIndex(idet)];
     // if (!overlap( gCrossingPos, *neighbor, window)) break; // mybe not needed?
     // maybe also add shallow crossing angle test here???
-    if (!Adder::add( *neighbor, tsos, prop, est, tmp)) break;
+    if (!Adder::add( *neighbor, tsos, prop, est, tmp1)) break;
     int theHelicity = computeHelicity(theComps[theBinFinder.binIndex(idet)],
 				      theComps[theBinFinder.binIndex(idet+1)] );
-    Merger::orderAndMergeTwoLevels( tmp, result, newResult, theHelicity, crossingSide);
+    vector<DetGroup> tmp2; tmp2.swap(result);
+    vector<DetGroup> newResult;
+    Merger::orderAndMergeTwoLevels( std::move(tmp1), std::move(tmp2), newResult, theHelicity, crossingSide);
     result.swap(newResult);
   }
   for (int idet=posStart; idet < posStart + quarter-1; idet++) {
-    tmp.clear();
-    newResult.clear();
+    vector<DetGroup> tmp1;
     const GeometricSearchDet* neighbor = theComps[theBinFinder.binIndex(idet)];
     // if (!overlap( gCrossingPos, *neighbor, window)) break; // mybe not needed?
     // maybe also add shallow crossing angle test here???
-    if (!Adder::add( *neighbor, tsos, prop, est, tmp)) break;
+    if (!Adder::add( *neighbor, tsos, prop, est, tmp1)) break;
     int theHelicity = computeHelicity(theComps[theBinFinder.binIndex(idet-1)],
 				      theComps[theBinFinder.binIndex(idet)] );
-    Merger::orderAndMergeTwoLevels( result, tmp, newResult, theHelicity, crossingSide);
+    vector<DetGroup> tmp2; tmp2.swap(result);
+    vector<DetGroup> newResult;
+    Merger::orderAndMergeTwoLevels(std::move(tmp2), std::move(tmp1), newResult, theHelicity, crossingSide);
     result.swap(newResult);
   }
 }
@@ -202,7 +202,7 @@ PixelForwardLayer::computeCrossings( const TrajectoryStateOnSurface& startingSta
   HelixPlaneCrossing::DirectionType turbineDir( turbineCrossing.direction(thePath.second));
   int closestIndex = theBinFinder.binIndex(turbinePoint.phi());
 
-  const BoundPlane& closestPlane( static_cast<const BoundPlane&>( 
+  const Plane& closestPlane( static_cast<const Plane&>( 
     theComps[closestIndex]->surface()));
 
 
@@ -217,7 +217,7 @@ PixelForwardLayer::computeCrossings( const TrajectoryStateOnSurface& startingSta
   int nextIndex = PhiLess()( closestPlane.position().phi(), turbinePoint.phi()) ? 
     closestIndex+1 : closestIndex-1;
 
-  const BoundPlane& nextPlane( static_cast<const BoundPlane&>( 
+  const Plane& nextPlane( static_cast<const Plane&>( 
     theComps[ theBinFinder.binIndex(nextIndex)]->surface()));
 
   pair<bool,double> theNextBladePath    = theBladeCrossing.pathLength( nextPlane );

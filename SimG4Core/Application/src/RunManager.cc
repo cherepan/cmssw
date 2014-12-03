@@ -6,6 +6,7 @@
 #include "SimG4Core/Application/interface/TrackingAction.h"
 #include "SimG4Core/Application/interface/SteppingAction.h"
 #include "SimG4Core/Application/interface/G4SimEvent.h"
+#include "SimG4Core/Application/interface/ParametrisedEMPhysics.h"
 
 #include "SimG4Core/Geometry/interface/DDDWorld.h"
 #include "SimG4Core/Geometry/interface/G4LogicalVolumeToDDLogicalPartMap.h"
@@ -52,6 +53,7 @@
 #include "G4TransportationManager.hh"
 #include "G4ParticleTable.hh"
 
+#include "G4GDMLParser.hh"
 
 #include <iostream>
 #include <sstream>
@@ -136,33 +138,31 @@ RunManager::RunManager(edm::ParameterSet const & p)
       m_pTrackingAction(p.getParameter<edm::ParameterSet>("TrackingAction")),
       m_pSteppingAction(p.getParameter<edm::ParameterSet>("SteppingAction")),
       m_G4Commands(p.getParameter<std::vector<std::string> >("G4Commands")),
-      m_p(p), m_fieldBuilder(0)
-
+      m_p(p), m_fieldBuilder(0),
+      m_theLHCTlinkTag(p.getParameter<edm::InputTag>("theLHCTlinkTag"))
 {    
-    m_kernel = G4RunManagerKernel::GetRunManagerKernel();
-    if (m_kernel==0) m_kernel = new G4RunManagerKernel();
+  m_kernel = G4RunManagerKernel::GetRunManagerKernel();
+  if (m_kernel==0) m_kernel = new G4RunManagerKernel();
     
-    m_CustomExceptionHandler = new ExceptionHandler(this) ;
+  m_CustomExceptionHandler = new ExceptionHandler(this) ;
     
-    m_check = p.getUntrackedParameter<bool>("CheckOverlap",false);
+  m_check = p.getUntrackedParameter<bool>("CheckOverlap",false);
+  m_WriteFile = p.getUntrackedParameter<std::string>("FileNameGDML","");
 
-    //Look for an outside SimActivityRegistry
-    // this is used by the visualization code
-    edm::Service<SimActivityRegistry> otherRegistry;
-    if(otherRegistry){
-       m_registry.connect(*otherRegistry);
-    }
+  //Look for an outside SimActivityRegistry
+  // this is used by the visualization code
+  edm::Service<SimActivityRegistry> otherRegistry;
+  if(otherRegistry){
+    m_registry.connect(*otherRegistry);
+  }
 
-    createWatchers(m_p, m_registry, m_watchers, m_producers);
+  createWatchers(m_p, m_registry, m_watchers, m_producers);
 }
 
 RunManager::~RunManager() 
 { 
     if (m_kernel!=0) delete m_kernel; 
 }
-
-
-
 
 void RunManager::initG4(const edm::EventSetup & es)
 {
@@ -195,6 +195,11 @@ void RunManager::initG4(const edm::EventSetup & es)
   const DDDWorld * world = new DDDWorld(&(*pDD), map_, catalog_, m_check);
   m_registry.dddWorldSignal_(world);
 
+  if("" != m_WriteFile) {
+    G4GDMLParser gdml;
+    gdml.Write(m_WriteFile, world->GetWorldVolume());
+  }
+
   if (m_pUseMagneticField)
     {
       // setup the magnetic field
@@ -204,8 +209,9 @@ void RunManager::initG4(const edm::EventSetup & es)
 
       // m_fieldBuilder = std::auto_ptr<sim::FieldBuilder>(new sim::FieldBuilder(&(*pMF), map_, m_pField));
       m_fieldBuilder = (new sim::FieldBuilder(&(*pMF), m_pField));
-      G4TransportationManager * tM = G4TransportationManager::GetTransportationManager();
-      m_fieldBuilder->build( tM->GetFieldManager(),tM->GetPropagatorInField() ) ;
+      G4TransportationManager * tM = 
+	G4TransportationManager::GetTransportationManager();
+      m_fieldBuilder->build( tM->GetFieldManager(),tM->GetPropagatorInField());
       // m_fieldBuilder->configure("MagneticFieldType",tM->GetFieldManager(),tM->GetPropagatorInField());
     }
 
@@ -239,8 +245,16 @@ void RunManager::initG4(const edm::EventSetup & es)
                                                    (m_pPhysics.getParameter<std::string> ("type")));
   if (physicsMaker.get()==0) throw SimG4Exception("Unable to find the Physics list requested");
   m_physicsList = physicsMaker->make(map_,fPDGTable,m_fieldBuilder,m_pPhysics,m_registry);
-  if (m_physicsList.get()==0) throw SimG4Exception("Physics list construction failed!");
-  m_kernel->SetPhysics(m_physicsList.get());
+
+
+  PhysicsList* phys = m_physicsList.get(); 
+  if (phys==0) throw SimG4Exception("Physics list construction failed!");
+
+  // adding GFlash and Russian Roulette for eletrons and gamma
+  // on top of any Physics Lists
+  phys->RegisterPhysics(new ParametrisedEMPhysics("EMoptions",m_pPhysics));
+  
+  m_kernel->SetPhysics(phys);
   m_kernel->InitializePhysics();
 
   m_physicsList->ResetStoredInAscii();
@@ -421,8 +435,8 @@ void RunManager::initializeUserActions()
         eventManager->SetUserAction(userSteppingAction);
         if (m_Override)
         {
-	   edm::LogInfo("SimG4CoreApplication") << " RunManager: user StackingAction overridden " ;
-            eventManager->SetUserAction(new StackingAction(m_pStackingAction));
+	  edm::LogInfo("SimG4CoreApplication") << " RunManager: user StackingAction overridden " ;
+	  eventManager->SetUserAction(new StackingAction(m_pStackingAction));
         }
     }
     else 
@@ -483,7 +497,7 @@ void RunManager::abortRun(bool softAbort)
 void RunManager::resetGenParticleId( edm::Event& inpevt ) {
 
   edm::Handle<edm::LHCTransportLinkContainer> theLHCTlink;
-  inpevt.getByType( theLHCTlink );
+  inpevt.getByLabel( m_theLHCTlinkTag, theLHCTlink );
   if ( theLHCTlink.isValid() ) {
     m_trackManager->setLHCTransportLink( theLHCTlink.product() );
   }

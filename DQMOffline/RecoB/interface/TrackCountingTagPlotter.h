@@ -14,11 +14,12 @@ class TrackCountingTagPlotter : public BaseTagInfoPlotter {
  public:
 
   TrackCountingTagPlotter (const std::string & tagName, const EtaPtBin & etaPtBin,
-	const edm::ParameterSet& pSet, const bool& update, const bool& mc, const bool& willfinalize);
+	const edm::ParameterSet& pSet, const bool& update, const unsigned int& mc, const bool& willfinalize);
 
   ~TrackCountingTagPlotter () ;
 
   void analyzeTag (const reco::BaseTagInfo * baseTagInfo, const int & jetFlavour);
+  void analyzeTag (const reco::BaseTagInfo * baseTagInfo, const int & jetFlavour, const float & w);
 
   virtual void finalize ();
   virtual void createPlotsForFinalize ();
@@ -28,7 +29,7 @@ class TrackCountingTagPlotter : public BaseTagInfoPlotter {
   void psPlot(const std::string & name);
 
  private:
-  bool mcPlots_;
+  unsigned int mcPlots_;
   int	nBinEffPur_ ;
   double startEffPur_ ; 
   double endEffPur_ ; 

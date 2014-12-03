@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 
+#ifdef EDM_ML_DEBUG
 class MyWatcher : public TStopwatch {
  public:
   MyWatcher(const std::string n=""):name(n),total(0) {}
@@ -24,6 +25,19 @@ class MyWatcher : public TStopwatch {
   std::string name;
   double total;
 };
+#else
+class MyWatcher {
+ public:
+  MyWatcher(const std::string) {}
+  ~MyWatcher(){}
 
+  std::string start(bool r=true){return name;}
+  std::string continu(){return name;}
+  std::string reset(){return name;}
+  std::string stop(){return name;}
+   std::string lap() {return name;}
+std::string name;
+};
+#endif
 
 #endif

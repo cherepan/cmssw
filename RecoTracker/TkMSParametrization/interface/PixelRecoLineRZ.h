@@ -57,7 +57,7 @@ private:
   inline float subTIP (float val) const
     {
       if (!theTIP2) return val;
-      double val2 = val * val;
+      float val2 = val * val;
       return val2 > theTIP2 ? std::sqrt(val2 - theTIP2) : 0.;
     }
 
@@ -66,4 +66,34 @@ private:
   LineOrigin theOrigin;
   float theCotLine;
 };
+
+// simpler version (no tip)
+class SimpleLineRZ {
+public:
+  
+  typedef PixelRecoPointRZ Point;
+  
+  SimpleLineRZ() { }
+  
+  SimpleLineRZ(const Point & aOrigin, float aCotLine) :
+    theOrigin( aOrigin ),
+    theCotLine(aCotLine) { }
+  
+  SimpleLineRZ(const Point & aOrigin, const Point & aPoint) :
+    theOrigin( aOrigin ),
+    theCotLine( (aPoint.z()-theOrigin.z())/ (aPoint.r()-theOrigin.r()) )
+  { } 
+  
+  float cotLine() const { return theCotLine; }
+  Point const & origin() const { return theOrigin; }
+  
+  float zAtR (float r) const { return theOrigin.z()+(r-theOrigin.r())*theCotLine; }
+  float rAtZ (float z) const { return theOrigin.r()+(z-theOrigin.z())/theCotLine; }
+  
+  
+private:
+  Point theOrigin;
+  float theCotLine=0;
+};
+
 #endif

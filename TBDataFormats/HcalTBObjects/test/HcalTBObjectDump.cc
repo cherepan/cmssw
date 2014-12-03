@@ -3,11 +3,11 @@
 #include "DataFormats/Common/interface/Handle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 #include "TBDataFormats/HcalTBObjects/interface/HcalTBTriggerData.h"
 #include "TBDataFormats/HcalTBObjects/interface/HcalTBRunData.h"
 #include "TBDataFormats/HcalTBObjects/interface/HcalTBEventPosition.h"
 #include "TBDataFormats/HcalTBObjects/interface/HcalTBTiming.h"
-#include "FWCore/Framework/interface/Selector.h"
 #include <iostream>
 
 using namespace std;
@@ -16,18 +16,28 @@ namespace cms {
 
   /** \class HcalTBObjectDump
       
-  $Date: 2007/04/10 23:11:20 $
-  $Revision: 1.6 $
+  $Date: 2012/09/20 20:16:10 $
+  $Revision: 1.9 $
   \author J. Mans - Minnesota
   */
   class HcalTBObjectDump : public edm::EDAnalyzer {
   public:
     explicit HcalTBObjectDump(edm::ParameterSet const& conf);
     virtual void analyze(edm::Event const& e, edm::EventSetup const& c);
+  private:
+    edm::InputTag hcalTBTriggerDataTag_;
+    edm::InputTag hcalTBRunDataTag_;
+    edm::InputTag hcalTBEventPositionTag_;
+    edm::InputTag hcalTBTimingTag_;
   };
 
 
-  HcalTBObjectDump::HcalTBObjectDump(edm::ParameterSet const& conf) {
+  HcalTBObjectDump::HcalTBObjectDump(edm::ParameterSet const& conf) :
+    hcalTBTriggerDataTag_(conf.getParameter<edm::InputTag>("hcalTBTriggerDataTag")),
+    hcalTBRunDataTag_(conf.getParameter<edm::InputTag>("hcalTBRunDataTag")),
+    hcalTBEventPositionTag_(conf.getParameter<edm::InputTag>("hcalTBEventPositionTag")),
+    hcalTBTimingTag_(conf.getParameter<edm::InputTag>("hcalTBTimingTag"))
+ {
   }
   
   void HcalTBObjectDump::analyze(edm::Event const& e, edm::EventSetup const& c) {
@@ -35,7 +45,7 @@ namespace cms {
     try {
       edm::Handle<HcalTBTriggerData> td;
 
-      e.getByType(td);
+      e.getByLabel(hcalTBTriggerDataTag_, td);
       const HcalTBTriggerData& info=*(td);
 
       cout << "TRIGGER DATA: ";
@@ -47,7 +57,7 @@ namespace cms {
     try {
       edm::Handle<HcalTBRunData> td;
 
-      e.getByType(td);
+      e.getByLabel(hcalTBRunDataTag_, td);
       const HcalTBRunData& info=*(td);
 
       cout << "RUN DATA: ";
@@ -59,7 +69,7 @@ namespace cms {
     try {
       edm::Handle<HcalTBEventPosition> td;
 
-      e.getByType(td);
+      e.getByLabel(hcalTBEventPositionTag_, td);
       const HcalTBEventPosition& info=*td;
 
       cout << "Event position info: ";
@@ -72,7 +82,7 @@ namespace cms {
       
       edm::Handle<HcalTBTiming>td;
 
-      e.getByType(td);
+      e.getByLabel(hcalTBTimingTag_, td);
       const HcalTBTiming& info=*(td);
 
       cout << "Timing: ";

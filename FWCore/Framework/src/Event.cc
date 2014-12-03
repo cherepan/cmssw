@@ -12,6 +12,8 @@
 
 namespace edm {
 
+  std::string const Event::emptyString_;
+
   Event::Event(EventPrincipal& ep, ModuleDescription const& md) :
       provRecorder_(ep, md),
       aux_(ep.aux()),
@@ -26,6 +28,12 @@ namespace edm {
     for_all(putProducts_, principal_get_adapter_detail::deleter());
   }
 
+  void
+  Event::setConsumer(EDConsumerBase const* iConsumer) {
+    provRecorder_.setConsumer(iConsumer);
+    const_cast<LuminosityBlock*>(luminosityBlock_.get())->setConsumer(iConsumer);
+  }
+
   EventPrincipal&
   Event::eventPrincipal() {
     return dynamic_cast<EventPrincipal&>(provRecorder_.principal());
@@ -38,7 +46,7 @@ namespace edm {
 
   ProductID
   Event::makeProductID(ConstBranchDescription const& desc) const {
-    return eventPrincipal().branchIDToProductID(desc.branchID());
+    return eventPrincipal().branchIDToProductID(desc.originalBranchID());
   }
 
   Run const&

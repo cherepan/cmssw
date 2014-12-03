@@ -1,27 +1,23 @@
 ## import skeleton process
 from PhysicsTools.PatAlgos.patTemplate_cfg import *
 
+## to run in scheduled mode uncomment the following lines
+#process.load("PhysicsTools.PatAlgos.patSequences_cff")
+#process.p = cms.Path(
+#    process.patDefaultSequence
+#    )
 
-## ------------------------------------------------------
-#  NOTE: you can use a bunch of core tools of PAT to
-#  taylor your PAT configuration; for a few examples
-#  uncomment the lines below
-## ------------------------------------------------------
-#from PhysicsTools.PatAlgos.tools.coreTools import *
+## to run in un-scheduled mode uncomment the following lines
+process.load("PhysicsTools.PatAlgos.producersLayer1.patCandidates_cff")
+process.load("PhysicsTools.PatAlgos.selectionLayer1.selectedPatCandidates_cff")
 
-## remove MC matching from the default sequence
-# removeMCMatching(process, ['Muons'])
-# runOnData(process)
-
-## remove certain objects from the default sequence
-# removeAllPATObjectsBut(process, ['Muons'])
-# removeSpecificPATObjects(process, ['Electrons', 'Muons', 'Taus'])
-
-
-## let it run
+process.options.allowUnscheduled = cms.untracked.bool(True)
+#process.Tracer = cms.Service("Tracer")
 process.p = cms.Path(
-    process.patDefaultSequence
+    process.selectedPatCandidates
     )
+
+
 
 ## ------------------------------------------------------
 #  In addition you usually want to change the following

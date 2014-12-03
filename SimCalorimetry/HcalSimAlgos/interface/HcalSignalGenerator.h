@@ -2,10 +2,10 @@
 #define HcalSimAlgos_HcalSignalGenerator_h
 
 #include "SimCalorimetry/HcalSimAlgos/interface/HcalBaseSignalGenerator.h"
-#include "FWCore/Framework/interface/Selector.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventPrincipal.h"
 #include "CalibFormats/HcalObjects/interface/HcalCoderDb.h"
 #include "CalibFormats/HcalObjects/interface/HcalCalibrations.h"
 #include "CalibFormats/HcalObjects/interface/HcalDbService.h"
@@ -28,7 +28,7 @@ public:
   typedef typename HCALDIGITIZERTRAITS::DigiCollection COLLECTION;
 
   HcalSignalGenerator(const edm::InputTag & inputTag)
-  : HcalBaseSignalGenerator(), theEvent(0), theEventPrincipal(0), theShape(0),  theInputTag(inputTag) {}
+  : HcalBaseSignalGenerator(), theEvent(0), theEventPrincipal(0), theInputTag(inputTag) {}
 
   virtual ~HcalSignalGenerator() {}
 
@@ -36,7 +36,6 @@ public:
   {
     theEvent = event;
     eventSetup->get<HcalDbRecord>().get(theConditions);
-    theShape = theConditions->getHcalShape (); // this one is generic
     theParameterMap->setDbService(theConditions.product());
   }
 
@@ -45,7 +44,6 @@ public:
   {
     theEventPrincipal = eventPrincipal;
     eventSetup->get<HcalDbRecord>().get(theConditions);
-    theShape = theConditions->getHcalShape (); // this one is generic
     theParameterMap->setDbService(theConditions.product());
   }
 
@@ -106,7 +104,8 @@ private:
     HcalDetId cell = digi.id();
     //         const HcalCalibrations& calibrations=conditions->getHcalCalibrations(cell);
     const HcalQIECoder* channelCoder = theConditions->getHcalCoder (cell);
-    HcalCoderDb coder (*channelCoder, *theShape);
+    const HcalQIEShape* channelShape = theConditions->getHcalShape (cell);
+    HcalCoderDb coder (*channelCoder, *channelShape);
     CaloSamples result;
     coder.adc2fC(digi, result);
     fC2pe(result);
@@ -118,7 +117,6 @@ private:
   const edm::Event * theEvent;
   const edm::EventPrincipal * theEventPrincipal;
   edm::ESHandle<HcalDbService> theConditions;
-  const HcalQIEShape* theShape;
   /// these come from the ParameterSet
   edm::InputTag theInputTag;
 };

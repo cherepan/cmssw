@@ -21,7 +21,7 @@
 #include "RecoLocalCalo/EcalRecAlgos/interface/EcalSeverityLevelAlgo.h"
 #include "RecoEcal/EgammaCoreTools/interface/EcalTools.h"
 
-// $Id: InterestingDetIdCollectionProducer.cc,v 1.9 2011/05/17 09:14:16 argiro Exp $
+// $Id: InterestingDetIdCollectionProducer.cc,v 1.11 2013/02/27 19:33:31 eulisse Exp $
 
 InterestingDetIdCollectionProducer::InterestingDetIdCollectionProducer(const edm::ParameterSet& iConfig) 
 {
@@ -48,7 +48,7 @@ InterestingDetIdCollectionProducer::InterestingDetIdCollectionProducer(const edm
 InterestingDetIdCollectionProducer::~InterestingDetIdCollectionProducer()
 {}
 
-void InterestingDetIdCollectionProducer::beginRun (edm::Run & run, const edm::EventSetup & iSetup)  
+void InterestingDetIdCollectionProducer::beginRun (edm::Run const& run, const edm::EventSetup & iSetup)  
 {
   edm::ESHandle<CaloTopology> theCaloTopology;
   iSetup.get<CaloTopologyRecord>().get(theCaloTopology);

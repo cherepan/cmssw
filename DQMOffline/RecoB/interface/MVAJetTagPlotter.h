@@ -18,11 +18,12 @@ class MVAJetTagPlotter : public BaseTagInfoPlotter {
  public:
 
   MVAJetTagPlotter (const std::string & tagName, const EtaPtBin & etaPtBin,
-	const edm::ParameterSet& pSet, const std::string& folderName, const bool& update, const bool& mc);
+	const edm::ParameterSet& pSet, const std::string& folderName, const bool& update, const unsigned int& mc);
 
   ~MVAJetTagPlotter ();
 
   virtual void analyzeTag (const std::vector<const reco::BaseTagInfo *> & baseTagInfos, const int & jetFlavour);
+  virtual void analyzeTag (const std::vector<const reco::BaseTagInfo *> & baseTagInfos, const int & jetFlavour, const float & w);
 
   virtual void finalize ();
 

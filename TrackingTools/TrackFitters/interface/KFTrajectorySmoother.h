@@ -5,8 +5,8 @@
  *  A Standard Kalman smoother. The forward fit is not redone,
  *  only the backward smoothing. Ported from ORCA
  *
- *  $Date: 2008/10/15 09:06:48 $
- *  $Revision: 1.7 $
+ *  $Date: 2012/09/01 11:08:33 $
+ *  $Revision: 1.10 $
  *  \author todorov, cerati
  */
 
@@ -15,11 +15,11 @@
 #include "TrackingTools/GeomPropagators/interface/Propagator.h"
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
 #include "TrackingTools/TrajectoryState/interface/FreeTrajectoryState.h"
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
 #include "TrackingTools/PatternTools/interface/TrajectoryMeasurement.h"
 #include "TrackingTools/DetLayers/interface/DetLayerGeometry.h"
 
-class KFTrajectorySmoother : public TrajectorySmoother {
+class KFTrajectorySmoother GCC11_FINAL : public TrajectorySmoother {
 
 private:
 
@@ -61,7 +61,7 @@ public:
 
   virtual ~KFTrajectorySmoother();
 
-  virtual std::vector<Trajectory> trajectories(const Trajectory& aTraj) const;
+  virtual Trajectory trajectory(const Trajectory& aTraj) const;
 
   const Propagator* propagator() const {return thePropagator;}
   const TrajectoryStateUpdator* updator() const {return theUpdator;}

@@ -24,8 +24,8 @@
 
 /** \class HcalDigiMonitor
   *  
-  * $Date: 2012/04/09 12:57:31 $
-  * $Revision: 1.69 $
+  * $Date: 2012/06/27 13:20:29 $
+  * $Revision: 1.71 $
   * \author J. Temple - Univ. of Maryland
   */
 
@@ -110,7 +110,8 @@ private:  ///Methods, variables accessible only within class code
   void UpdateHists(DigiHists& h);
 
   bool doFCpeds_;
-
+  bool setupDone_;
+  
   int HO0bad, HO12bad, HFlumibad;
 
   int shapeThresh_;

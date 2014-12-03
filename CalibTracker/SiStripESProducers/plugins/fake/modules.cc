@@ -43,6 +43,11 @@ DEFINE_FWK_EVENTSETUP_SOURCE(SiStripApvGainFakeESSource);
 typedef SiStripTemplateFakeESSource< SiStripLorentzAngle, SiStripLorentzAngleRcd, SiStripLorentzAngleGenerator > SiStripLorentzAngleFakeESSource;
 DEFINE_FWK_EVENTSETUP_SOURCE(SiStripLorentzAngleFakeESSource);
 
+#include "CondFormats/SiStripObjects/interface/SiStripBackPlaneCorrection.h"
+#include "CalibTracker/SiStripESProducers/interface/SiStripBackPlaneCorrectionGenerator.h"
+typedef SiStripTemplateFakeESSource< SiStripBackPlaneCorrection, SiStripBackPlaneCorrectionRcd, SiStripBackPlaneCorrectionGenerator > SiStripBackPlaneCorrectionFakeESSource;
+DEFINE_FWK_EVENTSETUP_SOURCE(SiStripBackPlaneCorrectionFakeESSource);
+
 #include "CondFormats/SiStripObjects/interface/SiStripBadStrip.h"
 #include "CalibTracker/SiStripESProducers/interface/SiStripBadModuleGenerator.h"
 typedef SiStripTemplateFakeESSource< SiStripBadStrip, SiStripBadModuleRcd, SiStripBadModuleGenerator > SiStripBadModuleConfigurableFakeESSource;

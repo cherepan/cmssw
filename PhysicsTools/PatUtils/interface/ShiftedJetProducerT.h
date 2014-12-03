@@ -10,9 +10,9 @@
  *
  * \author Christian Veelken, LLR
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: ShiftedJetProducerT.h,v 1.3 2012/02/13 14:12:12 veelken Exp $
+ * $Id: ShiftedJetProducerT.h,v 1.4 2012/08/31 09:59:15 veelken Exp $
  *
  */
 
@@ -57,7 +57,7 @@ class ShiftedJetProducerT : public edm::EDProducer
       jetCorrUncertaintyTag_ = cfg.getParameter<std::string>("jetCorrUncertaintyTag");
       if ( cfg.exists("jetCorrInputFileName") ) {
 	jetCorrInputFileName_ = cfg.getParameter<edm::FileInPath>("jetCorrInputFileName");
-	if ( !jetCorrInputFileName_.isLocal()) throw cms::Exception("ShiftedJetProducerT") 
+	if ( jetCorrInputFileName_.location() == edm::FileInPath::Unknown) throw cms::Exception("ShiftedJetProducerT")
 	  << " Failed to find JEC parameter file = " << jetCorrInputFileName_ << " !!\n";
 	std::cout << "Reading JEC parameters = " << jetCorrUncertaintyTag_  
 		  << " from file = " << jetCorrInputFileName_.fullPath() << "." << std::endl;

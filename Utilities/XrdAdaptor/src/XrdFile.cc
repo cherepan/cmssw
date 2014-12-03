@@ -1,6 +1,9 @@
+#include "Utilities/StorageFactory/interface/StatisticsSenderService.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
 #include "Utilities/XrdAdaptor/src/XrdFile.h"
 #include "FWCore/Utilities/interface/EDMException.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/Utilities/interface/Likely.h"
 #include <vector>
 #include <sstream>
 
@@ -12,6 +15,7 @@ XrdFile::XrdFile (void)
     m_name()
 {
   memset(&m_stat, 0, sizeof (m_stat));
+  pthread_mutex_init(&m_readv_mutex, 0);
 }
 
 XrdFile::XrdFile (const char *name,
@@ -24,6 +28,7 @@ XrdFile::XrdFile (const char *name,
     m_name()
 {
   memset(&m_stat, 0, sizeof (m_stat));
+  pthread_mutex_init(&m_readv_mutex, 0);
   open (name, flags, perms);
 }
 
@@ -37,6 +42,7 @@ XrdFile::XrdFile (const std::string &name,
     m_name()
 {
   memset(&m_stat, 0, sizeof (m_stat));
+  pthread_mutex_init(&m_readv_mutex, 0);
   open (name.c_str (), flags, perms);
 }
 
@@ -46,6 +52,7 @@ XrdFile::~XrdFile (void)
     edm::LogError("XrdFileError")
       << "Destructor called on XROOTD file '" << m_name
       << "' but the file is still open";
+  pthread_mutex_destroy(&m_readv_mutex);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -152,10 +159,26 @@ XrdFile::open (const char *name,
   }
   m_offset = 0;
   m_close = true;
+
+  // Send the monitoring info, if available.
+  // Note: getenv is not reentrant.
+  const char * crabJobId = edm::storage::StatisticsSenderService::getJobID();
+  if (crabJobId) {
+    kXR_unt32 dictId;
+    m_client->SendMonitoringInfo(crabJobId, &dictId);
+    edm::LogInfo("XrdFileInfo") << "Set monitoring ID to " << crabJobId << " with resulting dictId " << dictId << ".";
+  }
+
   edm::LogInfo("XrdFileInfo") << "Opened " << m_name;
 
   XrdClientConn *conn = m_client->GetClientConn();
   edm::LogInfo("XrdFileInfo") << "Connection URL " << conn->GetCurrentUrl().GetUrl().c_str();
+
+  std::string host = std::string(conn->GetCurrentUrl().Host.c_str());
+  edm::Service<edm::storage::StatisticsSenderService> statsService;
+  if (statsService.isAvailable()) {
+    statsService->setCurrentServer(host);
+  }
 }
 
 void
@@ -247,126 +270,6 @@ XrdFile::read (void *into, IOSize n, IOOffset pos)
 }
 
 IOSize
-XrdFile::readv (IOBuffer *into, IOSize n)
-{
-  // Note that the XROOTD and our interfaces do not match.
-  // XROOTD expects readv() into a single monolithic buffer
-  // from multiple file locations, whereas we expect scatter
-  // gather buffers read from a single file location.
-  //
-  // We work around this mismatch for now by issuing a cache
-  // read on the background, and then individual reads.
-  IOOffset pos = m_offset;
-  std::vector<long long> offsets (n);
-  std::vector<int> lengths (n);
-  for (IOSize i = 0; i < n; ++i)
-  {
-    IOSize len = into[i].size();
-    if (len > 0x7fffffff) {
-      edm::Exception ex(edm::errors::FileReadError);
-      ex << "XrdFile::readv(name='" << m_name << "')[" << i
-         << "].size=" << len << " exceeds read size limit 0x7fffffff";
-      ex.addContext("Calling XrdFile::readv()");
-      addConnection(ex);
-      throw ex;
-    }
-    offsets[i] = pos;
-    lengths[i] = len;
-    pos += len;
-  }
-
-  // Prefetch into the cache (if any).
-  if (m_client->ReadV(0, &offsets[0], &lengths[0], n) < 0) {
-    edm::Exception ex(edm::errors::FileReadError);
-    ex << "XrdClient::ReadV(name='" << m_name
-       << "') failed with error '" << m_client->LastServerError()->errmsg
-       << "' (errno=" << m_client->LastServerError()->errnum << ")";
-    ex.addContext("Calling XrdFile::readv()");
-    addConnection(ex);
-    throw ex;
-  }
-
-  // Issue actual reads.
-  IOSize total = 0;
-  for (IOSize i = 0; i < n; ++i)
-  {
-    int s = m_client->Read(into[i].data(), offsets[i], lengths[i]);
-    if (s < 0)
-    {
-      if (i > 0)
-        break;
-      edm::Exception ex(edm::errors::FileReadError);
-      ex << "XrdClient::Read(name='" << m_name
-         << "', offset=" << offsets[i] << ", n=" << lengths[i]
-         << ") failed with error '" << m_client->LastServerError()->errmsg
-         << "' (errno=" << m_client->LastServerError()->errnum << ")";
-      ex.addContext("Calling XrdFile::readv()");
-      addConnection(ex);
-      throw ex;
-    }
-    total += s;
-    m_offset += s;
-  }
-
-  return total;
-}
-
-IOSize
-XrdFile::readv (IOPosBuffer *into, IOSize n)
-{
-  // See comments in readv() above.
-  std::vector<long long> offsets (n);
-  std::vector<int> lengths (n);
-  for (IOSize i = 0; i < n; ++i)
-  {
-    IOSize len = into[i].size();
-    if (len > 0x7fffffff) {
-      edm::Exception ex(edm::errors::FileReadError);
-      ex << "XrdFile::readv(name='" << m_name << "')[" << i
-         << "].size=" << len << " exceeds read size limit 0x7fffffff";
-      ex.addContext("Calling XrdFile::readv()");
-      addConnection(ex);
-      throw ex;
-    }
-    offsets[i] = into[i].offset();
-    lengths[i] = len;
-  }
-
-  // Prefetch into the cache (if any).
-  if (m_client->ReadV(0, &offsets[0], &lengths[0], n) < 0) {
-    edm::Exception ex(edm::errors::FileReadError);
-    ex << "XrdClient::ReadV(name='" << m_name
-       << "') failed with error '" << m_client->LastServerError()->errmsg
-       << "' (errno=" << m_client->LastServerError()->errnum << ")";
-    ex.addContext("Calling XrdFile::readv()");
-    addConnection(ex);
-    throw ex;
-  }
-  // Issue actual reads.
-  IOSize total = 0;
-  for (IOSize i = 0; i < n; ++i)
-  {
-    int s = m_client->Read(into[i].data(), offsets[i], lengths[i]);
-    if (s < 0)
-    {
-      if (i > 0)
-        break;
-      edm::Exception ex(edm::errors::FileReadError);
-      ex << "XrdClient::Read(name='" << m_name
-         << "', offset=" << offsets[i] << ", n=" << lengths[i]
-         << ") failed with error '" << m_client->LastServerError()->errmsg
-         << "' (errno=" << m_client->LastServerError()->errnum << ")";
-      ex.addContext("Calling XrdFile::readv()");
-      addConnection(ex);
-      throw ex;
-    }
-    total += s;
-  }
-
-  return total;
-}
-
-IOSize
 XrdFile::write (const void *from, IOSize n)
 {
   if (n > 0x7fffffff) {
@@ -424,6 +327,12 @@ XrdFile::write (const void *from, IOSize n, IOOffset pos)
 bool
 XrdFile::prefetch (const IOPosBuffer *what, IOSize n)
 {
+  // Detect a prefetch support probe, and claim we don't support it.
+  // This will make the default application-only mode, but allows us to still
+  // effectively support storage-only mode.
+  if (unlikely((n == 1) && (what[0].offset() == 0) && (what[0].size() == PREFETCH_PROBE_LENGTH))) {
+    return false;
+  }
   std::vector<long long> offsets; offsets.resize(n);
   std::vector<int> lens; lens.resize(n);
   kXR_int64 total = 0;

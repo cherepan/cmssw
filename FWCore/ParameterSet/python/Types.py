@@ -2,9 +2,7 @@ from Mixins import PrintOptions, _SimpleParameterTypeBase, _ParameterTypeBase, _
 from Mixins import _ValidatingParameterListBase
 from ExceptionHandling import format_typename, format_outerframe
 
-import codecs
 import copy
-_string_escape_encoder = codecs.getencoder('string_escape')
 
 class _Untracked(object):
     """Class type for 'untracked' to allow nice syntax"""
@@ -143,7 +141,8 @@ class string(_SimpleParameterTypeBase):
     @staticmethod
     def formatValueForConfig(value):
         l = len(value)
-        value,newL = _string_escape_encoder(value)
+        value = value.encode("string-escape")
+        newL = len(value)
         if l != newL:
             #get rid of the hex encoding
             value=value.replace('\\x0','\\')
@@ -240,10 +239,11 @@ class LuminosityBlockRange(_ParameterTypeBase):
     def __init__(self, start, startSub=None, end=None, endSub=None):
         super(LuminosityBlockRange,self).__init__()
         if isinstance(start, basestring):
-            self.__start    = self._valueFromString(start).__start
-            self.__startSub = self._valueFromString(start).__startSub
-            self.__end      = self._valueFromString(start).__end
-            self.__endSub   = self._valueFromString(start).__endSub
+            parsed = self._valueFromString(start)
+            self.__start    = parsed.__start
+            self.__startSub = parsed.__startSub
+            self.__end      = parsed.__end
+            self.__endSub   = parsed.__endSub
         else:
             self.__start    = start
             self.__startSub = startSub
@@ -300,12 +300,13 @@ class EventRange(_ParameterTypeBase):
     def __init__(self, start, *args):
         super(EventRange,self).__init__()
         if isinstance(start, basestring):
-            self.__start     = self._valueFromString(start).__start
-            self.__startLumi = self._valueFromString(start).__startLumi
-            self.__startSub  = self._valueFromString(start).__startSub
-            self.__end       = self._valueFromString(start).__end
-            self.__endLumi   = self._valueFromString(start).__endLumi
-            self.__endSub    = self._valueFromString(start).__endSub
+            parsed = self._valueFromString(start)
+            self.__start     = parsed.__start
+            self.__startLumi = parsed.__startLumi
+            self.__startSub  = parsed.__startSub
+            self.__end       = parsed.__end
+            self.__endLumi   = parsed.__endLumi
+            self.__endSub    = parsed.__endSub
         else:
             self.__start     = start
             if len(args) == 3:
@@ -418,6 +419,12 @@ class InputTag(_ParameterTypeBase):
             self.__processName = label
             self._isModified=True
     processName = property(getProcessName,setProcessName,"process name for the product")
+    @staticmethod
+    def skipCurrentProcess():
+        """When used as the process name this value will make the framework skip the current process
+            when looking backwards in time for the data product.
+        """
+        return "@skipCurrentProcess"
     def configValue(self, options=PrintOptions()):
         result = self.__moduleLabel
         if self.__productInstance != "" or self.__processName != "":
@@ -464,15 +471,12 @@ class InputTag(_ParameterTypeBase):
         self.__processName=processName
 
         if -1 != moduleLabel.find(":"):
-        #    raise RuntimeError("the module label '"+str(moduleLabel)+"' contains a ':'. If you want to specify more than one label, please pass them as separate arguments.")
-        # tolerate it, at least for the translation phase
             toks = moduleLabel.split(":")
             self.__moduleLabel = toks[0]
             if len(toks) > 1:
-               self.__productInstance = toks[1]
+                self.__productInstance = toks[1]
             if len(toks) > 2:
-               self.__processName=toks[2]
-
+                self.__processName=toks[2]
     # convert to the wrapper class for C++ InputTags
     def cppTag(self, parameterSet):
         return parameterSet.newInputTag(self.getModuleLabel(),
@@ -949,6 +953,54 @@ def makeCppPSet(module,cppPSetMaker):
             p.insertInto(cppPSetMaker,x)
     return cppPSetMaker
 
+class EDAlias(_ConfigureComponent,_Labelable):
+    def __init__(self,*arg,**kargs):
+        super(EDAlias,self).__init__()
+        self.__dict__['_EDAlias__parameterNames'] = []
+        self.__setParameters(kargs)
+
+    def parameterNames_(self):
+        """Returns the name of the parameters"""
+        return self.__parameterNames[:]
+
+    def __addParameter(self, name, value):
+        if not isinstance(value,_ParameterTypeBase):
+            self.__raiseBadSetAttr(name)
+        self.__dict__[name]=value
+        self.__parameterNames.append(name)
+
+    def __setParameters(self,parameters):
+        for name,value in parameters.iteritems():
+            self.__addParameter(name, value)
+
+    def _place(self,name,proc):
+        proc._placeAlias(name,self)
+
+    def nameInProcessDesc_(self, myname):
+        return myname;
+
+    def insertInto(self, parameterSet, myname):
+        newpset = parameterSet.newPSet()
+        newpset.addString(True, "@module_label", myname)
+        newpset.addString(True, "@module_type", type(self).__name__)
+        newpset.addString(True, "@module_edm_type", type(self).__name__)
+        for name in self.parameterNames_():
+            param = getattr(self,name)
+            param.insertInto(newpset, name)
+        parameterSet.addPSet(True, self.nameInProcessDesc_(myname), newpset)
+
+    def dumpPython(self, options=PrintOptions()):
+        resultList = ['cms.EDAlias(']
+        separator = ""
+        for name in self.parameterNames_():
+            resultList[-1] = resultList[-1] + separator
+            separator=","
+            param = self.__dict__[name]
+            options.indent()
+            resultList.append(options.indentation()+name+' = '+param.dumpPython(options))
+            options.unindent()
+        return '\n'.join(resultList)+'\n)'
+
 if __name__ == "__main__":
 
     import unittest
@@ -1069,6 +1121,18 @@ if __name__ == "__main__":
             self.assertEqual(repr(vit), "cms.VInputTag(cms.InputTag(\"label1\"), cms.InputTag(\"label2\"))")
             vit = VInputTag("label1", "label2:label3")
             self.assertEqual(repr(vit), "cms.VInputTag(\"label1\", \"label2:label3\")")
+            it=InputTag('label',processName=InputTag.skipCurrentProcess())
+            self.assertEqual(it.getModuleLabel(), "label")
+            self.assertEqual(it.getProductInstanceLabel(), "")
+            self.assertEqual(it.getProcessName(), "@skipCurrentProcess")
+            it=InputTag('label','x',InputTag.skipCurrentProcess())
+            self.assertEqual(it.getModuleLabel(), "label")
+            self.assertEqual(it.getProductInstanceLabel(), "x")
+            self.assertEqual(it.getProcessName(), "@skipCurrentProcess")
+            it = InputTag("label:in:@skipCurrentProcess")
+            self.assertEqual(it.getModuleLabel(), "label")
+            self.assertEqual(it.getProductInstanceLabel(), "in")
+            self.assertEqual(it.getProcessName(), "@skipCurrentProcess")
         def testInputTagModified(self):
             a=InputTag("a")
             self.assertEqual(a.isModified(),False)
@@ -1129,6 +1193,8 @@ if __name__ == "__main__":
             self.assertRaises(TypeError, lambda : VPSet(3))
             self.assertRaises(TypeError, lambda : VPSet(int32(3)))
             self.assertRaises(SyntaxError, lambda : VPSet(foo=PSet()))
+        def testEDAlias(self):
+            aliasfoo2 = EDAlias(foo2 = VPSet(PSet(type = string("Foo2"))))
 
         def testFileInPath(self):
             f = FileInPath("FWCore/ParameterSet/python/Types.py")

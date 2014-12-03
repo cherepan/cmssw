@@ -15,7 +15,7 @@
 //
 // Original Author:  Ricardo Vasquez Sierra
 //         Created:  October 8, 2008
-// $Id: TauTagValidation.cc,v 1.37 2012/03/20 16:30:42 mverzett Exp $
+// $Id: TauTagValidation.cc,v 1.38 2012/04/02 10:23:15 perchall Exp $
 //
 //
 // user include files
@@ -535,9 +535,9 @@ void TauTagValidation::beginLuminosityBlock(edm::LuminosityBlock const& iLumi, e
 void TauTagValidation::endLuminosityBlock(edm::LuminosityBlock const& iLumi, edm::EventSetup const& iSetup) {
 }
 
-double TauTagValidation::getSumPt(const reco::PFCandidateRefVector & 	candidates) {
+double TauTagValidation::getSumPt(const std::vector<edm::Ptr<reco::PFCandidate> > & candidates ){
   double sumPt = 0.;
-  for (reco::PFCandidateRefVector::const_iterator candidate = candidates.begin(); candidate!=candidates.end(); ++candidate) {
+  for (std::vector<edm::Ptr<reco::PFCandidate> >::const_iterator candidate = candidates.begin(); candidate!=candidates.end(); ++candidate) {
     sumPt += (*candidate)->pt();
   }
 

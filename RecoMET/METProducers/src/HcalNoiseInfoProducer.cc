@@ -61,6 +61,28 @@ HcalNoiseInfoProducer::HcalNoiseInfoProducer(const edm::ParameterSet& iConfig) :
     HcalRecHitFlagsToBeExcluded_.resize(0);
   }
 
+  // Digi threshold and time slices to use for HBHE and HF calibration digis
+  useCalibDigi_ = true;
+  if(iConfig.existsAs<double>("calibdigiHBHEthreshold") == false)               useCalibDigi_ = false;
+  if(iConfig.existsAs<double>("calibdigiHFthreshold") == false)                 useCalibDigi_ = false;
+  if(iConfig.existsAs<std::vector<int> >("calibdigiHBHEtimeslices") == false)   useCalibDigi_ = false;
+  if(iConfig.existsAs<std::vector<int> >("calibdigiHFtimeslices") == false)     useCalibDigi_ = false;
+
+  if(useCalibDigi_ == true)
+  {
+    calibdigiHBHEthreshold_   = iConfig.getParameter<double>("calibdigiHBHEthreshold");
+    calibdigiHBHEtimeslices_  = iConfig.getParameter<std::vector<int> >("calibdigiHBHEtimeslices");
+    calibdigiHFthreshold_   = iConfig.getParameter<double>("calibdigiHFthreshold");
+    calibdigiHFtimeslices_  = iConfig.getParameter<std::vector<int> >("calibdigiHFtimeslices");
+  }
+  else
+  {
+     calibdigiHBHEthreshold_ = 0;
+     calibdigiHBHEtimeslices_ = std::vector<int>();
+     calibdigiHFthreshold_ = 0;
+     calibdigiHFtimeslices_ = std::vector<int>();
+  }
+
   TS4TS5EnergyThreshold_ = iConfig.getParameter<double>("TS4TS5EnergyThreshold");
 
   std::vector<double> TS4TS5UpperThresholdTemp = iConfig.getParameter<std::vector<double> >("TS4TS5UpperThreshold");
@@ -126,11 +148,12 @@ HcalNoiseInfoProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup
   // fill them with the various components
   // digi assumes that rechit information is available
   if(fillRecHits_)    fillrechits(iEvent, iSetup, rbxarray, summary);
-  if(fillDigis_)      filldigis(iEvent, iSetup, rbxarray);
+  if(fillDigis_)      filldigis(iEvent, iSetup, rbxarray, summary);
   if(fillCaloTowers_) fillcalotwrs(iEvent, iSetup, rbxarray, summary);
   if(fillTracks_)     filltracks(iEvent, iSetup, summary);
-
-  if(fillDigis_)      summary.calibCharge_ = TotalCalibCharge;
+  
+  // Why is this here?  Shouldn't it have been in the filldigis method? Any reason for TotalCalibCharge to be defined outside filldigis(...) ?-- Jeff, 7/2/12
+  //if(fillDigis_)      summary.calibCharge_ = TotalCalibCharge;
 
   // select those RBXs which are interesting
   // also look for the highest energy RBX
@@ -172,43 +195,14 @@ HcalNoiseInfoProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup
     // add the RBX to the event
     result1->push_back(rbx);
   }
-
+  
   // put the rbxcollection and summary into the EDM
   iEvent.put(result1);
   iEvent.put(result2);
-
+  
   return;
 }
 
-// ------------ method called once each job just before starting event loop  ------------
-void
-HcalNoiseInfoProducer::beginJob()
-{
-  return;
-}
-
-// ------------ method called once each job just after ending the event loop  ------------
-void
-HcalNoiseInfoProducer::endJob()
-{
-  return;
-}
-
-
-// ------------ method called once each run just before starting event loop  ------------
-// ------------ fills the pedestals
-void
-HcalNoiseInfoProducer::beginRun(edm::Run&, const edm::EventSetup&)
-{
-  return;
-}
-
-// ------------ method called once each job just after ending the event loop  ------------
-void
-HcalNoiseInfoProducer::endRun(edm::Run&, const edm::EventSetup&)
-{
-  return;
-}
 
 // ------------ here we fill specific variables in the summary object not already accounted for earlier
 void
@@ -303,15 +297,22 @@ HcalNoiseInfoProducer::fillOtherSummaryVariables(HcalNoiseSummary& summary, cons
 
 // ------------ fill the array with digi information
 void
-HcalNoiseInfoProducer::filldigis(edm::Event& iEvent, const edm::EventSetup& iSetup, HcalNoiseRBXArray& array)
+HcalNoiseInfoProducer::filldigis(edm::Event& iEvent, const edm::EventSetup& iSetup, HcalNoiseRBXArray& array, HcalNoiseSummary& summary)
 {
   // Some initialization
   TotalCalibCharge = 0;
 
+  // Starting with this version (updated by Jeff Temple on Dec. 6, 2012), the "TS45" names in the variables are mis-nomers.  The actual time slices used are determined from the digiTimeSlices_ variable, which may not be limited to only time slices 4 and 5.  For now, "TS45" name kept, because that is what is used in HcalNoiseSummary object (in GetCalibCountTS45, etc.).  Likewise, the charge value in 'gt15' is now configurable, though the name remains the same.  For HBHE, we track both the number of calibration channels (NcalibTS45) and the number of calibration channels above threshold (NcalibTS45gt15).  For HF, we track only the number of channels above the given threshold in the given time window (NcalibHFgtX).  Default for HF in 2012 is to use the full time sample with effectively no threshold (threshold=-999)
+  int NcalibTS45=0;
+  int NcalibTS45gt15=0;
+  int NcalibHFgtX=0;
+
+  double chargecalibTS45=0;
+  double chargecalibgt15TS45=0;
+
   // get the conditions and channel quality
   edm::ESHandle<HcalDbService> conditions;
   iSetup.get<HcalDbRecord>().get(conditions);
-  const HcalQIEShape* shape = conditions->getHcalShape();
   edm::ESHandle<HcalChannelQuality> qualhandle;
   iSetup.get<HcalChannelQualityRcd>().get(qualhandle);
   const HcalChannelQuality* myqual = qualhandle.product();
@@ -337,10 +338,13 @@ HcalNoiseInfoProducer::filldigis(edm::Event& iEvent, const edm::EventSetup& iSet
     const HcalChannelStatus* mydigistatus=myqual->getValues(detcell.rawId());
     if(mySeverity->dropChannel(mydigistatus->getValue())) continue;
     if(digi.zsMarkAndPass()) continue;
-
+    // Drop if exclude bit set
+    if ((mydigistatus->getValue() & (1 <<HcalChannelStatus::HcalCellExcludeFromHBHENoiseSummary))==1) continue;
+      
     // get the calibrations and coder
     const HcalCalibrations& calibrations=conditions->getHcalCalibrations(cell);
     const HcalQIECoder* channelCoder = conditions->getHcalCoder (cell);
+    const HcalQIEShape* shape = conditions->getHcalShape(channelCoder);
     HcalCoderDb coder (*channelCoder, *shape);
 
     // match the digi to an rbx and hpd
@@ -411,6 +415,7 @@ HcalNoiseInfoProducer::filldigis(edm::Event& iEvent, const edm::EventSetup& iSet
            continue;
 
         const HcalQIECoder *channelCoder = conditions->getHcalCoder(cell);
+	const HcalQIEShape* shape = conditions->getHcalShape(channelCoder);
         HcalCoderDb coder(*channelCoder, *shape);
 
         CaloSamples tool;
@@ -420,10 +425,59 @@ HcalNoiseInfoProducer::filldigis(edm::Event& iEvent, const edm::EventSetup& iSet
            TotalCalibCharge = TotalCalibCharge + tool[i];
         */
 
-        for(int i = 0; i < (int)digi->size(); i++)
-           TotalCalibCharge = TotalCalibCharge + adc2fC[digi->sample(i).adc()&0xff];
-     }
-  }
+	// Original code computes total calib charge over all digis.  While I think it would be more useful to skip
+	// zs mark-and-pass channels, I keep this computation as is.  Individual HBHE and HF variables do skip
+	// the m-p channels.  -- Jeff Temple, 6 December 2012
+
+	for(int i = 0; i < (int)digi->size(); i++)
+	  TotalCalibCharge = TotalCalibCharge + adc2fC[digi->sample(i).adc()&0xff];
+	
+
+	HcalCalibDetId myid=(HcalCalibDetId)digi->id();
+	if ( myid.calibFlavor()==HcalCalibDetId::HOCrosstalk)
+	  continue; // ignore HOCrosstalk channels
+	if(digi->zsMarkAndPass()) continue;  // skip "mark-and-pass" channels when computing charge in calib channels
+
+
+	if (digi->id().hcalSubdet()==HcalForward) // check HF
+	  {
+	    double sumChargeHF=0;
+	    for (unsigned int i=0;i<calibdigiHFtimeslices_.size();++i)
+	      {
+		// skip unphysical time slices
+		if (calibdigiHFtimeslices_[i]<0 || calibdigiHFtimeslices_[i]>digi->size())
+		  continue;
+		sumChargeHF+=adc2fC[digi->sample(calibdigiHFtimeslices_[i]).adc()&0xff];
+	      }
+	    if (sumChargeHF>calibdigiHFthreshold_) ++NcalibHFgtX;
+	  } // end of HF check
+	else if (digi->id().hcalSubdet()==HcalBarrel || digi->id().hcalSubdet()==HcalEndcap) // now check HBHE
+	  {
+            double sumChargeHBHE=0;
+            for (unsigned int i=0;i<calibdigiHBHEtimeslices_.size();++i)
+              {
+                // skip unphysical time slices
+                if (calibdigiHBHEtimeslices_[i]<0 || calibdigiHBHEtimeslices_[i]>digi->size())
+                  continue;
+                sumChargeHBHE+=adc2fC[digi->sample(calibdigiHBHEtimeslices_[i]).adc()&0xff];
+              }
+	    ++NcalibTS45;
+	    chargecalibTS45+=sumChargeHBHE;
+            if (sumChargeHBHE>calibdigiHBHEthreshold_) 
+	      {
+		++NcalibTS45gt15;
+		chargecalibgt15TS45+=sumChargeHBHE;
+	      }
+          } // end of HBHE check
+     } // loop on HcalCalibDigiCollection
+  } // if (hCalib.isValid()==true)
+  
+  summary.calibCharge_ = TotalCalibCharge;
+  summary.calibCountTS45_=NcalibTS45;
+  summary.calibCountgt15TS45_=NcalibTS45gt15;
+  summary.calibChargeTS45_=chargecalibTS45;
+  summary.calibChargegt15TS45_=chargecalibgt15TS45;
+  summary.calibCountHF_=NcalibHFgtX;
 
   return;
 }
@@ -461,6 +515,13 @@ HcalNoiseInfoProducer::fillrechits(edm::Event& iEvent, const edm::EventSetup& iS
   summary.rechitEnergy_ = 0;
   summary.rechitEnergy15_ = 0;
 
+  summary.hitsInLaserRegion_=0;
+  summary.hitsInNonLaserRegion_=0;
+  summary.energyInLaserRegion_=0;
+  summary.energyInNonLaserRegion_=0;
+
+
+
   // loop over all of the rechit information
   for(HBHERecHitCollection::const_iterator it=handle->begin(); it!=handle->end(); ++it) {
     const HBHERecHit &rechit=(*it);
@@ -478,6 +539,10 @@ HcalNoiseInfoProducer::fillrechits(edm::Event& iEvent, const edm::EventSetup& iS
       recHitFlag = (recHitFlag & bitset) ? recHitFlag-bitset : recHitFlag;
     }
     const uint32_t dbStatusFlag = dbHcalChStatus->getValues(id)->getValue();
+
+    // Ignore rechit if exclude bit set, regardless of severity of other bits
+    if ((dbStatusFlag & (1 <<HcalChannelStatus::HcalCellExcludeFromHBHENoiseSummary))==1) continue;
+      
     int severityLevel = hcalSevLvlComputer->getSeverityLevel(id, recHitFlag, dbStatusFlag);
     bool isRecovered  = hcalSevLvlComputer->recoveredRecHit(id, recHitFlag);
     if(severityLevel!=0 && !isRecovered && severityLevel>static_cast<int>(HcalAcceptSeverityLevel_)) continue;
@@ -485,6 +550,17 @@ HcalNoiseInfoProducer::fillrechits(edm::Event& iEvent, const edm::EventSetup& iS
     // do some rechit counting and energies
     summary.rechitCount_ = summary.rechitCount_ + 1;
     summary.rechitEnergy_ = summary.rechitEnergy_ + rechit.energy();
+    if ((dbStatusFlag & (1 <<HcalChannelStatus::HcalBadLaserSignal))==1) // hit comes from a region where no laser calibration pulse is normally seen
+      {
+	++summary.hitsInNonLaserRegion_;
+	summary.energyInNonLaserRegion_+=rechit.energy();
+      }
+    else // hit comes from region where laser calibration pulse is seen
+      {
+	++summary.hitsInLaserRegion_;
+	summary.energyInLaserRegion_+=rechit.energy();
+      }
+
     if(rechit.energy() > 1.5)
     {
       summary.rechitCount15_ = summary.rechitCount15_ + 1;
@@ -525,11 +601,14 @@ HcalNoiseInfoProducer::fillrechits(edm::Event& iEvent, const edm::EventSetup& iS
     }
 
     if(rechit.flags() & ts4ts5bitset) {
-      summary.nts4ts5noise_++;
-      summary.ts4ts5noisee_ += rechit.energy();
-      GlobalPoint gp = geo->getPosition(rechit.id());
-      double et = rechit.energy()*gp.perp()/gp.mag();
-      summary.ts4ts5noiseet_ += et;
+      if ((dbStatusFlag & (1 <<HcalChannelStatus::HcalCellExcludeFromHBHENoiseSummaryR45))==0)  // only add to TS4TS5 if the bit is not marked as "HcalCellExcludeFromHBHENoiseSummaryR45"
+	{
+	  summary.nts4ts5noise_++;
+	  summary.ts4ts5noisee_ += rechit.energy();
+	  GlobalPoint gp = geo->getPosition(rechit.id());
+	  double et = rechit.energy()*gp.perp()/gp.mag();
+	  summary.ts4ts5noiseet_ += et;
+	}
     }
 
     // find the hpd that the rechit is in

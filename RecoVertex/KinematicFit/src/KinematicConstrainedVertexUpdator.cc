@@ -1,5 +1,6 @@
 #include "RecoVertex/KinematicFit/interface/KinematicConstrainedVertexUpdator.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 
 KinematicConstrainedVertexUpdator::KinematicConstrainedVertexUpdator()
 { 
@@ -15,7 +16,7 @@ KinematicConstrainedVertexUpdator::~KinematicConstrainedVertexUpdator()
 
 std::pair<std::pair<std::vector<KinematicState>, AlgebraicMatrix >, RefCountedKinematicVertex >
 KinematicConstrainedVertexUpdator::update(const AlgebraicVector& inPar,
-	const AlgebraicMatrix& inCov, std::vector<KinematicState> lStates,
+	const AlgebraicMatrix& inCov, const std::vector<KinematicState> &lStates,
 	const GlobalPoint& lPoint, MultiTrackKinematicConstraint * cs)const
 {
  const MagneticField* field=lStates.front().magneticField();
@@ -89,7 +90,7 @@ KinematicConstrainedVertexUpdator::update(const AlgebraicVector& inPar,
 
   //check for NaN
   for(int i = 1; i<=val.num_row();++i) {
-    if (std::isnan(val(i))) {
+    if (edm::isNotFinite(val(i))) {
       LogDebug("KinematicConstrainedVertexUpdator")
       << "catched NaN.\n";
       return std::pair<std::pair<std::vector<KinematicState>, AlgebraicMatrix>, RefCountedKinematicVertex >(
@@ -160,7 +161,7 @@ KinematicConstrainedVertexUpdator::update(const AlgebraicVector& inPar,
 //making refitted states of Kinematic Particles
   int i_int = 0;
   std::vector<KinematicState> ns;
-  for(std::vector<KinematicState>::iterator i_st=lStates.begin(); i_st != lStates.end(); i_st++)
+  for(std::vector<KinematicState>::const_iterator i_st=lStates.begin(); i_st != lStates.end(); i_st++)
   {
    AlgebraicVector7 newPar; 
    for(int i =0; i<7; i++)

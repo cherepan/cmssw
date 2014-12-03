@@ -41,7 +41,10 @@ namespace {
   bool verbose = false;
 }
 
-HFLightCal::HFLightCal (const edm::ParameterSet& fConfiguration) {
+HFLightCal::HFLightCal (const edm::ParameterSet& fConfiguration) :
+  hfDigiCollectionTag_(fConfiguration.getParameter<edm::InputTag>("hfDigiCollectionTag")),
+  hcalCalibDigiCollectionTag_(fConfiguration.getParameter<edm::InputTag>("hcalCalibDigiCollectionTag")) {
+
   //std::string histfile = fConfiguration.getUntrackedParameter<string>("rootFile");
   histfile = fConfiguration.getUntrackedParameter<string>("rootFile");
   textfile = fConfiguration.getUntrackedParameter<string>("textFile");
@@ -425,7 +428,7 @@ void HFLightCal::analyze(const edm::Event& fEvent, const edm::EventSetup& fSetup
 
   // HF PIN-diodes
   edm::Handle<HcalCalibDigiCollection> calib;  
-  fEvent.getByType(calib);
+  fEvent.getByLabel(hcalCalibDigiCollectionTag_, calib);
   if (verbose) std::cout<<"Analysis-> total CAL digis= "<<calib->size()<<std::endl;
 
   /* COMMENTED OUT by J. Mans (7-28-2008) as major changes needed with new Calib DetId 
@@ -481,7 +484,7 @@ void HFLightCal::analyze(const edm::Event& fEvent, const edm::EventSetup& fSetup
 
   // HF
   edm::Handle<HFDigiCollection> hf_digi;
-  fEvent.getByType(hf_digi);
+  fEvent.getByLabel(hfDigiCollectionTag_, hf_digi);
   if (verbose) std::cout<<"Analysis-> total HF digis= "<<hf_digi->size()<<std::endl;
 
   for (unsigned ihit = 0; ihit < hf_digi->size (); ++ihit) {
@@ -496,6 +499,7 @@ void HFLightCal::analyze(const edm::Event& fEvent, const edm::EventSetup& fSetup
     if (ieta>0) ieta = ieta-29;
     else ieta = 13-ieta-29;
 
+    for (int ii=0; ii<10; ii++) buf[ii]=0;
     maxADC=-99;
     for (int isample = 0; isample < frame.size(); ++isample) {
       int adc = frame[isample].adc();
@@ -520,7 +524,7 @@ void HFLightCal::analyze(const edm::Event& fEvent, const edm::EventSetup& fSetup
     }
 
     maxADC=-99;
-    for (int ii=0; ii<10; ii++) {
+    for (int ii=0; ii<frame.size(); ii++) {
       signal=buf[ii];
       if      (ii<2) signal -= (buf[ii+4]+buf[ii+8])/2.0;
       else if (ii<4) signal -= buf[ii+4];

@@ -15,11 +15,12 @@ class TrackIPTagPlotter : public BaseTagInfoPlotter {
  public:
 
   TrackIPTagPlotter (const std::string & tagName, const EtaPtBin & etaPtBin,
-	const edm::ParameterSet& pSet, const bool& update, const bool& mc, const bool& wf);
+	const edm::ParameterSet& pSet, const bool& update, const unsigned int& mc, const bool& wf);
 
   ~TrackIPTagPlotter () ;
 
   void analyzeTag (const reco::BaseTagInfo * baseTagInfo, const int & jetFlavour);
+  void analyzeTag (const reco::BaseTagInfo * baseTagInfo, const int & jetFlavour, const float & w);
 
   virtual void createPlotsForFinalize ();
   virtual void finalize ();
@@ -35,7 +36,7 @@ class TrackIPTagPlotter : public BaseTagInfoPlotter {
   int	nBinEffPur_ ;
   double startEffPur_ ; 
   double endEffPur_ ; 
-  bool mcPlots_;
+  unsigned int mcPlots_;
   bool willFinalize_;
   bool makeQualityPlots_;
 
@@ -57,6 +58,8 @@ class TrackIPTagPlotter : public BaseTagInfoPlotter {
   TrackIPHistograms<double> * tkcntHistosTkPt3D[5];
   TrackIPHistograms<int> * tkcntHistosTkNHits2D[5];
   TrackIPHistograms<int> * tkcntHistosTkNHits3D[5];
+  TrackIPHistograms<int> * tkcntHistosTkNPixelHits2D[5];
+  TrackIPHistograms<int> * tkcntHistosTkNPixelHits3D[5];
   FlavourHistograms<int> * trkNbr3D, * trkNbr2D;
   double lowerIPSBound, upperIPSBound,lowerIPBound, upperIPBound,lowerIPEBound, upperIPEBound ;
   int nBinsIPS, nBinsIP, nBinsIPE;
@@ -66,8 +69,10 @@ class TrackIPTagPlotter : public BaseTagInfoPlotter {
 
   TrackIPHistograms<float> * tkcntHistosProb3D[5];
   TrackIPHistograms<float> * tkcntHistosProb2D[5];
-  TrackIPHistograms<double> *ghostTrackWeightHisto;
-  TrackIPHistograms<double> *ghostTrackDistanceValuHisto, *ghostTrackDistanceSignHisto;
+  TrackIPHistograms<float> * tkcntHistosTkProbIPneg2D, * tkcntHistosTkProbIPpos2D;
+  TrackIPHistograms<float> * tkcntHistosTkProbIPneg3D, * tkcntHistosTkProbIPpos3D;
+  TrackIPHistograms<double> * ghostTrackWeightHisto;
+  TrackIPHistograms<double> * ghostTrackDistanceValuHisto, * ghostTrackDistanceSignHisto;
 
   FlavourHistograms<int> * trackQualHisto;
   FlavourHistograms<int> * selectedTrackQualHisto;

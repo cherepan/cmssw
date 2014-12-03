@@ -3,8 +3,6 @@
 #include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
 #include "RecoParticleFlow/PFClusterTools/interface/PFPhotonClusters.h"
 
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
-
 #include <TMath.h>
 #include <TVector2.h>
 using namespace reco;
@@ -136,26 +134,45 @@ void PFPhotonClusters::FillClusterShape(){
     if(isEB_){	
       int deta=EBDetId::distanceEta(id,idseed_);
       int dphi=EBDetId::distancePhi(id,idseed_);
+
       if(abs(deta)>2 ||abs(dphi)>2)continue;
+      
       //f(abs(dphi)<=2 && abs(deta)<=2){
       EBDetId EBidSeed=EBDetId(idseed_.rawId());
       EBDetId EBid=EBDetId(id.rawId());
       int ind1=EBidSeed.ieta()-EBid.ieta();
-      int ind2=EBid.iphi()-EBidSeed.iphi();
+      int ind2=EBidSeed.iphi()-EBid.iphi();
       if(EBidSeed.ieta() * EBid.ieta() > 0){
 	ind1=EBid.ieta()-EBidSeed.ieta();
       }
       else{ //near EB+ EB-
-	ind1=(1-(EBidSeed.ieta()-EBid.ieta())); 
+	int shift(EBidSeed.ieta()>0 ? -1 : 1);
+	ind1=EBidSeed.ieta()-EBid.ieta()+shift; 
       }
+
+      // more tricky edges in phi. Note that distance is already <2 at this point 
+      if( (EBidSeed.iphi()<5&&EBid.iphi()>355) || (EBidSeed.iphi()>355&&EBid.iphi()<5)) {
+	int shift(EBidSeed.iphi()<180 ? EBDetId::MAX_IPHI:-EBDetId::MAX_IPHI) ; 
+	ind2 = shift + EBidSeed.iphi() - EBid.iphi();
+	//	std::cout << " Phi check " << EBidSeed.iphi() << " " <<  EBid.iphi() << " " << ind2 << std::endl;
+      }
+
       int iEta=ind1+2;
       int iPhi=ind2+2;
       //std::cout<<"IEta, IPhi "<<iEta<<", "<<iPhi<<std::endl;
-      if (iEta*5 + iPhi > 24 || iEta*5 + iPhi < 0){ //really check just writing outside the array
-	edm::LogInfo("OutOfBounds")<<"iEta = "<<iEta<<" iPhi = "<<iPhi;
-      } else {
-	e5x5_[iEta][iPhi]=E;
-      }
+//      if(iPhi >= 5 || iPhi <0) { 
+//	std::cout << "dphi "<< EBDetId::distancePhi(id,idseed_) << " iphi " << EBid.iphi() << " iphiseed " << EBidSeed.iphi() << " iPhi " << iPhi << std::endl;}
+//      if(iEta >= 5 || iEta <0) { 
+//	std::cout << "deta "<< EBDetId::distanceEta(id,idseed_) << " ieta " << EBid.ieta() << " ietaseed " << EBidSeed.ieta() << "ind1 " << ind1 << " iEta " << iEta << " " ;
+//	ind1=ind1prime;
+//	iEta=ind1+2;
+//	std::cout << " new iEta " << iEta << std::endl;
+//      }
+//      assert(iEta < 5);
+//      assert(iEta >= 0);
+//      assert(iPhi < 5);
+//      assert(iPhi >= 0);
+      e5x5_[iEta][iPhi]=E;
     }
     else{
       int dx=EEDetId::distanceX(id,idseed_);
@@ -168,11 +185,11 @@ void PFPhotonClusters::FillClusterShape(){
       int ix=ind1+2;
       int iy=ind2+2;
       //std::cout<<"IX, IY "<<ix<<", "<<iy<<std::endl;	    
-      if (ix*5 + iy > 24 || ix*5 + iy < 0 ){ //no indication there was a problem here, just sanity-protection as above
-	edm::LogInfo("OutOfBounds")<<"ix = "<<ix<<" iy = "<<iy;
-      } else {
-	e5x5_[ix][iy]=E;
-      }
+//      assert(ix < 5);
+//      assert(ix >= 0);
+//      assert(iy < 5);
+//      assert(iy >= 0);
+      e5x5_[ix][iy]=E;
     }
   }
 }

@@ -77,8 +77,13 @@ class Pythia6ServiceWithCallback : public Pythia6Service {
       if ( !hepeup_.nup || Pythia6Hadronizer::getJetMatching()->isMatchingDone() )
          return true;
 
+      bool retValue = Pythia6Hadronizer::getJetMatching()->match( 0, 0 );
+      // below is old code and a note of it
       // NOTE: I'm passing NULL pointers, instead of HepMC::GenEvent, etc.
-      return Pythia6Hadronizer::getJetMatching()->match(0, 0, true);
+      //retValur = Pythia6Hadronizer::getJetMatching()->match(0, 0, true);
+      return retValue;
+
+
     }
 };
 
@@ -863,7 +868,7 @@ bool Pythia6Hadronizer::initializeForInternalPartons()
    return true;
 }
 
-bool Pythia6Hadronizer::declareStableParticles( const std::vector<int> pdg )
+bool Pythia6Hadronizer::declareStableParticles( const std::vector<int>& pdg )
 {
    
    for ( unsigned int i=0; i<pdg.size(); i++ )
@@ -885,7 +890,7 @@ bool Pythia6Hadronizer::declareStableParticles( const std::vector<int> pdg )
    return true;
 }
 
-bool Pythia6Hadronizer::declareSpecialSettings( const std::vector<std::string> settings )
+bool Pythia6Hadronizer::declareSpecialSettings( const std::vector<std::string>& settings )
 {
    
    for ( unsigned int iss=0; iss<settings.size(); iss++ )

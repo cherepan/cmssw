@@ -15,4 +15,8 @@ from RecoEcal.EgammaCoreTools.EcalNextToDeadChannelESProducer_cff import *
 # create path with all clustering algos
 # NB: preshower MUST be run after multi5x5 clustering in the endcap
 
-ecalClusters = cms.Sequence(hybridClusteringSequence*multi5x5ClusteringSequence*multi5x5PreshowerClusteringSequence)
+#particle flow super clustering sequence
+from RecoEcal.EgammaClusterProducers.particleFlowSuperClusteringSequence_cff import *
+
+ecalClustersNoPFBox = cms.Sequence(hybridClusteringSequence*multi5x5ClusteringSequence*multi5x5PreshowerClusteringSequence)
+ecalClusters = cms.Sequence(ecalClustersNoPFBox*particleFlowSuperClusteringSequence)

@@ -1,8 +1,8 @@
 /** \file LaserAlignment.cc
  *  LAS reconstruction module
  *
- *  $Date: 2011/09/16 07:45:48 $
- *  $Revision: 1.41 $
+ *  $Date: 2013/05/25 14:31:03 $
+ *  $Revision: 1.48 $
  *  \author Maarten Thomas
  *  \author Jan Olzem
  */
@@ -39,7 +39,9 @@ LaserAlignment::LaserAlignment( edm::ParameterSet const& theConf ) :
   theAlignableTracker(),
   theAlignRecordName( "TrackerAlignmentRcd" ),
   theErrorRecordName( "TrackerAlignmentErrorRcd" ),
-  firstEvent_(true) {
+  firstEvent_(true),
+  theParameterSet( theConf )
+{
 
 
   std::cout << std::endl;
@@ -63,7 +65,6 @@ LaserAlignment::LaserAlignment( edm::ParameterSet const& theConf ) :
 	    << "\n    ----------------------------------------------- ----------"
 	    << (theSetNominalStrips?"\n    Set strips to nominal       =  true":"\n")
 	    << "\n=============================================================" << std::endl;
-
 
   // tell about masked modules
   if( theMaskTecModules.size() ) {
@@ -264,6 +265,11 @@ void LaserAlignment::produce(edm::Event& theEvent, edm::EventSetup const& theSet
 
   if (firstEvent_) {
 
+    //Retrieve tracker topology from geometry
+    edm::ESHandle<TrackerTopology> tTopoHandle;
+    theSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+    const TrackerTopology* const tTopo = tTopoHandle.product();
+
     // access the tracker
     theSetup.get<TrackerDigiGeometryRecord>().get( theTrackerGeometry );
     theSetup.get<IdealGeometryRecord>().get( gD );
@@ -285,12 +291,13 @@ void LaserAlignment::produce(edm::Event& theEvent, edm::EventSetup const& theSet
       edm::ESHandle<GeometricDet> theGeometricDet;
       theSetup.get<IdealGeometryRecord>().get(theGeometricDet);
       TrackerGeomBuilderFromGeometricDet trackerBuilder;
-      TrackerGeometry* theRefTracker = trackerBuilder.build(&*theGeometricDet);
-      theAlignableTracker = new AlignableTracker(&(*theRefTracker));
+      TrackerGeometry* theRefTracker = trackerBuilder.build(&*theGeometricDet, theParameterSet);
+      
+      theAlignableTracker = new AlignableTracker(&(*theRefTracker), tTopo);
     }
     else {
       // the AlignableTracker object is initialized with the input geometry from DB
-      theAlignableTracker = new AlignableTracker( &(*theTrackerGeometry) );
+      theAlignableTracker = new AlignableTracker( &(*theTrackerGeometry), tTopo );
     }
     
     firstEvent_ = false;
@@ -458,7 +465,7 @@ void LaserAlignment::produce(edm::Event& theEvent, edm::EventSetup const& theSet
 ///
 ///
 ///
-void LaserAlignment::endRun( edm::Run& theRun, const edm::EventSetup& theSetup ) {
+void LaserAlignment::endRunProduce( edm::Run& theRun, const edm::EventSetup& theSetup ) {
 
 
   std::cout << " [LaserAlignment::endRun] -- Total number of events processed: " << theEvents << std::endl;

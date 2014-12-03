@@ -23,12 +23,6 @@
 #include "DataFormats/DetId/interface/DetId.h"
 
 
-#include "DataFormats/SiStripDetId/interface/TIBDetId.h"
-#include "DataFormats/SiStripDetId/interface/TOBDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIDDetId.h"
-#include "DataFormats/SiStripDetId/interface/TECDetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
 #include "DataFormats/MuonDetId/interface/DTWireId.h"
 #include "DataFormats/MuonDetId/interface/RPCDetId.h"
@@ -354,7 +348,7 @@ vector<Trajectory> TrackTransformerForCosmicMuons::transform(const reco::Track& 
 
 
 ///decide if the track should be reversed
-bool TrackTransformerForCosmicMuons::SlopeSum(TransientTrackingRecHit::ConstRecHitContainer tkHits) const{
+bool TrackTransformerForCosmicMuons::SlopeSum(const TransientTrackingRecHit::ConstRecHitContainer& tkHits) const{
 
 	bool retval = false;
 	float y1 = 0 ;
@@ -414,7 +408,7 @@ bool TrackTransformerForCosmicMuons::SlopeSum(TransientTrackingRecHit::ConstRecH
 
 
 ///decide if the track should be reversed
-float TrackTransformerForCosmicMuons::SumDy(TransientTrackingRecHit::ConstRecHitContainer tkHits) const{
+float TrackTransformerForCosmicMuons::SumDy(const TransientTrackingRecHit::ConstRecHitContainer& tkHits) const{
 
 	bool retval = false;
 	float y1 = 0 ;

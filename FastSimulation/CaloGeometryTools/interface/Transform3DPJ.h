@@ -1,4 +1,4 @@
-// @(#)root/mathcore:$Name:  $:$Id: Transform3DPJ.h,v 1.17 2006/11/10 11:04:42 moneta Exp $
+// @(#)root/mathcore:$Name: CMSSW_6_2_0 $:$Id: Transform3DPJ.h,v 1.2 2012/11/12 21:20:35 dlange Exp $
 // Authors: W. Brown, M. Fischler, L. Moneta    2005  
 
 /**********************************************************************

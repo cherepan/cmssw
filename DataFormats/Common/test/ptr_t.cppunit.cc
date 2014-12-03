@@ -19,11 +19,13 @@
 
 #include <iostream>
 
-#include "DataFormats/Common/test/IntValues.h"
+#include "DataFormats/Common/interface/IntValues.h"
 #include <typeinfo>
 
+#include "Cintex/Cintex.h"
+
 using namespace edm;
-using namespace test_with_reflex;
+using namespace test_with_dictionaries;
 
 class testPtr: public CppUnit::TestFixture {
    CPPUNIT_TEST_SUITE(testPtr);
@@ -34,7 +36,7 @@ class testPtr: public CppUnit::TestFixture {
 
    CPPUNIT_TEST_SUITE_END();
 public:
-      void setUp(){}
+   void setUp(){ROOT::Cintex::Cintex::Enable();}
    void tearDown(){}
 
    void constructTest();

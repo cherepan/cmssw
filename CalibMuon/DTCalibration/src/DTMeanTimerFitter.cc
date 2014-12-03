@@ -2,8 +2,8 @@
 /*
  *  See header file for a description of this class.
  *
- *  $Date: 2008/09/19 17:32:46 $
- *  $Revision: 1.7 $
+ *  $Date: 2013/05/23 15:28:45 $
+ *  $Revision: 1.10 $
  *  \author S. Bolognesi - INFN Torino
  */
 
@@ -29,7 +29,7 @@ DTMeanTimerFitter::~DTMeanTimerFitter() {
   hDebugFile->Close();
 }
 
-vector<float> DTMeanTimerFitter::evaluateVDriftAndReso (TString N) {
+vector<float> DTMeanTimerFitter::evaluateVDriftAndReso (const TString& N) {
   
   // Retrieve histogram sets
   hTMaxCell * histos   = new hTMaxCell(N, hInputFile);
@@ -143,7 +143,7 @@ vector<float> DTMeanTimerFitter::evaluateVDriftAndReso (TString N) {
 	ith != hT0.end(); ith++) {
       try{
         (*ith)->Fit("gaus");
-      } catch(...){
+      } catch(std::exception){
         edm::LogError("DTMeanTimerFitter") << "Exception when fitting T0..histogram " << (*ith)->GetName();    
         // return empty or -1 filled vector?
         vector<float> defvec(6,-1);
@@ -209,7 +209,7 @@ TF1* DTMeanTimerFitter::fitTMax(TH1F* histo){
       rGaus->SetMarkerSize();// just silence gcc complainining about unused var
       try{	
         histo->Fit("rGaus","R");
-      } catch(...){
+      } catch(std::exception){
 	edm::LogError("DTMeanTimerFitter") << "Exception when fitting TMax..histogram " << histo->GetName()
 	     << "   setting return function pointer to zero";   
 	return 0;

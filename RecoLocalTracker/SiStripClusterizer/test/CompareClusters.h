@@ -4,13 +4,15 @@ class SiStripGain;
 class SiStripNoises;
 class SiStripQuality;
 class SiStripDigi;
-class SiStripCluster;
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "DataFormats/Common/interface/DetSetVector.h"
 #include "DataFormats/Common/interface/DetSetVectorNew.h"
+#include "DataFormats/SiStripCluster/interface/SiStripCluster.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Utilities/interface/InputTag.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+
 #include <sstream>
 
 class CompareClusters : public edm::EDAnalyzer {

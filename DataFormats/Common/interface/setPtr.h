@@ -20,10 +20,9 @@
 
 // user include files
 #include "DataFormats/Common/interface/FillView.h"
-#include "FWCore/Utilities/interface/EDMException.h"
 #include "DataFormats/Common/interface/fwd_setPtr.h"
-#include "Reflex/Object.h"
-#include "Reflex/Type.h"
+#include "FWCore/Utilities/interface/EDMException.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 
 // system include files
 #include <typeinfo>
@@ -50,23 +49,15 @@ namespace edm {
         element_type const* address = GetProduct<product_type>::address( it );
         oPtr = address;
       } else {
-        using Reflex::Type;
-        using Reflex::Object;
-        static Type const s_type(Type::ByTypeInfo(typeid(element_type)));
+        static TypeWithDict const s_type(TypeWithDict(typeid(element_type)));
 
         iter it = coll.begin();
         std::advance(it,iIndex);
         element_type const* address = GetProduct<product_type>::address( it );
 
-        // The const_cast below is needed because
-        // Object's constructor requires a pointer to
-        // non-const void, although the implementation does not, of
-        // course, modify the object to which the pointer points.
-        Object obj(s_type, const_cast<void*>(static_cast<void const*>(address)));
-        Object cast = obj.CastObject(Type::ByTypeInfo(iToType));
-        if(0 != cast.Address()) {
-          oPtr = cast.Address(); // returns void*, after pointer adjustment
-        } else {
+        oPtr = TypeWithDict(iToType).pointerToBaseType(address, s_type);
+
+        if(0 == oPtr) {
           Exception::throwThis(errors::LogicError,
             "TypeConversionError"
              "edm::Ptr<> : unable to convert type ",

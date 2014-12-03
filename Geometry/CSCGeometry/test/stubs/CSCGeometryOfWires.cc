@@ -105,7 +105,7 @@ void
 	// What's its surface?
 	// The surface knows how to transform local <-> global
 
-	const BoundSurface& bSurface = layer->surface();
+	const Surface& bSurface = layer->surface();
 
 	// Check global coordinates of centre of CSCLayer, and how
 	// local z direction relates to global z direction
@@ -186,7 +186,7 @@ void
 
         // Layer geometry:  layer corner phi's... OF ALUMINUM FRAME
 
-	std::vector<float> parameters = geom->parameters();
+	std::array<const float, 4> const & parameters = geom->parameters();
         // these parameters are half-lengths, due to GEANT
         float hBottomEdge = parameters[0];
         float hTopEdge    = parameters[1];

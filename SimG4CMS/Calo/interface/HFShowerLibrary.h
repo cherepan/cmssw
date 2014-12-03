@@ -44,7 +44,8 @@ public:
   };
 
   void                initRun(G4ParticleTable * theParticleTable);
-  std::vector<Hit>    getHits(G4Step * aStep, bool & ok, bool onlyLong=false);
+  std::vector<Hit>    getHits(G4Step * aStep, bool &ok, double weight, 
+			      bool onlyLong=false);
 
 protected:
 
@@ -63,7 +64,7 @@ private:
   TFile *             hf;
   TBranch             *emBranch, *hadBranch;
 
-  bool                verbose;
+  bool                verbose, applyFidCut;
   int                 nMomBin, totEvents, evtPerBin;
   float               libVers, listVersion; 
   std::vector<double> pmom;

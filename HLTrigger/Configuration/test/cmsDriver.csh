@@ -11,9 +11,9 @@ rehash
 
 #
 # gen sim input files for Monte-Carlo tests
-set InputGenSimGRun = /store/relval/CMSSW_5_2_7-START52_V10/RelValProdTTbar/GEN-SIM/v1/00000/1E51943C-5306-E211-A13F-0018F3D096A2.root
-set InputGenSimHIon = /store/relval/CMSSW_5_2_7/RelValPyquen_ZeemumuJets_pt10_2760GeV/GEN-SIM/PU_STARTHI52_V9-v1/0004/52203A21-3708-E211-A85A-003048D2C16E.root
-set InputGenSimPIon = /store/relval/CMSSW_5_2_7-START52_V10/RelValProdTTbar/GEN-SIM/v1/00000/1E51943C-5306-E211-A13F-0018F3D096A2.root
+set InputGenSimGRun = /store/relval/CMSSW_5_3_6-START53_V14/RelValProdTTbar/GEN-SIM/v2/00000/DE03BB7E-F429-E211-A0B4-001A928116CC.root
+set InputGenSimHIon = /store/relval/CMSSW_5_3_6/RelValPyquen_ZeemumuJets_pt10_2760GeV/GEN-SIM/PU_STARTHI53_V10-v1/0004/CE7B8599-EA2C-E211-A254-003048D375AA.root
+set InputGenSimPIon = /store/relval/CMSSW_5_3_6-START53_V14/RelValProdTTbar/GEN-SIM/v2/00000/DE03BB7E-F429-E211-A0B4-001A928116CC.root
 #
 # lhc raw input files for Real-Data tests
 set InputLHCRawGRun = /store/data/Run2012A/MuEG/RAW/v1/000/191/718/14932935-E289-E111-830C-5404A6388697.root
@@ -38,7 +38,6 @@ set NNHIMC = 25
 set NNHIRD = 25
 
 set XL1T    = "" # syntax: tag,record[,connect,label]
-set XL1TPP0 = "" # "L1GtTriggerMenu_L1Menu_Collisions2011_v6_mc,L1GtTriggerMenuRcd,frontier://FrontierProd/CMS_COND_31X_L1T"
 set XL1TPP1 = "" # "L1GtTriggerMenu_L1Menu_Collisions2012_v1_mc,L1GtTriggerMenuRcd,frontier://FrontierProd/CMS_COND_31X_L1T"
 set XL1TPP2 = "" # "L1GtTriggerMenu_L1Menu_Collisions2012_v2_mc,L1GtTriggerMenuRcd,frontier://FrontierProd/CMS_COND_31X_L1T"
 set XL1TPP3 = "" # "L1GtTriggerMenu_L1Menu_Collisions2012_v3_mc,L1GtTriggerMenuRcd,frontier://FrontierProd/CMS_COND_31X_L1T"
@@ -89,7 +88,7 @@ foreach gtag ( STARTUP DATA )
     continue
   endif
 
-  foreach table ( GRun 2011 5E33v4 7E33v2 7E33v3 7E33v4 8E33v2 HIon PIon )
+  foreach table ( GRun PIon 8E33v2 HIon )
 
     set name = ${table}_${gtag}  
 
@@ -97,46 +96,6 @@ foreach gtag ( STARTUP DATA )
       set XL1T = $XL1TPP3
       set XHLT = HLT:GRun
       set GTAG = ${GTAGPP}_GRun
-      set NN   = $NNPP
-      set SCEN = pp
-      set InputGenSim = $InputGenSimGRun
-      set InputLHCRaw = $InputLHCRawGRun
-    else if ( $table == 2011 ) then
-      set XL1T = $XL1TPP0
-      set XHLT = HLT:2011
-      set GTAG = ${GTAGPP}_2011
-      set NN   = $NNPP
-      set SCEN = pp
-      set InputGenSim = $InputGenSimGRun
-      set InputLHCRaw = $InputLHCRawGRun
-    else if ( $table == 5E33v4 ) then
-      set XL1T = $XL1TPP1
-      set XHLT = HLT:5E33v4
-      set GTAG = ${GTAGPP}_5E33v4
-      set NN   = $NNPP
-      set SCEN = pp
-      set InputGenSim = $InputGenSimGRun
-      set InputLHCRaw = $InputLHCRawGRun
-    else if ( $table == 7E33v2 ) then
-      set XL1T = $XL1TPP1
-      set XHLT = HLT:7E33v2
-      set GTAG = ${GTAGPP}_7E33v2
-      set NN   = $NNPP
-      set SCEN = pp
-      set InputGenSim = $InputGenSimGRun
-      set InputLHCRaw = $InputLHCRawGRun
-    else if ( $table == 7E33v3 ) then
-      set XL1T = $XL1TPP2
-      set XHLT = HLT:7E33v3
-      set GTAG = ${GTAGPP}_7E33v3
-      set NN   = $NNPP
-      set SCEN = pp
-      set InputGenSim = $InputGenSimGRun
-      set InputLHCRaw = $InputLHCRawGRun
-    else if ( $table == 7E33v4 ) then
-      set XL1T = $XL1TPP2
-      set XHLT = HLT:7E33v4
-      set GTAG = ${GTAGPP}_7E33v4
       set NN   = $NNPP
       set SCEN = pp
       set InputGenSim = $InputGenSimGRun
@@ -195,7 +154,7 @@ foreach gtag ( STARTUP DATA )
 
     echo
     echo "Creating FastSim $name"
-    cmsDriver.py TTbar_Tauola_8TeV_cfi --step GEN,FASTSIM,$XHLT                    --conditions=$GTAG                                              --custom_conditions=$XL1T  --fileout=FastSim_GenToHLT_$name.root    --number=$NN $DATAMC --no_exec --datatier 'GEN-SIM-DIGI-RECO'     --eventcontent FEVTDEBUGHLT --customise=HLTrigger/Configuration/CustomConfigs.FASTSIM --scenario=$SCEN --python_filename=FastSim_GenToHLT_$name.py     --processName=$PNAME
+    cmsDriver.py TTbar_Tauola_8TeV_cfi --step GEN,SIM,$XHLT --fast                 --conditions=$GTAG                                              --custom_conditions=$XL1T  --fileout=FastSim_GenToHLT_$name.root    --number=$NN $DATAMC --no_exec --datatier 'GEN-SIM-DIGI-RECO'     --eventcontent FEVTDEBUGHLT --customise=HLTrigger/Configuration/CustomConfigs.FASTSIM --scenario=$SCEN --python_filename=FastSim_GenToHLT_$name.py     --processName=$PNAME
 
     endif
 
@@ -212,11 +171,13 @@ foreach gtag ( STARTUP DATA )
 
     if ( $gtag == DATA ) then
 
-    set RTAG = auto:com10_${table}
+    set RTAG = $GTAG
 
     echo
     echo "Creating HLT+RECO $name"
     cmsDriver.py RelVal                --step=$XHLT,RAW2DIGI,L1Reco,RECO           --conditions=$RTAG --filein=file:RelVal_Raw_$name.root          --custom_conditions=$XL1T  --fileout=RelVal_HLT_RECO_$name.root     --number=$NN $DATAMC --no_exec --datatier 'SIM-RAW-HLT-RECO'      --eventcontent=RAW          --customise=HLTrigger/Configuration/CustomConfigs.L1THLT  --scenario=$SCEN --python_filename=RelVal_HLT_Reco_$name.py      --processName=$PNAME
+
+    set RTAG = auto:com10_${table}
 
     echo
     echo "Creating RECO+DQM $name"

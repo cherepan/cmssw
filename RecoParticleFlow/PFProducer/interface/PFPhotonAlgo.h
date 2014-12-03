@@ -75,6 +75,9 @@ class PFPhotonAlgo {
   void setnPU(int nVtx){
     nVtx_=nVtx;
   }
+  void setPhotonPrimaryVtx(const reco::Vertex& primary){
+    primaryVertex_ = & primary;
+  }
   //check candidate validity
   bool isPhotonValidCandidate(const reco::PFBlockRef&  blockRef,
 			      std::vector< bool >&  active,
@@ -142,7 +145,7 @@ private:
   //FOR SINGLE LEG MVA:					      
   double MVACUT;
   bool useReg_;
-  reco::Vertex       primaryVertex_;
+  const reco::Vertex  *  primaryVertex_;
   TMVA::Reader *tmvaReader_;
   const GBRForest *ReaderLC_;
   const GBRForest *ReaderGC_;

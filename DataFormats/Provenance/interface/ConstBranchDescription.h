@@ -35,6 +35,8 @@ namespace edm {
     std::string const& moduleName() const {return ptr_->moduleName();}
     std::string const& processName() const {return ptr_->processName();}
     BranchID const& branchID() const {return ptr_->branchID();}
+    bool isAlias() const {return ptr_->isAlias();}
+    BranchID const& originalBranchID() const {return ptr_->originalBranchID();}
     std::string const& fullClassName() const {return ptr_->fullClassName();}
     std::string const& className() const {return ptr_->fullClassName();}
     std::string const& friendlyClassName() const {return ptr_->friendlyClassName();}
@@ -44,8 +46,10 @@ namespace edm {
     bool const& onDemand() const {return ptr_->onDemand();}
     bool present() const {return ptr_->present();}
     bool const& transient() const {return ptr_->transient();}
-    Reflex::Type const& type() const {return ptr_->type();}
-    TypeID const& typeID() const {return ptr_->typeID();}
+    TypeWithDict const& wrappedType() const {return ptr_->wrappedType();}
+    TypeWithDict const& unwrappedType() const {return ptr_->unwrappedType();}
+    TypeID wrappedTypeID() const {return ptr_->wrappedTypeID();}
+    TypeID unwrappedTypeID() const {return ptr_->unwrappedTypeID();}
     int const& splitLevel() const {return ptr_->splitLevel();}
     int const& basketSize() const {return ptr_->basketSize();}
 

@@ -30,6 +30,9 @@ RecoParticleFlowFEVT = cms.PSet(
     #'keep recoPFBlocks_*_*_*',
     'keep recoPFBlocks_particleFlowBlock_*_*',
     #'keep recoPFCandidates_*_*_*',
+    'keep recoPFCandidates_particleFlowEGamma_*_*',
+    'keep recoCaloClusters_particleFlowEGamma_*_*',
+    'keep recoSuperClusters_particleFlowEGamma_*_*',    
     'keep recoPFCandidates_particleFlow_*_*',
     'keep recoPFCandidates_particleFlowTmp_*_*',
     'drop recoPFCandidates_particleFlowTmp__*',
@@ -39,7 +42,10 @@ RecoParticleFlowFEVT = cms.PSet(
     'keep *_pfPhotonTranslator_*_*',
     'keep *_particleFlow_electrons_*',
     'keep *_particleFlow_photons_*',
-    'keep *_trackerDrivenElectronSeeds_preid_*')
+    'keep *_trackerDrivenElectronSeeds_preid_*',
+    'keep *_particleFlowPtrs_*_*',
+    'keep *_particleFlowTmpPtrs_*_*'
+        )
     )
 # RECO content
 RecoParticleFlowRECO = cms.PSet(
@@ -66,6 +72,9 @@ RecoParticleFlowRECO = cms.PSet(
     #'keep recoPFBlocks_*_*_*',
     'keep recoPFBlocks_particleFlowBlock_*_*',
     #'keep recoPFCandidates_*_*_*',
+    'keep recoPFCandidates_particleFlowEGamma_*_*',
+    'keep recoCaloClusters_particleFlowEGamma_*_*',
+    'keep recoSuperClusters_particleFlowEGamma_*_*',
     'keep recoPFCandidates_particleFlow_*_*',
     'keep recoPFCandidates_particleFlowTmp_electrons_*',
     'keep recoPFCandidates_particleFlowTmp_*_*',
@@ -76,7 +85,10 @@ RecoParticleFlowRECO = cms.PSet(
     'keep *_pfPhotonTranslator_*_*',
     'keep *_particleFlow_electrons_*',
     'keep *_particleFlow_photons_*',
-    'keep *_trackerDrivenElectronSeeds_preid_*')
+    'keep *_trackerDrivenElectronSeeds_preid_*',
+    'keep *_particleFlowPtrs_*_*',
+    'keep *_particleFlowTmpPtrs_*_*'
+        )
 )    
     
 # AOD content
@@ -96,6 +108,8 @@ RecoParticleFlowAOD = cms.PSet(
     'keep recoPFRecHits_particleFlowRecHitHO_Cleaned_*',
     'keep recoPFRecHits_particleFlowRecHitPS_Cleaned_*',
     #'keep recoPFCandidates_*_*_*',
+    'keep recoCaloClusters_particleFlowEGamma_*_*',
+    'keep recoSuperClusters_particleFlowEGamma_*_*',    
     'keep recoPFCandidates_particleFlow_*_*',
     'keep recoPFCandidates_particleFlowTmp_*_*',
     'drop recoPFCandidates_particleFlowTmp__*',
@@ -109,5 +123,8 @@ RecoParticleFlowAOD = cms.PSet(
     'keep recoSuperClusters_pfPhotonTranslator_*_*',
     'keep recoPhotons_pfPhotonTranslator_*_*',
     'keep recoPhotonCores_pfPhotonTranslator_*_*',
-    'keep recoConversions_pfPhotonTranslator_*_*')
+    'keep recoConversions_pfPhotonTranslator_*_*',
+    'keep *_particleFlowPtrs_*_*',
+    'keep *_particleFlowTmpPtrs_*_*'
+        )
 )

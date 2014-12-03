@@ -1,5 +1,5 @@
 //
-// $Id: PATLeptonCountFilter.h,v 1.1 2008/01/15 13:30:02 lowette Exp $
+// $Id: PATLeptonCountFilter.h,v 1.2 2013/02/27 23:26:56 wmtan Exp $
 //
 
 #ifndef PhysicsTools_PatAlgos_PATLeptonCountFilter_h
@@ -23,7 +23,7 @@ namespace pat {
 
     private:
 
-      virtual bool filter(edm::Event & iEvent, const edm::EventSetup & iSetup);
+      virtual bool filter(edm::Event & iEvent, const edm::EventSetup& iSetup) override;
 
     private:
 

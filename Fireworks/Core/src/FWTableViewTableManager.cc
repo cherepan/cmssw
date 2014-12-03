@@ -1,7 +1,8 @@
-// $Id: FWTableViewTableManager.cc,v 1.16 2010/05/27 16:50:03 chrjones Exp $
+// $Id: FWTableViewTableManager.cc,v 1.18 2012/09/21 09:26:26 eulisse Exp $
 
 #include <math.h>
 #include <sstream>
+#include <cassert>
 
 #include "TClass.h"
 #include "TGClient.h"

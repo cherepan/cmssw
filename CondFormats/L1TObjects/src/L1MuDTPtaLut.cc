@@ -5,8 +5,8 @@
 //   Description: Look-up tables for pt assignment 
 //
 //
-//   $Date: 2009/05/13 06:36:48 $
-//   $Revision: 1.6 $
+//   $Date: 2012/08/05 12:48:33 $
+//   $Revision: 1.8 $
 //
 //   Author :
 //   N. Neumeister            CERN EP
@@ -180,6 +180,7 @@ int L1MuDTPtaLut::load() {
       number++;
       
       if ( adr != adr_old ) {
+        assert(number);
         tmplut.insert(make_pair( adr_old, (sum_pt/number) ));
 
         adr_old = adr;

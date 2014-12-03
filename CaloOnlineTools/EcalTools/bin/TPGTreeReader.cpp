@@ -87,7 +87,7 @@ void printHelp()
 
 }
 
-unsigned int getEt(unsigned int val) {return (val&0xff) ;}
+int getEt(int val) {return (val&0xff) ;}
 
 unsigned int getFg(unsigned int val) {return ((val&0x100)!=0) ;}
 
@@ -245,7 +245,7 @@ int main (int argc, char** argv)
     for (unsigned int tower = 0 ; tower < treeVars.nbOfTowers ; tower++) {
 
       int tp = getEt(treeVars.rawTPData[tower]) ;
-      int emul[5] = {getEt(treeVars.rawTPEmul1[tower]),  
+      int emul[5] = {getEt(treeVars.rawTPEmul1[tower]),
 		     getEt(treeVars.rawTPEmul2[tower]),
 		     getEt(treeVars.rawTPEmul3[tower]),
 		     getEt(treeVars.rawTPEmul4[tower]),

@@ -13,7 +13,7 @@
 //
 // Original Author:  James Jackson
 //         Created:  Mon Jan 11 09:57:58 CET 2010
-// $Id$
+// $Id: RecHitEnergyFilter.cc,v 1.2 2013/02/27 20:17:14 wmtan Exp $
 //
 //
 
@@ -40,7 +40,7 @@ class RecHitEnergyFilter : public edm::EDFilter {
 
    private:
       virtual void beginJob() ;
-      virtual bool filter(edm::Event&, const edm::EventSetup&);
+      virtual bool filter(edm::Event&, const edm::EventSetup&) override;
       virtual void endJob() ;
 
       // RecHit input tags

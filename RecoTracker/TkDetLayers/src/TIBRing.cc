@@ -8,7 +8,7 @@
 #include "TrackingTools/DetLayers/interface/PhiLess.h"
 #include "TrackingTools/GeomPropagators/interface/HelixBarrelPlaneCrossing2OrderLocal.h"
 #include "TrackingTools/GeomPropagators/interface/HelixBarrelCylinderCrossing.h"
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
 
 #include "LayerCrossingSide.h"
 #include "DetGroupMerger.h"
@@ -157,15 +157,15 @@ TIBRing::groupedCompatibleDetsV( const TrajectoryStateOnSurface& tsos,
   if (crossings.nextDistance < detWidth + window) {
     vector<DetGroup> nextResult;
     if (Adder::add( *theDets[theBinFinder.binIndex(crossings.nextIndex)], 
-		   tsos, prop, est, nextResult)) {
+		    tsos, prop, est, nextResult)) {
       int crossingSide = LayerCrossingSide().barrelSide( tsos, prop);
       if (crossings.closestIndex < crossings.nextIndex) {
-	DetGroupMerger::orderAndMergeTwoLevels( closestResult, nextResult,
+	DetGroupMerger::orderAndMergeTwoLevels( std::move(closestResult), std::move(nextResult),
 						result,
 						theHelicity, crossingSide);
       }
       else {
-	DetGroupMerger::orderAndMergeTwoLevels( nextResult, closestResult,
+	DetGroupMerger::orderAndMergeTwoLevels( std::move(nextResult), std::move(closestResult),
 						result,
 						theHelicity, crossingSide);
       }
@@ -178,7 +178,7 @@ TIBRing::groupedCompatibleDetsV( const TrajectoryStateOnSurface& tsos,
   }
   
   // only loop over neighbors (other than closest and next) if window is BIG
-  if (window > 0.5*detWidth) {
+  if (window > 0.5f*detWidth) {
     searchNeighbors( tsos, prop, est, crossings, window, result);
   } 
 }
@@ -198,26 +198,26 @@ void TIBRing::searchNeighbors( const TrajectoryStateOnSurface& tsos,
   int posStart = max( crossings.closestIndex, crossings.nextIndex) + 1;
   
   int quarter = theDets.size()/4;
-  vector<DetGroup> tmp;
-  vector<DetGroup> newResult;
   for (int idet=negStart; idet >= negStart - quarter+1; idet--) {
     const GeomDet* neighbor = theDets[theBinFinder.binIndex(idet)];
     // if (!overlap( gCrossingPos, *neighbor, window)) break; // mybe not needed?
     // maybe also add shallow crossing angle test here???
-    tmp.clear();
-    newResult.clear();
-    if (!Adder::add( *neighbor, tsos, prop, est, tmp)) break;
-    Merger::orderAndMergeTwoLevels( tmp, result, newResult, theHelicity, crossingSide);
+    vector<DetGroup> tmp1;
+    if (!Adder::add( *neighbor, tsos, prop, est, tmp1)) break;
+    vector<DetGroup> tmp2; tmp2.swap(result);
+    vector<DetGroup> newResult;
+    Merger::orderAndMergeTwoLevels(std::move(tmp1), std::move(tmp2), newResult, theHelicity, crossingSide);
     result.swap(newResult);
   }
   for (int idet=posStart; idet < posStart + quarter-1; idet++) {
     const GeomDet* neighbor = theDets[theBinFinder.binIndex(idet)];
     // if (!overlap( gCrossingPos, *neighbor, window)) break; // mybe not needed?
     // maybe also add shallow crossing angle test here???
-    tmp.clear();
-    newResult.clear();
-    if (!Adder::add( *neighbor, tsos, prop, est, tmp)) break;
-    Merger::orderAndMergeTwoLevels( result, tmp, newResult, theHelicity, crossingSide);
+    vector<DetGroup> tmp1;
+    if (!Adder::add( *neighbor, tsos, prop, est, tmp1)) break;
+    vector<DetGroup> tmp2; tmp2.swap(result);
+    vector<DetGroup> newResult;
+    Merger::orderAndMergeTwoLevels(std::move(tmp2), std::move(tmp1), newResult, theHelicity, crossingSide);
     result.swap(newResult);
   }
 }
@@ -243,7 +243,7 @@ TIBRing::computeCrossings( const TrajectoryStateOnSurface& startingState,
   GlobalVector cylDir( cylCrossing.direction());
   int closestIndex = theBinFinder.binIndex(cylPoint.phi());
 
-  const BoundPlane& closestPlane( theDets[closestIndex]->surface());
+  const Plane& closestPlane( theDets[closestIndex]->surface());
 
   LocalPoint closestPos = Crossing( cylPoint, cylDir, rho, closestPlane).position();
   float closestDist = closestPos.x(); // use fact that local X perp to global Z 
@@ -252,7 +252,7 @@ TIBRing::computeCrossings( const TrajectoryStateOnSurface& startingState,
   int nextIndex = PhiLess()( closestPlane.position().phi(), cylPoint.phi()) ? 
     closestIndex+1 : closestIndex-1;
 
-  const BoundPlane& nextPlane( theDets[ theBinFinder.binIndex(nextIndex)]->surface());
+  const Plane& nextPlane( theDets[ theBinFinder.binIndex(nextIndex)]->surface());
   LocalPoint nextPos = Crossing( cylPoint, cylDir, rho, nextPlane).position();
   float nextDist = nextPos.x();
 

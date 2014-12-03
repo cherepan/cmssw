@@ -5,12 +5,12 @@
  * \class ConversionForwardEstimator
  *  Defines the search area in the  forward 
  *
- *   $Date: 2007/03/07 16:48:53 $ 
- *   $Revision: 1.3 $
+ *   $Date: 2012/12/26 11:08:57 $ 
+ *   $Revision: 1.7 $
  *  \author Nancy Marinelli, U. of Notre Dame, US
  */
 
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h" 
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h" 
 #include "DataFormats/GeometryVector/interface/Vector2DBase.h"
 #include "DataFormats/GeometryVector/interface/LocalTag.h"
 
@@ -18,7 +18,7 @@
 #include <iostream> 
 class RecHit;
 class TrajectoryStateOnSurface;
-class BoundPlane;
+class Plane;
 
 class ConversionForwardEstimator : public MeasurementEstimator {
 public:
@@ -32,13 +32,13 @@ public:
   virtual std::pair<bool,double> estimate( const TrajectoryStateOnSurface& ts, 
 			   const TransientTrackingRecHit& hit) const;
   virtual bool estimate( const TrajectoryStateOnSurface& ts, 
-			   const BoundPlane& plane) const;
+			   const Plane& plane) const;
   virtual ConversionForwardEstimator* clone() const {
     return new ConversionForwardEstimator(*this);
   } 
 
 
-virtual Local2DVector maximalLocalDisplacement( const TrajectoryStateOnSurface& ts, const BoundPlane& plane) const;
+virtual Local2DVector maximalLocalDisplacement( const TrajectoryStateOnSurface& ts, const Plane& plane) const;
 
  double nSigmaCut() const {return theNSigma;}
 

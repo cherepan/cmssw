@@ -3,7 +3,7 @@
 #include "DataFormats/Common/interface/PtrVector.h"
 #include "DataFormats/Common/interface/TestHandle.h"
 #include "DataFormats/Common/interface/Wrapper.h"
-#include "DataFormats/Common/test/IntValues.h"
+#include "DataFormats/Common/interface/IntValues.h"
 
 #include <cppunit/extensions/HelperMacros.h>
 
@@ -138,7 +138,7 @@ testPtrVector::check() {
 
 void
 testPtrVector::get() {
-  using namespace test_with_reflex;
+  using namespace test_with_dictionaries;
   typedef std::vector<IntValue> IntCollection;
   std::auto_ptr<IntCollection> ptr(new IntCollection);
 

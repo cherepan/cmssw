@@ -2,7 +2,8 @@
 #include "FastSimulation/TrackerSetup/interface/TrackerInteractionGeometry.h"
 
 TrackerRecHit::TrackerRecHit(const SiTrackerGSMatchedRecHit2D* theHit, 
-			     const TrackerGeometry* theGeometry) :
+			     const TrackerGeometry* theGeometry,
+			     const TrackerTopology* tTopo) :
   theSplitHit(0),
   theMatchedHit(theHit),
   theSubDetId(0),
@@ -13,11 +14,12 @@ TrackerRecHit::TrackerRecHit(const SiTrackerGSMatchedRecHit2D* theHit,
   theLargerError(0.)
      
 { 
-  init(theGeometry);
+  init(theGeometry, tTopo);
 }
 
 TrackerRecHit::TrackerRecHit(const SiTrackerGSRecHit2D* theHit, 
-			     const TrackerGeometry* theGeometry) :
+			     const TrackerGeometry* theGeometry,
+			     const TrackerTopology* tTopo ) :
   theSplitHit(theHit),
   theMatchedHit(0),
   theSubDetId(0),
@@ -28,49 +30,138 @@ TrackerRecHit::TrackerRecHit(const SiTrackerGSRecHit2D* theHit,
   theLargerError(0.)
      
 { 
-  init(theGeometry);
+  init(theGeometry,tTopo);
 }
 
 void
-TrackerRecHit::init(const TrackerGeometry* theGeometry) { 
+TrackerRecHit::init(const TrackerGeometry* theGeometry, const TrackerTopology *tTopo) { 
 
   const DetId& theDetId = hit()->geographicalId();
   theGeomDet = theGeometry->idToDet(theDetId);
   theSubDetId = theDetId.subdetId(); 
   if ( theSubDetId == StripSubdetector::TIB) { 
-    TIBDetId tibid(theDetId.rawId()); 
-    theLayerNumber = tibid.layer();
+     
+    theLayerNumber = tTopo->tibLayer(theDetId);
     theCylinderNumber = TrackerInteractionGeometry::TIB+theLayerNumber;
     forward = false;
   } else if ( theSubDetId ==  StripSubdetector::TOB ) { 
-    TOBDetId tobid(theDetId.rawId()); 
-    theLayerNumber = tobid.layer();
+     
+    theLayerNumber = tTopo->tobLayer(theDetId);
     theCylinderNumber = TrackerInteractionGeometry::TOB+theLayerNumber;
     forward = false;
   } else if ( theSubDetId ==  StripSubdetector::TID) { 
-    TIDDetId tidid(theDetId.rawId());
-    theLayerNumber = tidid.wheel();
+    
+    theLayerNumber = tTopo->tidWheel(theDetId);
     theCylinderNumber = TrackerInteractionGeometry::TID+theLayerNumber;
-    theRingNumber = tidid.ring();
+    theRingNumber = tTopo->tidRing(theDetId);
     forward = true;
   } else if ( theSubDetId ==  StripSubdetector::TEC ) { 
-    TECDetId tecid(theDetId.rawId()); 
-    theLayerNumber = tecid.wheel(); 
+     
+    theLayerNumber = tTopo->tecWheel(theDetId); 
     theCylinderNumber = TrackerInteractionGeometry::TEC+theLayerNumber;
-    theRingNumber = tecid.ring();
+    theRingNumber = tTopo->tecRing(theDetId);
     forward = true;
   } else if ( theSubDetId ==  PixelSubdetector::PixelBarrel ) { 
-    PXBDetId pxbid(theDetId.rawId()); 
-    theLayerNumber = pxbid.layer(); 
+     
+    theLayerNumber = tTopo->pxbLayer(theDetId); 
     theCylinderNumber = TrackerInteractionGeometry::PXB+theLayerNumber;
     forward = false;
   } else if ( theSubDetId ==  PixelSubdetector::PixelEndcap ) { 
-    PXFDetId pxfid(theDetId.rawId()); 
-    theLayerNumber = pxfid.disk();  
+     
+    theLayerNumber = tTopo->pxfDisk(theDetId);  
     theCylinderNumber = TrackerInteractionGeometry::PXD+theLayerNumber;
     forward = true;
   }
   
+}
+
+
+bool
+TrackerRecHit::isOnRequestedDet(const std::vector<std::string>& layerList) const { /// TEMPORARY, JUST FOR SOME TESTS
+
+  std::cout << "layerList.size() = " << layerList.size()  << std::endl;
+  bool isOnDet = false;
+
+  int subdet = 0; // 1 = PXB, 2 = PXD, 3 = TIB, 4 = TID, 5 = TOB, 6 = TEC, 0 = not valid
+  int idLayer = 0;
+  int side = 0; // 0 = barrel, -1 = neg. endcap, +1 = pos. endcap
+
+  for (unsigned i=0; i<layerList.size();i++) {
+    std::string name = layerList[i];
+    std::cout << "------- Name = " << name << std::endl;
+
+    //
+    // BPIX
+    //
+    if (name.substr(0,4) == "BPix") {
+      subdet = 1;
+      idLayer = atoi(name.substr(4,1).c_str());
+      side=0;
+    }
+    //
+    // FPIX
+    //
+    else if (name.substr(0,4) == "FPix") {
+      subdet = 2;
+      idLayer = atoi(name.substr(4,1).c_str());
+      if ( name.find("pos") != std::string::npos ) {
+	side = +1;
+      } else {
+	side = -1;
+      }
+    }
+    //
+    // TIB
+    //
+    else if (name.substr(0,3) == "TIB") {
+      subdet = 3;
+      idLayer = atoi(name.substr(3,1).c_str());
+      side=0;
+    }
+    //
+    // TID
+    //
+    else if (name.substr(0,3) == "TID") {
+      subdet = 4;
+      idLayer = atoi(name.substr(3,1).c_str());
+      if ( name.find("pos") !=std::string::npos ) {
+	side = +1;
+      } else {
+	side = -1;
+      }
+    }
+    //
+    // TOB
+    //
+    else if (name.substr(0,3) == "TOB") {
+      subdet = 5;
+      idLayer = atoi(name.substr(3,1).c_str());
+      side = 0;
+    }
+    //
+    // TEC
+    //
+    else if (name.substr(0,3) == "TEC") {
+      subdet = 6;
+      idLayer = atoi(name.substr(3,1).c_str());
+      if ( name.find("pos") != std::string::npos ) {
+	side = +1;
+      } else {
+	side = -1;
+      }
+    }
+    
+    std::cout << "subdet = " << subdet << std::endl;
+    std::cout << "idLayer = " << idLayer << std::endl;
+    std::cout << "side = " << side << std::endl;
+
+  }
+
+  /// http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/RecoTracker/TkSeedingLayers/src/SeedingLayerSetsBuilder.cc?revision=1.13&view=markup
+
+  
+
+  return isOnDet;
 }
 
 bool

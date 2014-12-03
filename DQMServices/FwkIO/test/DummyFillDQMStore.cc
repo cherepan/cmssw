@@ -13,7 +13,7 @@
 //
 // Original Author:  Christopher Jones
 //         Created:  Fri Apr 29 18:05:50 CDT 2011
-// $Id: DummyFillDQMStore.cc,v 1.2 2011/05/12 00:08:34 chrjones Exp $
+// $Id: DummyFillDQMStore.cc,v 1.6 2013/02/01 16:38:32 wdd Exp $
 //
 //
 
@@ -62,10 +62,11 @@ namespace {
         m_element->setLumiFlag();
       }
       m_hist = m_element->getTH1F();
-      m_delta =  (iPSet.getUntrackedParameter<double>("highX")-m_min)/(m_steps+1);
       m_valueToFill=iPSet.getUntrackedParameter<double>("value");
     }
-    
+   
+    virtual ~TH1FFiller() {};
+ 
     void reset() {
       m_element->Reset();
     }
@@ -75,7 +76,6 @@ namespace {
   private:
     TH1F* m_hist;
     double m_valueToFill;
-    double m_delta;
     double m_min;
     unsigned int m_steps;
     MonitorElement* m_element;
@@ -102,20 +102,20 @@ namespace {
         m_element->setLumiFlag();
       }
       m_hist = m_element->getTH2F();
-      m_delta =  (iPSet.getUntrackedParameter<double>("highX")-m_min)/(m_steps+1);
       m_valueToFill=iPSet.getUntrackedParameter<double>("value");
     }
     
+    virtual ~TH2FFiller() {};
+ 
     void reset() {
       m_element->Reset();
     }
     void fill() {
-      m_hist->Fill(m_valueToFill);
+      m_hist->Fill(m_valueToFill, m_valueToFill);
     }
   private:
     TH2F* m_hist;
     double m_valueToFill;
-    double m_delta;
     double m_min;
     unsigned int m_steps;
     MonitorElement* m_element;

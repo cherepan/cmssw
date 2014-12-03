@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Package:    FFTJetProducers
+// Package:    RecoJets/FFTJetProducers
 // Class:      FFTJetPileupProcessor
 // 
 /**\class FFTJetPileupProcessor FFTJetPileupProcessor.cc RecoJets/FFTJetProducers/plugins/FFTJetPileupProcessor.cc
@@ -13,7 +13,7 @@
 //
 // Original Author:  Igor Volobouev
 //         Created:  Wed Apr 20 13:52:23 CDT 2011
-// $Id: FFTJetPileupProcessor.cc,v 1.1 2011/04/27 00:57:01 igv Exp $
+// $Id: FFTJetPileupProcessor.cc,v 1.11 2012/11/21 03:13:26 igv Exp $
 //
 //
 
@@ -34,7 +34,8 @@
 
 #include "DataFormats/Common/interface/View.h"
 #include "DataFormats/Common/interface/Handle.h"
-#include "DataFormats/Histograms/interface/MEtoEDMFormat.h"
+// #include "DataFormats/Histograms/interface/MEtoEDMFormat.h"
+#include "DataFormats/JetReco/interface/DiscretizedEnergyFlow.h"
 
 #include "RecoJets/FFTJetAlgorithms/interface/gridConverters.h"
 
@@ -43,6 +44,10 @@
 
 // useful utilities collected in the second base
 #include "RecoJets/FFTJetProducers/interface/FFTJetInterface.h"
+
+// Loader for the lookup tables
+#include "JetMETCorrections/FFTJetObjects/interface/FFTJetLookupTableSequenceLoader.h"
+
 
 using namespace fftjetcms;
 
@@ -68,6 +73,7 @@ private:
 
     void buildKernelConvolver(const edm::ParameterSet&);
     void mixExtraGrid();
+    void loadFlatteningFactors(const edm::EventSetup& iSetup);
 
     // The FFT engine
     std::auto_ptr<MyFFTEngine> engine;
@@ -101,7 +107,20 @@ private:
     // Variable related to mixing additional grids
     std::vector<std::string> externalGridFiles;
     std::ifstream gridStream;
+    double externalGridMaxEnergy;
     unsigned currentFileNum;
+
+    // Some memory to hold the percentiles found
+    std::vector<double> percentileData;
+
+    // Variables to load the flattening factors from
+    // the calibration database (this has to be done
+    // in sync with configuring the appropriate event
+    // setup source)
+    std::string flatteningTableRecord;
+    std::string flatteningTableName;
+    std::string flatteningTableCategory;
+    bool loadFlatteningFactorsFromDB;
 };
 
 //
@@ -116,7 +135,12 @@ FFTJetPileupProcessor::FFTJetPileupProcessor(const edm::ParameterSet& ps)
       convolverMaxBin(ps.getParameter<unsigned>("convolverMaxBin")),
       pileupEtaPhiArea(ps.getParameter<double>("pileupEtaPhiArea")),
       externalGridFiles(ps.getParameter<std::vector<std::string> >("externalGridFiles")),
-      currentFileNum(externalGridFiles.size() + 1U)
+      externalGridMaxEnergy(ps.getParameter<double>("externalGridMaxEnergy")),
+      currentFileNum(externalGridFiles.size() + 1U),
+      flatteningTableRecord(ps.getParameter<std::string>("flatteningTableRecord")),
+      flatteningTableName(ps.getParameter<std::string>("flatteningTableName")),
+      flatteningTableCategory(ps.getParameter<std::string>("flatteningTableCategory")),
+      loadFlatteningFactorsFromDB(ps.getParameter<bool>("loadFlatteningFactorsFromDB"))
 {
     // Build the discretization grid
     energyFlow = fftjet_Grid2d_parser(
@@ -134,7 +158,7 @@ FFTJetPileupProcessor::FFTJetPileupProcessor(const edm::ParameterSet& ps)
             throw cms::Exception("FFTJetBadConfig")
                 << "ERROR in FFTJetPileupProcessor constructor:"
                 " number of elements in the \"etaFlatteningFactors\""
-                " vector is inconsistent with the iscretization grid binning"
+                " vector is inconsistent with the discretization grid binning"
                 << std::endl;
     }
 
@@ -153,7 +177,9 @@ FFTJetPileupProcessor::FFTJetPileupProcessor(const edm::ParameterSet& ps)
     filterScales = std::auto_ptr<fftjet::EquidistantInLogSpace>(
         new fftjet::EquidistantInLogSpace(minScale, maxScale, nScales));
 
-    produces<TH2D>(outputLabel);
+    percentileData.resize(nScales*nPercentiles);
+
+    produces<reco::DiscretizedEnergyFlow>(outputLabel);
     produces<std::pair<double,double> >(outputLabel);
 }
 
@@ -229,15 +255,9 @@ void FFTJetPileupProcessor::produce(
         (convolverMaxBin - convolverMinBin)*convolvedFlow->nPhi() :
         convolvedFlow->nEta()*convolvedFlow->nPhi();
 
-    // We will fill the following histo
-    std::auto_ptr<TH2D> pTable(new TH2D("FFTJetPileupProcessor",
-                                        "FFTJetPileupProcessor",
-                                        nScales, -0.5, nScales-0.5,
-                                        nPercentiles, 0.0, 1.0));
-    pTable->SetDirectory(0);
-    pTable->GetXaxis()->SetTitle("Filter Number");
-    pTable->GetYaxis()->SetTitle("Et CDF");
-    pTable->GetZaxis()->SetTitle("Et Density");
+    // Load flattenning factors from DB (if requested)
+    if (loadFlatteningFactorsFromDB)
+        loadFlatteningFactors(iSetup);
 
     // Go over all scales and perform the convolutions
     convolver->setEventData(g.data(), g.nEta(), g.nPhi());
@@ -268,10 +288,16 @@ void FFTJetPileupProcessor::produce(
                 ilow, ilow+1U, sortData[ilow], sortData[ilow+1U], dindex);
 
             // Store the calculated percentile
-            pTable->SetBinContent(iscale+1U, iper+1U, percentile);
+            percentileData[iscale*nPercentiles + iper] = percentile;
         }
     }
 
+    // Convert percentile data into a more convenient storable object
+    // and put it into the event record
+    std::auto_ptr<reco::DiscretizedEnergyFlow> pTable(
+        new reco::DiscretizedEnergyFlow(
+            &percentileData[0], "FFTJetPileupProcessor",
+            -0.5, nScales-0.5, 0.0, nScales, nPercentiles));
     iEvent.put(pTable, outputLabel);
 
     std::auto_ptr<std::pair<double,double> > etSum(
@@ -296,21 +322,40 @@ void FFTJetPileupProcessor::mixExtraGrid()
                 << externalGridFiles[currentFileNum] << std::endl;
     }
 
-    const fftjet::Grid2d<float>* g = fftjet::Grid2d<float>::read(gridStream);
+    const fftjet::Grid2d<float>* g = 0;
+    const unsigned maxFail = 100U;
+    unsigned nEnergyRejected = 0;
 
-    // If we can't read the grid, we need to switch to another file
-    for (unsigned ntries=0; ntries<nFiles && g == 0; ++ntries)
+    while(!g)
     {
-        gridStream.close();
-        currentFileNum = (currentFileNum + 1U) % nFiles;
-        gridStream.open(externalGridFiles[currentFileNum].c_str(),
-                        std::ios_base::in | std::ios_base::binary);
-        if (!gridStream.is_open())
-            throw cms::Exception("FFTJetBadConfig")
-                << "ERROR in FFTJetPileupProcessor::mixExtraGrid():"
-                " failed to open external grid file "
-                << externalGridFiles[currentFileNum] << std::endl;
         g = fftjet::Grid2d<float>::read(gridStream);
+
+        // If we can't read the grid, we need to switch to another file
+        for (unsigned ntries=0; ntries<nFiles && g == 0; ++ntries)
+        {
+            gridStream.close();
+            currentFileNum = (currentFileNum + 1U) % nFiles;
+            gridStream.open(externalGridFiles[currentFileNum].c_str(),
+                            std::ios_base::in | std::ios_base::binary);
+            if (!gridStream.is_open())
+                throw cms::Exception("FFTJetBadConfig")
+                    << "ERROR in FFTJetPileupProcessor::mixExtraGrid():"
+                    " failed to open external grid file "
+                    << externalGridFiles[currentFileNum] << std::endl;
+            g = fftjet::Grid2d<float>::read(gridStream);
+        }
+
+        if (g)
+            if (g->sum() > externalGridMaxEnergy)
+            {
+                delete g;
+                g = 0;
+                if (++nEnergyRejected >= maxFail)
+                    throw cms::Exception("FFTJetBadConfig")
+                        << "ERROR in FFTJetPileupProcessor::mixExtraGrid():"
+                        " too many grids in a row (" << nEnergyRejected
+                        << ") failed the maximum energy cut" << std::endl;
+            }
     }
 
     if (g)
@@ -337,6 +382,26 @@ void FFTJetPileupProcessor::beginJob()
 // ------------ method called once each job just after ending the event loop
 void FFTJetPileupProcessor::endJob()
 {
+}
+
+
+void FFTJetPileupProcessor::loadFlatteningFactors(const edm::EventSetup& iSetup)
+{
+    edm::ESHandle<FFTJetLookupTableSequence> h;
+    StaticFFTJetLookupTableSequenceLoader::instance().load(
+        iSetup, flatteningTableRecord, h);
+    boost::shared_ptr<npstat::StorableMultivariateFunctor> f =
+        (*h)[flatteningTableCategory][flatteningTableName];
+
+    // Fill out the table of flattening factors as a function of eta
+    const unsigned nEta = energyFlow->nEta();
+    etaFlatteningFactors.clear();
+    etaFlatteningFactors.reserve(nEta);
+    for (unsigned ieta=0; ieta<nEta; ++ieta)
+    {
+        const double eta = energyFlow->etaBinCenter(ieta);
+        etaFlatteningFactors.push_back((*f)(&eta, 1U));
+    }
 }
 
 

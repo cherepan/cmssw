@@ -3,22 +3,12 @@
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h" 
 #include "CLHEP/Units/GlobalPhysicalConstants.h"
 
-// Temporary hack workaround for algoByName string "above array bounds"
-// error reported by gcc from Conversion::algoByName below. This could
-// should probably be demangled a bit in any case, but for now just
-// turn off the warning/error in this file. 
-// Do not copy this into other files without checking with the release
-// coordinators!   PE 20091231
-#if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
-# pragma GCC diagnostic ignored "-Warray-bounds"
-#endif
-
 using namespace reco;
 
 
 Conversion::Conversion(  const reco::CaloClusterPtrVector sc, 
-			 const std::vector<reco::TrackRef> tr, 
-			 const std::vector<math::XYZPointF> trackPositionAtEcal, 
+			 const std::vector<reco::TrackRef>& tr, 
+			 const std::vector<math::XYZPointF>& trackPositionAtEcal, 
 			 const reco::Vertex  & convVtx,
 			 const std::vector<reco::CaloClusterPtr> & matchingBC,
                          const float DCA,
@@ -49,15 +39,15 @@ Conversion::Conversion(  const reco::CaloClusterPtrVector sc,
 
 
 Conversion::Conversion(  const reco::CaloClusterPtrVector sc, 
-			 const std::vector<edm::RefToBase<reco::Track> > tr, 
-			 const std::vector<math::XYZPointF> trackPositionAtEcal, 
+			 const std::vector<edm::RefToBase<reco::Track> >& tr, 
+			 const std::vector<math::XYZPointF>& trackPositionAtEcal, 
 			 const reco::Vertex  & convVtx,
 			 const std::vector<reco::CaloClusterPtr> & matchingBC,
                          const float DCA,
 			 const std::vector<math::XYZPointF> & innPoint,
 			 const std::vector<math::XYZVectorF> & trackPin,
 			 const std::vector<math::XYZVectorF> & trackPout,
-                         const std::vector<uint8_t> nHitsBeforeVtx,                  
+                         const std::vector<uint8_t>& nHitsBeforeVtx,                  
                          const std::vector<Measurement1DFloat> & dlClosestHitToVtx,
                          uint8_t nSharedHits,
                          const float mva,
@@ -86,7 +76,7 @@ Conversion::Conversion(  const reco::CaloClusterPtrVector sc,
 
 
 Conversion::Conversion(  const reco::CaloClusterPtrVector sc, 
-			 const std::vector<reco::TrackRef> tr, 
+			 const std::vector<reco::TrackRef>& tr, 
 			 const reco::Vertex  & convVtx,
 			 ConversionAlgorithm algo):  
   caloCluster_(sc), tracks_(tr), 
@@ -113,7 +103,7 @@ Conversion::Conversion(  const reco::CaloClusterPtrVector sc,
 
 
 Conversion::Conversion(  const reco::CaloClusterPtrVector sc, 
-			 const std::vector<edm::RefToBase<reco::Track> >  tr, 
+			 const std::vector<edm::RefToBase<reco::Track> >&  tr, 
 			 const reco::Vertex  & convVtx,
 			 ConversionAlgorithm algo):  
   caloCluster_(sc), trackToBaseRefs_(tr), 
@@ -162,7 +152,7 @@ Conversion::Conversion() {
 Conversion::~Conversion() { }
 
 
-std::string const Conversion::algoNames[] = { "undefined","ecalSeeded","trackerOnly","mixed"};  
+std::string const Conversion::algoNames[] = { "undefined","ecalSeeded","trackerOnly","mixed","pflow"};  
 
 Conversion::ConversionAlgorithm Conversion::algoByName(const std::string &name){
   ConversionAlgorithm size = algoSize;

@@ -5,9 +5,10 @@
 #include "DataFormats/TrackerRecHit2D/interface/SiStripRecHit2D.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include <iostream>
-#include <Reflex/Object.h>
-#include <Reflex/Type.h>
+#include "FWCore/Utilities/interface/ObjectWithDict.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 #include <typeinfo>
+#include "Cintex/Cintex.h"
 
 class testCutParser : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(testCutParser);
@@ -15,7 +16,7 @@ class testCutParser : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE_END();
 
 public:
-  void setUp() {}
+  void setUp() {ROOT::Cintex::Cintex::Enable();}
   void tearDown() {}
   void checkAll(); 
   void check(const std::string &, bool);
@@ -23,7 +24,7 @@ public:
   void checkMuon(const std::string &, bool, const reco::Muon &);
   reco::Track trk;
   SiStripRecHit2D hitOk, hitThrow;
-  Reflex::Object o;
+  edm::ObjectWithDict o;
   reco::parser::SelectorPtr sel;
 };
 
@@ -41,8 +42,8 @@ void testCutParser::check(const std::string & cut, bool res) {
 }
 
 void testCutParser::checkHit(const std::string & cut, bool res, const SiStripRecHit2D &hit) {
-  Reflex::Type t = Reflex::Type::ByTypeInfo(typeid(SiStripRecHit2D));
-  o = Reflex::Object(t, const_cast<void *>(static_cast<const void *>(&hit)));
+  edm::TypeWithDict t(typeid(SiStripRecHit2D));
+  o = edm::ObjectWithDict(t, const_cast<void *>(static_cast<const void *>(&hit)));
   for (int lazy = 0; lazy <= 1; ++lazy) {
   std::cerr << "parsing " << (lazy ? "lazy " : "") << "cut: \"" << cut << "\"" << std::endl;
   sel.reset();
@@ -54,8 +55,8 @@ void testCutParser::checkHit(const std::string & cut, bool res, const SiStripRec
 }
 
 void testCutParser::checkMuon(const std::string & cut, bool res, const reco::Muon &mu) {
-  Reflex::Type t = Reflex::Type::ByTypeInfo(typeid(reco::Muon));
-  o = Reflex::Object(t, const_cast<void *>(static_cast<const void *>(&mu)));
+  edm::TypeWithDict t(typeid(reco::Muon));
+  o = edm::ObjectWithDict(t, const_cast<void *>(static_cast<const void *>(&mu)));
   sel.reset();
   for (int lazy = 0; lazy <= 1; ++lazy) {
   std::cerr << "parsing " << (lazy ? "lazy " : "") << "cut: \"" << cut << "\"" << std::endl;
@@ -70,7 +71,6 @@ void testCutParser::checkMuon(const std::string & cut, bool res, const reco::Muo
 
 void testCutParser::checkAll() {
   using namespace reco;
-  using namespace Reflex;
   const double chi2 = 20.0;
   const int ndof = 10;
   reco::Track::Point v(1, 2, 3);
@@ -85,8 +85,8 @@ void testCutParser::checkAll() {
 
   hitOk = SiStripRecHit2D(LocalPoint(1,1), LocalError(1,1,1), 0, SiStripRecHit2D::ClusterRef());
 
-  Reflex::Type t = Reflex::Type::ByTypeInfo(typeid(reco::Track));
-  o = Reflex::Object(t, & trk);
+  edm::TypeWithDict t(typeid(reco::Track));
+  o = edm::ObjectWithDict(t, & trk);
 
   std::cerr << "Track pt: " << trk.pt() << std::endl;
   // note: pt = 3, charge = -1

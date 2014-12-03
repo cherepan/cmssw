@@ -5,13 +5,13 @@
  *  
  *  Class to fill dqm monitor elements from existing EDM file
  *
- *  $Date: 2009/05/25 15:08:35 $
- *  $Revision: 1.6 $
+ *  $Date: 2013/05/17 22:02:50 $
+ *  $Revision: 1.10 $
  *  \author M. Strang SUNY-Buffalo
  */
 
 // framework & common header files
-#include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/one/EDProducer.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Run.h"
@@ -22,6 +22,7 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 #include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
 #include "DataFormats/DetId/interface/DetId.h"
 
@@ -72,7 +73,7 @@
 #include "TString.h"
 #include "TH1F.h"
 
-class GlobalHitsProdHist : public edm::EDProducer
+class GlobalHitsProdHist : public edm::one::EDProducer<edm::EndRunProducer>
 {
   
  public:
@@ -81,10 +82,10 @@ class GlobalHitsProdHist : public edm::EDProducer
 
   explicit GlobalHitsProdHist(const edm::ParameterSet&);
   virtual ~GlobalHitsProdHist();
-  virtual void beginJob( void );
-  virtual void endJob();  
-  virtual void produce(edm::Event&, const edm::EventSetup&);
-  virtual void endRun(edm::Run&, const edm::EventSetup&);
+  virtual void beginJob() override;
+  virtual void endJob() override;  
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
+  virtual void endRunProduce(edm::Run&, const edm::EventSetup&) override;
   
  private:
 
@@ -121,6 +122,9 @@ class GlobalHitsProdHist : public edm::EDProducer
   TH1F *hGeantTrkPt;
   TH1F *hGeantTrkE;
   int nRawGenPart;  
+
+  edm::InputTag G4VtxSrc_;
+  edm::InputTag G4TrkSrc_;
 
   // Electromagnetic info
   // ECal info

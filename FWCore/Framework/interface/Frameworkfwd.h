@@ -11,7 +11,6 @@ Forward declarations of types in the EDM.
 #include "DataFormats/Provenance/interface/ProvenanceFwd.h"
 
 namespace edm {
-  class ConfigurableInputSource;
   class CurrentProcessingContext;
   class PrincipalGetAdapter;
   class DelayedReader;
@@ -23,8 +22,6 @@ namespace edm {
   class EventPrincipal;
   class EventSetup;
   class FileBlock;
-  class GeneratedInputSource;
-  class Group;
   class InputSource;
   struct InputSourceDescription;
   class LuminosityBlock;
@@ -41,8 +38,6 @@ namespace edm {
   class Run;
   class RunPrincipal;
   class Schedule;
-  class Selector;
-  class SelectorBase;
   class TypeID;
   class UnscheduledHandler;
   class ViewBase;

@@ -119,6 +119,7 @@ class Process(object):
         self.__dict__['_Process__essources'] = {}
         self.__dict__['_Process__esproducers'] = {}
         self.__dict__['_Process__esprefers'] = {}
+        self.__dict__['_Process__aliases'] = {}
         self.__dict__['_Process__psets']={}
         self.__dict__['_Process__vpsets']={}
         self.__dict__['_cloneToObjectDict'] = {}
@@ -251,6 +252,10 @@ class Process(object):
         """returns a dict of the es_prefers which have been added to the Process"""
         return DictTypes.FixedKeysDict(self.__esprefers)
     es_prefers = property(es_prefers_,doc="dictionary containing the es_prefers for the process")
+    def aliases_(self):
+        """returns a dict of the aliases that have been added to the Process"""
+        return DictTypes.FixedKeysDict(self.__aliases)
+    aliases = property(aliases_,doc="dictionary containing the aliases for the process")
     def psets_(self):
         """returns a dict of the PSets which have been added to the Process"""
         return DictTypes.FixedKeysDict(self.__psets)
@@ -259,6 +264,34 @@ class Process(object):
         """returns a dict of the VPSets which have been added to the Process"""
         return DictTypes.FixedKeysDict(self.__vpsets)
     vpsets = property(vpsets_,doc="dictionary containing the PSets for the process")
+
+    def __setObjectLabel(self, object, newLabel) :
+        if not object.hasLabel_() :
+            object.setLabel(newLabel)
+            return
+        if newLabel == object.label_() :
+            return
+        if newLabel is None :
+            object.setLabel(None)
+            return
+        if (hasattr(self, object.label_()) and id(getattr(self, object.label_())) == id(object)) :
+            msg100 = "Attempting to change the label of an attribute of the Process\n"
+            msg101 = "Old label = "+object.label_()+"  New label = "+newLabel+"\n"
+            msg102 = "Type = "+str(type(object))+"\n"
+            msg103 = "Some possible solutions:\n"
+            msg104 = "  1. Clone modules instead of using simple assignment. Cloning is\n"
+            msg105 = "  also preferred for other types when possible.\n"
+            msg106 = "  2. Declare new names starting with an underscore if they are\n"
+            msg107 = "  for temporaries you do not want propagated into the Process. The\n"
+            msg108 = "  underscore tells \"from x import *\" and process.load not to import\n"
+            msg109 = "  the name.\n"
+            msg110 = "  3. Reorganize so the assigment is not necessary. Giving a second\n"
+            msg111 = "  name to the same object usually causes confusion and problems.\n"
+            msg112 = "  4. Compose Sequences: newName = cms.Sequence(oldName)\n"
+            raise ValueError(msg100+msg101+msg102+msg103+msg104+msg105+msg106+msg107+msg108+msg109+msg110+msg111+msg112)
+        object.setLabel(None)
+        object.setLabel(newLabel)
+
     def __setattr__(self,name,value):
         # check if the name is well-formed (only _ and alphanumerics are allowed)
         if not name.replace('_','').isalnum():
@@ -289,26 +322,65 @@ class Process(object):
         else:
             newValue =value
         if not self._okToPlace(name, value, self.__dict__):
+            newFile='top level config'
+            if hasattr(value,'_filename'):
+               newFile = value._filename
+            oldFile='top level config'
+            oldValue = getattr(self,name)
+            if hasattr(oldValue,'_filename'):
+               oldFile = oldValue._filename
             msg = "Trying to override definition of process."+name
-            msg += "\n new object defined in: "+value._filename
-            msg += "\n existing object defined in: "+getattr(self,name)._filename
+            msg += "\n new object defined in: "+newFile
+            msg += "\n existing object defined in: "+oldFile
             raise ValueError(msg)
         # remove the old object of the name (if there is one)
         if hasattr(self,name) and not (getattr(self,name)==newValue):
-            # Allow items in sequences from load() statements to have
+            # Compain if items in sequences from load() statements have
             # degeneratate names, but if the user overwrites a name in the
             # main config, replace it everywhere
-            if not self.__InExtendCall and isinstance(newValue, _Sequenceable):
-                self._replaceInSequences(name, newValue)
+            if isinstance(newValue, _Sequenceable):
+                if not self.__InExtendCall:
+                   self._replaceInSequences(name, newValue)
+                else:
+                   #should check to see if used in sequence before complaining
+                   newFile='top level config'
+                   if hasattr(value,'_filename'):
+                      newFile = value._filename
+                   oldFile='top level config'
+                   oldValue = getattr(self,name)
+                   if hasattr(oldValue,'_filename'):
+                      oldFile = oldValue._filename
+                   msg1 = "Trying to override definition of "+name+" while it is used by the sequence "
+                   msg2 = "\n new object defined in: "+newFile
+                   msg2 += "\n existing object defined in: "+oldFile
+                   s = self.__findFirstSequenceUsingModule(self.sequences,oldValue)
+                   if s is not None:
+                      raise ValueError(msg1+s.label_()+msg2)
+                   s = self.__findFirstSequenceUsingModule(self.paths,oldValue)
+                   if s is not None:
+                      raise ValueError(msg1+s.label_()+msg2)
+                   s = self.__findFirstSequenceUsingModule(self.endpaths,oldValue)
+                   if s is not None:
+                      raise ValueError(msg1+s.label_()+msg2)
             self.__delattr__(name)
         self.__dict__[name]=newValue
         if isinstance(newValue,_Labelable):
-            newValue.setLabel(name)
+            self.__setObjectLabel(newValue, name)
             self._cloneToObjectDict[id(value)] = newValue
             self._cloneToObjectDict[id(newValue)] = newValue
         #now put in proper bucket
         newValue._place(name,self)
-
+    def __findFirstSequenceUsingModule(self,seqs,mod):
+       """Given a container of sequences, find the first sequence containing mod
+       and return the sequence. If no sequence is found, return None"""
+       from FWCore.ParameterSet.SequenceTypes import ModuleNodeVisitor
+       for sequenceable in seqs.itervalues():
+          l = list()
+          v = ModuleNodeVisitor(l)
+          sequenceable.visit(v)
+          if mod in l:
+             return sequenceable
+       return None
     def __delattr__(self,name):
         if not hasattr(self,name):
             raise KeyError('process does not know about '+name)
@@ -372,7 +444,7 @@ class Process(object):
             else:
                 d[name] = mod
             if isinstance(mod,_Labelable):
-               mod.setLabel(name)
+                self.__setObjectLabel(mod, name)
     def _placeOutputModule(self,name,mod):
         self._place(name, mod, self.__outputmodules)
     def _placeProducer(self,name,mod):
@@ -404,6 +476,8 @@ class Process(object):
         self._place(name, mod, self.__esprefers)
     def _placeESSource(self,name,mod):
         self._place(name, mod, self.__essources)
+    def _placeAlias(self,name,mod):
+        self._place(name, mod, self.__aliases)
     def _placePSet(self,name,mod):
         self._place(name, mod, self.__psets)
     def _placeVPSet(self,name,mod):
@@ -439,7 +513,6 @@ class Process(object):
         self.__dict__['_Process__InExtendCall'] = True
 
         seqs = dict()
-        labelled = dict()
         for name in dir(other):
             #'from XX import *' ignores these, and so should we.
             if name.startswith('_'):
@@ -451,12 +524,8 @@ class Process(object):
                 seqs[name]=item
             elif isinstance(item,_Labelable):
                 self.__setattr__(name,item)
-                labelled[name]=item
-                try:
-                    item.label_()
-                except:
+                if not item.hasLabel_() :
                     item.setLabel(name)
-                continue
             elif isinstance(item,Schedule):
                 self.__setattr__(name,item)
             elif isinstance(item,_Unlabelable):
@@ -472,7 +541,7 @@ class Process(object):
             else:
                 newSeq = self._cloneToObjectDict[id(seq)]
                 self.__dict__[name]=newSeq
-                newSeq.setLabel(name)
+                self.__setObjectLabel(newSeq, name)
                 #now put in proper bucket
                 newSeq._place(name,self)
         self.__dict__['_Process__InExtendCall'] = False
@@ -527,6 +596,9 @@ class Process(object):
                                   options)
         config+=self._dumpConfigUnnamedList(self.services_().iteritems(),
                                   'service',
+                                  options)
+        config+=self._dumpConfigNamedList(self.aliases_().iteritems(),
+                                  'alias',
                                   options)
         config+=self._dumpConfigOptionallyNamedList(
             self.es_producers_().iteritems(),
@@ -631,6 +703,7 @@ class Process(object):
         result+=self._dumpPythonList(self.es_producers_(), options)
         result+=self._dumpPythonList(self.es_sources_(), options)
         result+=self._dumpPython(self.es_prefers_(), options)
+        result+=self._dumpPythonList(self.aliases_(), options)
         result+=self._dumpPythonList(self.psets, options)
         result+=self._dumpPythonList(self.vpsets, options)
         if self.schedule:
@@ -713,7 +786,7 @@ class Process(object):
             self.endpaths_()[endpathname].insertInto(processPSet, endpathname, self.__dict__)
         processPSet.addVString(False, "@filters_on_endpaths", endpathValidator.filtersOnEndpaths)
 
-    def prune(self):
+    def prune(self,verbose=False):
         """ Remove clutter from the process which we think is unnecessary:
         tracked PSets, VPSets and unused modules and sequences. If a Schedule has been set, then Paths and EndPaths
         not in the schedule will also be removed, along with an modules and sequences used only by
@@ -729,23 +802,24 @@ class Process(object):
         for x in self.endpaths.itervalues():
             x.resolve(self.__dict__)
         usedModules = set()
+        unneededPaths = set()
         if self.schedule_():
             usedModules=set(self.schedule_().moduleNames())
             #get rid of unused paths
             schedNames = set(( x.label_() for x in self.schedule_()))
             names = set(self.paths)
             names.update(set(self.endpaths))
-            junk = names - schedNames
-            for n in junk:
+            unneededPaths = names - schedNames
+            for n in unneededPaths:
                 delattr(self,n)
         else:
             pths = list(self.paths.itervalues())
             pths.extend(self.endpaths.itervalues())
             temp = Schedule(*pths)
             usedModules=set(temp.moduleNames())
-        self._pruneModules(self.producers_(), usedModules)
-        self._pruneModules(self.filters_(), usedModules)
-        self._pruneModules(self.analyzers_(), usedModules)
+        unneededModules = self._pruneModules(self.producers_(), usedModules)
+        unneededModules.update(self._pruneModules(self.filters_(), usedModules))
+        unneededModules.update(self._pruneModules(self.analyzers_(), usedModules))
         #remove sequences that do not appear in remaining paths and endpaths
         seqs = list()
         sv = SequenceVisitor(seqs)
@@ -755,14 +829,22 @@ class Process(object):
             p.visit(sv)
         keepSeqSet = set(( s for s in seqs if s.hasLabel_()))
         availableSeqs = set(self.sequences.itervalues())
-        for s in availableSeqs-keepSeqSet:
+        unneededSeqs = availableSeqs-keepSeqSet
+        unneededSeqLabels = []
+        for s in unneededSeqs:
+            unneededSeqLabels.append(s.label_())
             delattr(self,s.label_())
-                
+        if verbose:
+            print "prune removed the following:"
+            print "  modules:"+",".join(unneededModules)
+            print "  sequences:"+",".join(unneededSeqLabels)
+            print "  paths/endpaths:"+",".join(unneededPaths)
     def _pruneModules(self, d, scheduledNames):
         moduleNames = set(d.keys())
         junk = moduleNames - scheduledNames
         for name in junk:
             delattr(self, name)
+        return junk
 
     def fillProcessDesc(self, processPSet):
         """Used by the framework to convert python to C++ objects"""
@@ -789,6 +871,7 @@ class Process(object):
         self._insertManyInto(processPSet, "@all_esmodules", self.es_producers_(), True)
         self._insertManyInto(processPSet, "@all_essources", self.es_sources_(), True)
         self._insertManyInto(processPSet, "@all_esprefers", self.es_prefers_(), True)
+        self._insertManyInto(processPSet, "@all_aliases", self.aliases_(), True)
         self._insertPaths(processPSet)
         #handle services differently
         services = []
@@ -926,6 +1009,8 @@ class SubProcess(_ConfigureComponent,_Unlabelable):
 
 if __name__=="__main__":
     import unittest
+    import copy
+    
     class TestMakePSet(object):
         """Has same interface as the C++ object which creates PSets
         """
@@ -1054,6 +1139,9 @@ if __name__=="__main__":
             p.add_(ESSource("ConfigDB"))
             self.assert_('ConfigDB' in p.es_sources_())
 
+            p.aliasfoo1 = EDAlias(foo1 = VPSet(PSet(type = string("Foo1"))))
+            self.assert_('aliasfoo1' in p.aliases_())
+
         def testProcessExtend(self):
             class FromArg(object):
                 def __init__(self,*arg,**args):
@@ -1061,6 +1149,8 @@ if __name__=="__main__":
                         self.__dict__[name]=args[name]
 
             a=EDAnalyzer("MyAnalyzer")
+            t=EDAnalyzer("MyAnalyzer")
+            t.setLabel("foo")
             s1 = Sequence(a)
             s2 = Sequence(s1)
             s3 = Sequence(s2)
@@ -1076,10 +1166,51 @@ if __name__=="__main__":
             p = Process("Test")
             p.extend(d)
             self.assertEqual(p.a.type_(),"MyAnalyzer")
+            self.assertEqual(p.a.label_(),"a")
             self.assertRaises(AttributeError,getattr,p,'b')
             self.assertEqual(p.Full.type_(),"Full")
             self.assertEqual(str(p.c),'a')
             self.assertEqual(str(p.d),'a')
+
+            z1 = FromArg(
+                    a=a,
+                    b=Service("Full"),
+                    c=Path(a),
+                    d=s2,
+                    e=s1,
+                    f=s3,
+                    s4=s3,
+                    g=Sequence(s1+s2+s3)
+                 )
+            
+            p1 = Process("Test")
+            #p1.extend(z1)
+            self.assertRaises(ValueError, p1.extend, z1)
+
+            z2 = FromArg(
+                    a=a,
+                    b=Service("Full"),
+                    c=Path(a),
+                    d=s2,
+                    e=s1,
+                    f=s3,
+                    aaa=copy.deepcopy(a),
+                    s4=copy.deepcopy(s3),
+                    g=Sequence(s1+s2+s3),
+                    t=t
+                )
+            p2 = Process("Test")
+            p2.extend(z2)
+            #self.assertRaises(ValueError, p2.extend, z2)
+            self.assertEqual(p2.s4.label_(),"s4")
+            #p2.s4.setLabel("foo")
+            self.assertRaises(ValueError, p2.s4.setLabel, "foo")
+            p2.s4.setLabel("s4")
+            p2.s4.setLabel(None)
+            p2.s4.setLabel("foo")
+            p2._Process__setObjectLabel(p2.s4, "foo")
+            p2._Process__setObjectLabel(p2.s4, None)
+            p2._Process__setObjectLabel(p2.s4, "bar")
 
         def testProcessDumpPython(self):
             p = Process("test")
@@ -1205,6 +1336,16 @@ process.schedule = cms.Schedule(*[ process.p2, process.p ])
             notInProcess = EDAnalyzer('NotInProcess')
             p2 = Path(p.c+p.s*notInProcess)
             self.assertRaises(RuntimeError, p._validateSequence, p2, 'p2')
+
+        def testSequence2(self):
+            p = Process('test')
+            p.a = EDAnalyzer("MyAnalyzer")
+            p.b = EDAnalyzer("YourAnalyzer")
+            p.c = EDAnalyzer("OurAnalyzer")
+            testseq = Sequence(p.a*p.b)
+            p.s = testseq
+            #p.y = testseq
+            self.assertRaises(ValueError, p.__setattr__, "y", testseq) 
 
         def testPath(self):
             p = Process("test")
@@ -1498,6 +1639,10 @@ process.subProcess = cms.SubProcess( process = childProcess, SelectEvents = cms.
             keys = pths.keys()
             self.assertEqual(pths[keys[0]],p.path1)
             self.assertEqual(pths[keys[1]],p.path2)
+            p.pset1 = PSet(parA = string("pset1"))
+            p.pset2 = untracked.PSet(parA = string("pset2"))
+            p.vpset1 = VPSet()
+            p.vpset2 = untracked.VPSet()
             p.prune()
             self.assert_(hasattr(p, 'a'))
             self.assert_(hasattr(p, 'b'))
@@ -1506,6 +1651,10 @@ process.subProcess = cms.SubProcess( process = childProcess, SelectEvents = cms.
             self.assert_(not hasattr(p, 's'))
             self.assert_(hasattr(p, 'path1'))
             self.assert_(hasattr(p, 'path2'))
+            self.assert_(not hasattr(p, 'pset1'))
+            self.assert_(hasattr(p, 'pset2'))
+            self.assert_(not hasattr(p, 'vpset1'))
+            self.assert_(not hasattr(p, 'vpset2'))
 
             p = Process("test")
             p.a = EDAnalyzer("MyAnalyzer")

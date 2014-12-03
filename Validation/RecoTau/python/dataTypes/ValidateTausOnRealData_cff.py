@@ -62,10 +62,10 @@ produceDenominatorRealData = cms.Sequence(
       CleanedPFJets
       )
 
-produceDenominator = produceDenominatorRealData
+produceDenominator = cms.Sequence(produceDenominatorRealData)
 
 runTauValidationBatchMode = cms.Sequence(
-      produceDenominator
+      produceDenominatorRealData
       +TauValNumeratorAndDenominatorRealData
       )
 

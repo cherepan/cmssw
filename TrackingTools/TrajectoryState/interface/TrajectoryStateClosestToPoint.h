@@ -6,8 +6,6 @@
 #include "TrackingTools/TrajectoryParametrization/interface/PerigeeTrajectoryParameters.h"
 #include "TrackingTools/TrajectoryParametrization/interface/PerigeeTrajectoryError.h"
 #include "TrackingTools/TrajectoryState/interface/PerigeeConversions.h"
-#include "TrackingTools/TrajectoryParametrization/interface/TrajectoryStateExceptions.h"
-#include <vector>
 
 /**
  * Trajectory state defined at a given point on the helix, which is 
@@ -33,19 +31,24 @@ public:
    * parameters to a FreeTrajectoryState. For the case where
    * no error is provided.
    */
-
   TrajectoryStateClosestToPoint(const PerigeeTrajectoryParameters& perigeeParameters, double pt,
-				const GlobalPoint& referencePoint, const MagneticField* field);
+				const GlobalPoint& referencePoint, const MagneticField* field):
+    theField(field), theRefPoint(referencePoint), 
+    theParameters(perigeeParameters), thePt( pt ), 
+    valid(true),  theFTSavailable(false), errorIsAvailable(false)
+  {}
 
   /**
    * Public constructor, which is used to convert perigee 
    * parameters to a FreeTrajectoryState. For the case where
    * an error is provided.
    */
-
   TrajectoryStateClosestToPoint(const PerigeeTrajectoryParameters& perigeeParameters, double pt,
-    const PerigeeTrajectoryError& perigeeError, const GlobalPoint& referencePoint,
-    const MagneticField* field);
+				const PerigeeTrajectoryError& perigeeError, const GlobalPoint& referencePoint,
+				const MagneticField* field):
+    theField(field),  theRefPoint(referencePoint),
+    theParameters(perigeeParameters), thePt( pt ), thePerigeeError(perigeeError),
+    valid(true), theFTSavailable(false), errorIsAvailable(true){}
 
 
   /**
@@ -53,10 +56,7 @@ public:
    * It is thus the point with respect to which the impact parameters
    * are defined.
    */ 
-
   const GlobalPoint & referencePoint() const {
-    if(!isValid()) throw TrajectoryStateException(
-	"TrajectoryStateClosestToPoint is invalid and cannot return any parameters");
     return theRefPoint;
   }
 
@@ -65,20 +65,14 @@ public:
    * returns the perigee parameters at the p.c.a. to the reference 
    *  point.
    */
-
   const PerigeeTrajectoryParameters & perigeeParameters() const {
-    if(!isValid()) throw TrajectoryStateException(
-	"TrajectoryStateClosestToPoint is invalid and cannot return any parameters");
-    return theParameters;
+     return theParameters;
   }
 
   /**
    * returns the transverse momentum magnitude
    */
-
   double pt() const {
-    if(!isValid()) throw TrajectoryStateException(
-	"TrajectoryStateClosestToPoint is invalid and cannot return any parameters");
     return thePt;
   }
 
@@ -86,12 +80,7 @@ public:
    * returns the error of the perigee parameters if it is 
    * available
    */
-
   const PerigeeTrajectoryError & perigeeError() const {
-    if(!isValid()) throw TrajectoryStateException(
-	"TrajectoryStateClosestToPoint is invalid and cannot return any parameters");
-    if (!errorIsAvailable) throw TrajectoryStateException(
-      "TrajectoryStateClosestToPoint: attempt to access errors when none available");
     return thePerigeeError;
   }
 
@@ -99,31 +88,22 @@ public:
    * returns the state defined at the point of closest approach to the
    * reference point.
    */
-
   GlobalPoint position() const {
-    if(!isValid()) throw TrajectoryStateException(
-	"TrajectoryStateClosestToPoint is invalid and cannot return any parameters");
-    return perigeeConversions.positionFromPerigee(theParameters, theRefPoint);
+     return PerigeeConversions::positionFromPerigee(theParameters, theRefPoint);
   }
 
 
   GlobalVector momentum() const {
-    if(!isValid()) throw TrajectoryStateException(
-	"TrajectoryStateClosestToPoint is invalid and cannot return any parameters");
-    return perigeeConversions.momentumFromPerigee(theParameters, thePt, theRefPoint);
+    return PerigeeConversions::momentumFromPerigee(theParameters, thePt, theRefPoint);
   }
 
 
   TrackCharge charge() const {
-    if(!isValid()) throw TrajectoryStateException(
-	"TrajectoryStateClosestToPoint is invalid and cannot return any parameters");
     return theParameters.charge();
   }
 
 
   const FreeTrajectoryState & theState() const {
-    if(!isValid()) throw TrajectoryStateException(
-	"TrajectoryStateClosestToPoint is invalid and cannot return any parameters");
     if (!theFTSavailable) calculateFTS();
     return theFTS;
   }
@@ -133,10 +113,7 @@ public:
    * tells whether the error of the perigee parameters 
    * is available.
    */
-
   bool hasError() const {
-    if(!isValid()) throw TrajectoryStateException(
-	"TrajectoryStateClosestToPoint is invalid and cannot return any parameters");
     return errorIsAvailable;
   }
 
@@ -148,10 +125,8 @@ public:
   }
 
 
-private:
 
   friend class TrajectoryStateClosestToPointBuilder;
-  friend class PerigeeConversions;
 
   /**
    * Use the appropriate TrajectoryStateClosestToPointBuilder to
@@ -162,18 +137,19 @@ private:
 
   void calculateFTS() const;
 
-  bool valid;
+private:
+
   const MagneticField* theField;
 
   mutable FTS theFTS;
-  mutable bool theFTSavailable;
   
   GlobalPoint theRefPoint;
   PerigeeTrajectoryParameters theParameters;
   double thePt;
   PerigeeTrajectoryError thePerigeeError;
+  bool valid;
+  mutable bool theFTSavailable;
   bool errorIsAvailable;
-  PerigeeConversions perigeeConversions;
-  
+ 
 };
 #endif

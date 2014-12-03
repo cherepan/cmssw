@@ -7,6 +7,7 @@
 #include "DataFormats/Common/interface/Handle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 #include "SimG4Core/SensitiveDetector/interface/AttachSD.h"
 #include "SimG4Core/SensitiveDetector/interface/SensitiveDetector.h"
@@ -62,7 +63,7 @@ public:
     void terminateRun();
     void abortRun(bool softAbort=false);
     const G4Run * currentRun() const { return m_currentRun; }
-    void produce(edm::Event& inpevt, const edm::EventSetup & es);
+    void produce(edm::Event& inpevt, const edm::EventSetup& es);
     void abortEvent();
     const Generator * generator() const { return m_generator; }
     const G4Event * currentEvent() const { return m_currentEvent; }
@@ -137,7 +138,9 @@ private:
     edm::ESWatcher<IdealGeometryRecord> idealGeomRcdWatcher_;
     edm::ESWatcher<IdealMagneticFieldRecord> idealMagRcdWatcher_;
 
+    edm::InputTag m_theLHCTlinkTag;
 
+    std::string m_WriteFile;
 };
 
 #endif

@@ -8,19 +8,17 @@
 #include <map>
 #include <vector>
 
-//#include <boost/cstdint.hpp>
-
 class CaloGeometry;
 class RandomEngine;
-// class HcalTPGCoder;
 class HcalSimParameterMap;
 class HcalDbService;
 class HcalRespCorrs;
+class HcalTopology;
 
 namespace edm { 
-  class ParameterSet;
   class Event;
   class EventSetup;
+  class ParameterSet;
 }
 
 class HcalRecHitsMaker
@@ -29,21 +27,21 @@ class HcalRecHitsMaker
   HcalRecHitsMaker(edm::ParameterSet const & p,int,const RandomEngine* random);
   ~HcalRecHitsMaker();
 
-  void loadHcalRecHits(edm::Event &iEvent, HBHERecHitCollection& hbheHits, HBHEDigiCollection& hbheDigis);
-  void loadHcalRecHits(edm::Event &iEvent, HORecHitCollection &ho, HODigiCollection & hoDigis);
-  void loadHcalRecHits(edm::Event &iEvent, HFRecHitCollection &hfHits, HFDigiCollection& hfDigis);
+  void loadHcalRecHits(edm::Event &iEvent, const HcalTopology&, HBHERecHitCollection& hbheHits, HBHEDigiCollection& hbheDigis);
+  void loadHcalRecHits(edm::Event &iEvent, const HcalTopology&, HORecHitCollection &ho, HODigiCollection & hoDigis);
+  void loadHcalRecHits(edm::Event &iEvent, const HcalTopology&, HFRecHitCollection &hfHits, HFDigiCollection& hfDigis);
   void init(const edm::EventSetup &es,bool dodigis,bool domiscalib);
 
  private:
   unsigned createVectorsOfCells(const edm::EventSetup &es);
-  unsigned createVectorOfSubdetectorCells( const CaloGeometry&,int subdetn,std::vector<int>&);
+  unsigned createVectorOfSubdetectorCells( const CaloGeometry&,const HcalTopology&, int subdetn,std::vector<int>&);
   unsigned noisifySubdet(std::vector<float >& theMap, std::vector<int>& theHits,const std::vector<int>& thecells, unsigned ncells, double  hcalHotFraction_, const GaussianTail *,double sigma,double threshold,double correctionfactor); 
   // Not currently used. Will probably be removed soon.
   //  void noisifySignal(std::map<uint32_t,std::pair<float,bool> >& theMap); 
   void noisify();
   double noiseInfCfromDB(const HcalDbService * conditions,const HcalDetId & detId);
   void Fill(int id,float energy, std::vector<int> & myHits,float noise,float correctionfactor);
-  void loadPCaloHits(const edm::Event & iEvent);
+  void loadPCaloHits(const edm::Event & iEvent, const HcalTopology&);
   
   void clean();
   void cleanSubDet(std::vector<float>& hits,std::vector<int>& cells);
@@ -62,10 +60,14 @@ class HcalRecHitsMaker
   //  edm::ESHandle<CaloTowerConstituentsMap> calotowerMap_;
   edm::InputTag inputCol_;
   static bool initialized_;
+  static bool initializedHB_;
+  static bool initializedHE_;
+  static bool initializedHO_;
+  static bool initializedHF_;
   bool doDigis_;
   bool doMiscalib_;
   bool doSaturation_;
-  bool noiseFromDb_;
+  std::vector<bool> noiseFromDb_;
   double refactor_;
   double refactor_mean_;
   std::string hcalfileinpath_;

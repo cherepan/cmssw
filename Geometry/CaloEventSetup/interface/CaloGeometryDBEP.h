@@ -10,6 +10,7 @@
 #include "FWCore/Framework/interface/ESProducer.h"
 
 #include "FWCore/Framework/interface/ESHandle.h"
+
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
 #include "CondFormats/AlignmentRecord/interface/GlobalPositionRcd.h"
 #include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
@@ -48,7 +49,9 @@ class CaloGeometryDBEP : public edm::ESProducer
       typedef CaloSubdetectorGeometry::IVec   IVec       ;
       
       CaloGeometryDBEP<T,U>( const edm::ParameterSet& ps ) :
-	 m_applyAlignment ( ps.getParameter<bool>("applyAlignment") )
+	  m_applyAlignment ( ps.getParameter<bool>("applyAlignment") ),
+	  m_pSet( ps )
+
       {
 	 setWhatProduced( this,
 			  &CaloGeometryDBEP<T,U>::produceAligned,
@@ -56,6 +59,7 @@ class CaloGeometryDBEP : public edm::ESProducer
       }
 
       virtual ~CaloGeometryDBEP<T,U>() {}
+    
       PtrType produceAligned( const typename T::AlignedRecord& iRecord ) 
       {
 	 const Alignments* alignPtr  ( 0 ) ;
@@ -79,6 +83,7 @@ class CaloGeometryDBEP : public edm::ESProducer
 	 TrVec  tvec ;
 	 DimVec dvec ;
 	 IVec   ivec ;
+	 std::vector<uint32_t> dins;
 
 	 if( U::writeFlag() )
 	 {
@@ -87,13 +92,12 @@ class CaloGeometryDBEP : public edm::ESProducer
 
 	    const CaloSubdetectorGeometry* pGptr ( pG.product() ) ;
 
-	    pGptr->getSummary( tvec, ivec, dvec ) ;
+	    pGptr->getSummary( tvec, ivec, dvec, dins ) ;
 
 	    U::write( tvec, dvec, ivec, T::dbString() ) ;
 	 }
 	 else
 	 {
-           //std::cout<<"Getting Geometry from DB for "<<T::producerTag()<<std::endl ;
 	    edm::ESHandle<PCaloGeometry> pG ;
 	    iRecord.template getRecord<typename T::PGeometryRecord >().get( pG ) ; 
 
@@ -203,10 +207,11 @@ class CaloGeometryDBEP : public edm::ESProducer
 
 	 return ptr ; 
       }
+    
+private:
 
-   private:
-
-      bool        m_applyAlignment ;
+    bool        m_applyAlignment ;
+    const edm::ParameterSet m_pSet;
 };
 
 #endif

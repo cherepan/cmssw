@@ -19,31 +19,32 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/InputTag.h"
-#include "FWCore/Framework/interface/Selector.h"
 
 #include "SimDataFormats/CrossingFrame/interface/CrossingFrame.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
 #include "SimDataFormats/Track/interface/SimTrackContainer.h"
 #include "SimDataFormats/Vertex/interface/SimVertexContainer.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupMixingContent.h"
 
 #include "DataFormats/Provenance/interface/ProductID.h"
 #include "DataFormats/Common/interface/Handle.h"
-
-#include "MixingWorkerBase.h"
-
 #include <vector>
 #include <string>
 
 class CrossingFramePlaybackInfoExtended;
-class MixingWorkerBase;
-namespace edm
-{
-  class MixingModule : public BMixingModule
-    {
+class DigiAccumulatorMixMod;
+class PileUpEventPrincipal;
+
+namespace edm {
+  class MixingWorkerBase;
+
+  class MixingModule : public BMixingModule {
     public:
+      typedef std::vector<DigiAccumulatorMixMod*> Accumulators;
 
       /** standard constructor*/
       explicit MixingModule(const edm::ParameterSet& ps);
@@ -52,7 +53,23 @@ namespace edm
       virtual ~MixingModule();
 
       virtual void beginJob() {}
-      
+
+      virtual void beginRun(Run const& r1, EventSetup const& c) override;
+
+      virtual void endRun(Run const& r1, EventSetup const& c) override;
+
+      virtual void beginLuminosityBlock(LuminosityBlock const& l1, EventSetup const& c) override;
+
+      virtual void endLuminosityBlock(LuminosityBlock const& l1, EventSetup const& c) override;
+
+      void initializeEvent(Event const& event, EventSetup const& setup);
+
+      void accumulateEvent(Event const& event, EventSetup const& setup);
+
+      void accumulateEvent(PileUpEventPrincipal const& event, EventSetup const& setup);
+
+      void finalizeEvent(Event& event, EventSetup const& setup);
+
       virtual void reload(const edm::EventSetup &);
  
     private:
@@ -62,20 +79,24 @@ namespace edm
       virtual void checkSignal(const edm::Event &e);
       virtual void addSignals(const edm::Event &e, const edm::EventSetup& es); 
       virtual void doPileUp(edm::Event &e, const edm::EventSetup& es);
-      //      void pileAllWorkers(EventPrincipal const& ep, int bcr, int& id, int& offset);
-      void pileAllWorkers(EventPrincipal const& ep, int bcr, int id, int& offset);
-      std::string labelPlayback_;
+      void pileAllWorkers(EventPrincipal const& ep, int bcr, int id, int& offset,
+			  const edm::EventSetup& setup);
+      void createDigiAccumulators( const edm::ParameterSet& mixingPSet ) ;
+
+      InputTag inputTagPlayback_;
       bool mixProdStep2_;
       bool mixProdStep1_;
       CrossingFramePlaybackInfoExtended *playbackInfo_;
-
-      Selector * sel_;
 
       std::vector<MixingWorkerBase *> workers_;
       std::vector<MixingWorkerBase *> workersObjects_;
       std::vector<std::string> wantedBranches_;
       bool useCurrentProcessOnly_;
-    };
+
+      // Digi-producing algorithms
+      Accumulators digiAccumulators_ ;
+
+  };
 }//edm
 
 #endif

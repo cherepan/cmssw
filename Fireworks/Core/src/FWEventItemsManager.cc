@@ -8,7 +8,7 @@
 //
 // Original Author:
 //         Created:  Fri Jan  4 10:38:18 EST 2008
-// $Id: FWEventItemsManager.cc,v 1.45 2011/08/16 01:29:42 amraktad Exp $
+// $Id: FWEventItemsManager.cc,v 1.49 2013/01/25 19:44:03 wmtan Exp $
 //
 
 // system include files
@@ -26,6 +26,7 @@
 #include "Fireworks/Core/interface/FWItemAccessorFactory.h"
 #include "Fireworks/Core/interface/FWProxyBuilderConfiguration.h"
 #include "Fireworks/Core/interface/fwLog.h"
+#include <cassert>
 
 //
 // constants, enums and typedefs
@@ -164,10 +165,10 @@ FWEventItemsManager::addTo(FWConfiguration& iTo) const
    {
       if(!*it) continue;
       FWConfiguration conf(6);
-      Reflex::Type dataType( Reflex::Type::ByTypeInfo(*((*it)->type()->GetTypeInfo())));
-      assert(dataType != Reflex::Type() );
+      edm::TypeWithDict dataType((*((*it)->type()->GetTypeInfo())));
+      assert(dataType != edm::TypeWithDict() );
 
-      conf.addKeyValue(kType,FWConfiguration(dataType.Name(Reflex::SCOPED)));
+      conf.addKeyValue(kType,FWConfiguration(dataType.name()));
       conf.addKeyValue(kModuleLabel,FWConfiguration((*it)->moduleLabel()));
       conf.addKeyValue(kProductInstanceLabel, FWConfiguration((*it)->productInstanceLabel()));
       conf.addKeyValue(kProcessName, FWConfiguration((*it)->processName()));

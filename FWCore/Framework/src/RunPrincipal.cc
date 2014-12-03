@@ -4,7 +4,7 @@
 #include "DataFormats/Provenance/interface/ProcessHistoryRegistry.h"
 #include "DataFormats/Provenance/interface/ProductRegistry.h"
 #include "FWCore/Framework/interface/DelayedReader.h"
-#include "FWCore/Framework/interface/Group.h"
+#include "FWCore/Framework/interface/ProductHolder.h"
 #include "FWCore/Utilities/interface/EDMException.h"
 
 namespace edm {
@@ -13,17 +13,18 @@ namespace edm {
     boost::shared_ptr<ProductRegistry const> reg,
     ProcessConfiguration const& pc,
     HistoryAppender* historyAppender) :
-    Base(reg, pc, InRun, historyAppender),
-      aux_(aux) {
+    Base(reg, reg->productLookup(InRun), pc, InRun, historyAppender),
+      aux_(aux), complete_(false) {
   }
 
   void
   RunPrincipal::fillRunPrincipal(DelayedReader* reader) {
+    complete_ = false;
 
     fillPrincipal(aux_->processHistoryID(), reader);
 
-    for (const_iterator i = this->begin(), iEnd = this->end(); i != iEnd; ++i) {
-      (*i)->setProcessHistoryID(processHistoryID());
+    for(auto const& prod : *this) {
+      prod->setProcessHistoryID(processHistoryID());
     }
   }
 
@@ -32,42 +33,43 @@ namespace edm {
         ConstBranchDescription const& bd,
         WrapperOwningHolder const& edp) {
 
-    assert(bd.produced());
+    // Assert commented out for LHESource.
+    // assert(bd.produced());
     if(!edp.isValid()) {
       throw edm::Exception(edm::errors::InsertFailure,"Null Pointer")
         << "put: Cannot put because auto_ptr to product is null."
         << "\n";
     }
-    Group *g = getExistingGroup(bd.branchID());
-    assert(g);
-    // Group assumes ownership
-    putOrMerge(edp, g);
+    ProductHolderBase* phb = getExistingProduct(bd.branchID());
+    assert(phb);
+    // ProductHolder assumes ownership
+    putOrMerge(edp, phb);
   }
 
   void
   RunPrincipal::readImmediate() const {
-    for (Principal::const_iterator i = begin(), iEnd = end(); i != iEnd; ++i) {
-      Group const& g = **i;
-      if(!g.branchDescription().produced()) {
-        if(!g.productUnavailable()) {
-          resolveProductImmediate(g);
+    for(auto const& prod : *this) {
+      ProductHolderBase const& phb = *prod;
+      if(phb.singleProduct() && !phb.branchDescription().produced()) {
+        if(!phb.productUnavailable()) {
+          resolveProductImmediate(phb);
         }
       }
     }
   }
 
   void
-  RunPrincipal::resolveProductImmediate(Group const& g) const {
-    if(g.branchDescription().produced()) return; // nothing to do.
+  RunPrincipal::resolveProductImmediate(ProductHolderBase const& phb) const {
+    if(phb.branchDescription().produced()) return; // nothing to do.
     if(!reader()) return; // nothing to do.
 
     // must attempt to load from persistent store
-    BranchKey const bk = BranchKey(g.branchDescription());
-    WrapperOwningHolder edp(reader()->getProduct(bk, g.productData().getInterface(), this));
+    BranchKey const bk = BranchKey(phb.branchDescription());
+    WrapperOwningHolder edp(reader()->getProduct(bk, phb.productData().getInterface(), this));
 
-    // Now fix up the Group
+    // Now fix up the ProductHolder
     if(edp.isValid()) {
-      putOrMerge(edp, &g);
+      putOrMerge(edp, &phb);
     }
   }
 }

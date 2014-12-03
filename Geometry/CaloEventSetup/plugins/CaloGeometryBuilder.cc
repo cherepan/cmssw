@@ -13,7 +13,7 @@
 //
 // Original Author:  Jeremiah Mans
 //         Created:  Mon Oct  3 11:35:27 CDT 2005
-// $Id: CaloGeometryBuilder.cc,v 1.14 2009/01/21 21:27:03 heltsley Exp $
+// $Id: CaloGeometryBuilder.cc,v 1.18 2013/04/26 09:38:32 yana Exp $
 //
 //
 
@@ -54,8 +54,6 @@ CaloGeometryBuilder::CaloGeometryBuilder( const edm::ParameterSet& iConfig )
 CaloGeometryBuilder::ReturnType
 CaloGeometryBuilder::produceAligned( const CaloGeometryRecord& iRecord )
 {
-//   std::cout<<"*****************************entering geometry builder***********"<<std::endl;
-
    edm::ESHandle< CaloSubdetectorGeometry > pG;
 
    ReturnType pCalo ( new CaloGeometry() ) ;
@@ -92,7 +90,6 @@ CaloGeometryBuilder::produceAligned( const CaloGeometryRecord& iRecord )
       // look for Ecal Barrel
       else if ( (*ite) == EcalBarrelGeometry::producerTag() ) 
       {
-//	 std::cout<< "Building EcalBarrel reconstruction geometry"<<std::endl;
 	 edm::LogInfo("CaloGeometryBuilder") << "Building EcalBarrel reconstruction geometry";
 	 iRecord.getRecord<EcalBarrelGeometryRecord>().get( EcalBarrelGeometry::producerTag(), pG ); 
 	 pCalo->setSubdetGeometry(DetId::Ecal,EcalBarrel,pG.product());

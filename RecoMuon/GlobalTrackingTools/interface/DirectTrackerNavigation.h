@@ -7,8 +7,8 @@
  *  Free Trajectory State by checking the eta range
  *
  *
- *  $Date: 2007/08/20 20:53:17 $
- *  $Revision: 1.1 $
+ *  $Date: 2013/01/08 12:24:22 $
+ *  $Revision: 1.3 $
  *
  *  \author Chang Liu  -  Purdue University
  */
@@ -33,13 +33,7 @@ class DirectTrackerNavigation {
     DirectTrackerNavigation(const edm::ESHandle<GeometricSearchTracker>&, 
                             bool outOnly = true);
 
-    /// destructor 
-    virtual ~DirectTrackerNavigation() {}
 
-    /// clone
-    DirectTrackerNavigation* clone() const {
-      return new DirectTrackerNavigation(*this);
-    }
 
     /// find compatible layers for a given trajectory state
     std::vector<const DetLayer*> 

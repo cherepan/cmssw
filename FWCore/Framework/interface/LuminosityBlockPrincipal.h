@@ -35,8 +35,7 @@ namespace edm {
         boost::shared_ptr<LuminosityBlockAuxiliary> aux,
         boost::shared_ptr<ProductRegistry const> reg,
         ProcessConfiguration const& pc,
-        boost::shared_ptr<RunPrincipal> rp,
-        HistoryAppender* historyAppender = 0);
+        HistoryAppender* historyAppender);
 
     ~LuminosityBlockPrincipal() {}
 
@@ -48,6 +47,10 @@ namespace edm {
 
     RunPrincipal& runPrincipal() {
       return *runPrincipal_;
+    }
+
+    void setRunPrincipal(boost::shared_ptr<RunPrincipal> rp) {
+      runPrincipal_ = rp;
     }
 
     LuminosityBlockID id() const {
@@ -90,14 +93,23 @@ namespace edm {
 
     void readImmediate() const;
 
-  private:
-    virtual bool unscheduledFill(std::string const&) const {return false;}
+    void setComplete() {
+      complete_ = true;
+    }
 
-    void resolveProductImmediate(Group const& g) const;
+  private:
+
+    virtual bool isComplete_() const override {return complete_;}
+
+    virtual bool unscheduledFill(std::string const&) const override {return false;}
+
+    void resolveProductImmediate(ProductHolderBase const& phb) const;
 
     boost::shared_ptr<RunPrincipal> runPrincipal_;
 
     boost::shared_ptr<LuminosityBlockAuxiliary> aux_;
+
+    bool complete_;
   };
 }
 #endif

@@ -98,9 +98,9 @@ import sys
 # 4.2.x or 52x configuration
 fileTag = "52x"
 if options.useData :
-	process.GlobalTag.globaltag = cms.string( 'GR_R_52_V7::All' )
+	process.GlobalTag.globaltag = cms.string( 'GR_R_52_V9B::All' )
 else :
-	process.GlobalTag.globaltag = cms.string( 'START52_V8::All' )
+	process.GlobalTag.globaltag = cms.string( 'START52_V11B::All' )
 
 
 # require scraping filter
@@ -445,6 +445,14 @@ process.caFilteredGenJetsNoNu = process.ca8GenJetsNoNu.clone(
 	jetPtMin = cms.double(100.0)
 )
 
+process.caMassDropFilteredGenJetsNoNu = process.caFilteredGenJetsNoNu.clone(
+        src = cms.InputTag('genParticlesForJetsNoNu'),
+	useMassDropTagger = cms.bool(True),
+	muCut = cms.double(0.667),
+	yCut = cms.double(0.08)
+)
+
+
 
 ###############################
 #### CATopTag Setup ###########
@@ -622,6 +630,20 @@ if options.useExtraJetColls:
 			 doJetID = False
 			 )
 
+
+	addJetCollection(process, 
+			 cms.InputTag('caMassDropFilteredPFlow', 'SubJets'),         # Jet collection; must be already in the event when patLayer0 sequence is executed
+			 'CA12MassDropFilteredSubjets', 'PF',
+			 doJTA=True,            # Run Jet-Track association & JetCharge
+			 doBTagging=True,       # Run b-tagging
+			 jetCorrLabel=None,
+			 doType1MET=False,
+			 doL1Cleaning=False,
+			 doL1Counters=False,
+			 genJetCollection = cms.InputTag("ak5GenJetsNoNu"),
+			 doJetID = False
+			 )
+
 	addJetCollection(process, 
 			 cms.InputTag('ak5PrunedPFlow'),
 			 'AK5Pruned', 'PF',
@@ -775,7 +797,18 @@ if options.useExtraJetColls:
 
 
 
-for icorr in [process.patJetCorrFactorsCATopTagPF,
+
+switchJetCollection(process,cms.InputTag('ak5PFJets'),
+		    doJTA        = False,
+		    doBTagging   = False,
+		    jetCorrLabel = inputJetCorrLabel,
+		    doType1MET   = False,
+		    genJetCollection=cms.InputTag("ak5GenJetsNoNu"),
+		    doJetID      = False
+		    )
+
+for icorr in [process.patJetCorrFactors,
+	      process.patJetCorrFactorsCATopTagPF,
               process.patJetCorrFactorsCA8PrunedPF,
               process.patJetCorrFactorsCA8PF ] :
     icorr.rho = cms.InputTag("kt6PFJets", "rho")
@@ -803,6 +836,7 @@ if options.useExtraJetColls:
 
 # Do some configuration of the jet substructure things
 for jetcoll in (process.patJetsPFlow,
+		process.patJets,
                 process.patJetsCA8PF,
                 process.patJetsCA8PrunedPF,
                 process.patJetsCATopTagPF
@@ -1185,6 +1219,19 @@ if options.useExtraJetColls:
 		src = cms.InputTag('ak7FilteredGenJetsNoNu')
 		)
 
+        process.ca8PrunedGenLite = process.ak7TrimmedGenLite.clone(
+                src = cms.InputTag('caPrunedGen')
+                )
+
+        process.ca12FilteredGenLite = process.ak7TrimmedGenLite.clone(
+                src = cms.InputTag('caFilteredGenJetsNoNu')
+                )
+
+        process.ca12MassDropFilteredGenLite = process.ak7TrimmedGenLite.clone(
+                src = cms.InputTag('caMassDropFilteredGenJetsNoNu')
+                )
+
+
 
 	process.ak8Lite = process.ak5Lite.clone(
 		src = cms.InputTag('goodPatJetsAK8PF')
@@ -1221,6 +1268,7 @@ process.patseq = cms.Sequence(
     process.ca8GenJetsNoNu*
     process.ak8GenJetsNoNu*
     process.caFilteredGenJetsNoNu*
+    process.caMassDropFilteredGenJetsNoNu*
     getattr(process,"patPF2PATSequence"+postfix)*
     process.patDefaultSequence*
     process.goodPatJetsPFlow*
@@ -1268,7 +1316,10 @@ if options.useExtraJetColls:
 		process.ak8Lite*
 		process.ak8TrimmedLite*
 		process.ak8FilteredLite*
-		process.ak8PrunedLite
+		process.ak8PrunedLite*
+                process.ca8PrunedGenLite*
+                process.ca12FilteredGenLite*
+                process.ca12MassDropFilteredGenLite
 	)
 	process.patseq *= process.extraJetSeq
 
@@ -1293,6 +1344,9 @@ if options.useData == True :
 	    process.patseq.remove( process.ak7TrimmedGenLite )
 	    process.patseq.remove( process.ak7FilteredGenLite )
 	    process.patseq.remove( process.ak7PrunedGenLite )
+            process.patseq.remove( process.ca8PrunedGenLite )
+            process.patseq.remove( process.ca12FilteredGenLite )
+            process.patseq.remove( process.ca12MassDropFilteredGenLite )
 
 
 if options.writeSimpleInputs :
@@ -1353,6 +1407,7 @@ process.out.outputCommands = [
     'keep *_selectedPat*_*_*',
     'keep *_goodPat*_*_*',
     'drop patJets_selectedPat*_*_*',
+    'keep patJets_selectedPatJetsCA12MassDropFilteredSubjetsPF*_*_*',
     'drop *_selectedPatJets_*_*',    
     'keep *_patMETs*_*_*',
 #    'keep *_offlinePrimaryVertices*_*_*',
@@ -1399,11 +1454,13 @@ process.out.outputCommands = [
     'drop recoGenJets_selectedPatJets*_*_*',
     'keep *_*_rho_*',
     'drop *_*PFlowLoose*_*_*',
-    'keep patElectrons_*PFlowLoose*_*_*',
-    'keep patMuons_*PFlowLoose*_*_*',
-    'keep patTaus_*PFlowLoose*_*_*',
+    'keep patElectrons_selected*PFlowLoose*_*_*',
+    'keep patMuons_selected*PFlowLoose*_*_*',
+    #'keep patTaus_*PFlowLoose*_*_*',
     'keep *_offlineBeamSpot_*_*',
-    'keep *_allConversions_*_*'
+    'drop *_*atTaus_*_*',
+    'keep *_pfType1CorrectedMet_*_*',
+    'keep *_pfType1p2CorrectedMet_*_*'
     #'keep recoTracks_generalTracks_*_*'
     ]
 

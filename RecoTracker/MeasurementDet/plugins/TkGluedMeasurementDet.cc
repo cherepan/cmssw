@@ -110,55 +110,94 @@ TkGluedMeasurementDet::collectRecHits( const TrajectoryStateOnSurface& ts, Colle
 }
 #endif
 
-std::vector<TrajectoryMeasurement> 
-TkGluedMeasurementDet::fastMeasurements( const TrajectoryStateOnSurface& stateOnThisDet, 
-					 const TrajectoryStateOnSurface& startingState, 
-					 const Propagator&, 
-					 const MeasurementEstimator& est) const
-{
-   std::vector<TrajectoryMeasurement> result;
-   if (theMonoDet->isActive() || theStereoDet->isActive()) {
+#include<cstdint>
+#include<cstdio>
+namespace {
+  struct Stat {
+    double totCall=0;
+    double totMono=0;
+    double totStereo=0;
+    double totComb=0;
+    double totMatched=0;
+    double filtMono=0;
+    double filtStereo=0;
+    double filtComb=0;
+    double matchT=0;
+    double matchF=0;
+    double singleF=0;
+    double zeroM=0;
+    double zeroS=0;
 
-      HitCollectorForFastMeasurements collector( &fastGeomDet(), theMatcher, theCPE, stateOnThisDet, est, result);
-      collectRecHits(stateOnThisDet, collector);
-       
-      if ( result.empty()) {
-          //LogDebug("TkStripMeasurementDet") << "No hit found on TkGlued. Testing strips...  ";
-          const BoundPlane &gluedPlane = geomDet().surface();
-          if (  // sorry for the big IF, but I want to exploit short-circuiting of logic
-               stateOnThisDet.hasError() && ( /* do this only if the state has uncertainties, otherwise it will throw 
-                                                 (states without uncertainties are passed to this code from seeding */
-                (theMonoDet->isActive() && 
-                    (theMonoDet->hasAllGoodChannels() || 
-                       testStrips(stateOnThisDet,gluedPlane,*theMonoDet)
-                    )
-                ) /*Mono OK*/ || 
-                (theStereoDet->isActive() && 
-                    (theStereoDet->hasAllGoodChannels() || 
-                       testStrips(stateOnThisDet,gluedPlane,*theStereoDet)
-                    )
-                ) /*Stereo OK*/ 
-               ) /* State has errors */
-              ) {
-              result.push_back( TrajectoryMeasurement( stateOnThisDet, 
-                          InvalidTransientRecHit::build(&fastGeomDet()), 0.F)); 
-          } else {
-              result.push_back( TrajectoryMeasurement(stateOnThisDet, 
-                         InvalidTransientRecHit::build(&fastGeomDet(), TrackingRecHit::inactive), 0.F));
-          }
-      } else {
-          // sort results according to estimator value
-          if ( result.size() > 1) {
-              sort( result.begin(), result.end(), TrajMeasLessEstim());
-          }
-      }
-   } else {
-     //     LogDebug("TkStripMeasurementDet") << " DetID " << geomDet().geographicalId().rawId() << " (glued) fully inactive";
-      result.push_back( TrajectoryMeasurement( stateOnThisDet, 
-               InvalidTransientRecHit::build(&fastGeomDet(), TrackingRecHit::inactive), 
-               0.F));
-   }
-   return result;	
+    void match(uint64_t t) {
+      if(t!=0) ++matchT;
+      totMatched+=t;
+    }
+    void operator()(uint64_t m,uint64_t s, uint64_t fm, uint64_t fs) {
+      ++totCall; 
+      totMono+=m;
+      totStereo+=s;
+      totComb += m*s;
+      filtMono+=fm;
+      filtStereo+=fs;
+      filtComb += fm*fs;
+      if(fm==0) ++zeroM;
+      if(fs==0) ++zeroS;
+      if(fm!=0&&fs!=0) ++matchF;
+      if(fm!=0||fs!=0) ++singleF;
+    }
+    ~Stat() {
+      if ( totCall>0)
+	printf("Matches:%d/%d/%d/%d/%d/%d : %f/%f/%f/%f/%f/%f/%f\n",
+	       int(totCall),int(matchF),int(singleF-matchF),int(matchT),int(zeroM),int(zeroS),
+	       totMono/totCall,totStereo/totCall,totComb/totCall,totMatched/matchT,
+	       filtMono/totCall,filtStereo/totCall,filtComb/matchF);
+    }
+  };
+
+  Stat stat;
+}
+
+
+bool TkGluedMeasurementDet::measurements( const TrajectoryStateOnSurface& stateOnThisDet,
+					  const MeasurementEstimator& est,
+					  TempMeasurements & result) const {
+
+   if unlikely((!theMonoDet->isActive()) && (!theStereoDet->isActive())) {
+       //     LogDebug("TkStripMeasurementDet") << " DetID " << geomDet().geographicalId().rawId() << " (glued) fully inactive";
+       result.add (InvalidTransientRecHit::build(&fastGeomDet(), TrackingRecHit::inactive),0.F);
+       return true;
+     }
+
+   auto oldSize = result.size();
+
+   HitCollectorForFastMeasurements collector( &fastGeomDet(), theMatcher, theCPE, stateOnThisDet, est, result);
+   collectRecHits(stateOnThisDet, collector);
+   
+   
+   if (result.size()>oldSize) return true;
+
+   //LogDebug("TkStripMeasurementDet") << "No hit found on TkGlued. Testing strips...  ";
+   const BoundPlane &gluedPlane = geomDet().surface();
+   if (  // sorry for the big IF, but I want to exploit short-circuiting of logic
+       stateOnThisDet.hasError() && ( /* do this only if the state has uncertainties, otherwise it will throw 
+					 (states without uncertainties are passed to this code from seeding */
+				     (theMonoDet->isActive() && 
+				      (theMonoDet->hasAllGoodChannels() || 
+				       testStrips(stateOnThisDet,gluedPlane,*theMonoDet)
+				       )
+				      ) /*Mono OK*/ || 
+				     (theStereoDet->isActive() && 
+				      (theStereoDet->hasAllGoodChannels() || 
+				       testStrips(stateOnThisDet,gluedPlane,*theStereoDet)
+				       )
+				      ) /*Stereo OK*/ 
+				      ) /* State has errors */
+	 ) {
+     result.add(InvalidTransientRecHit::build(&fastGeomDet(),TrackingRecHit::missing), 0.F);
+     return false;
+   } 
+   result.add(InvalidTransientRecHit::build(&fastGeomDet(), TrackingRecHit::inactive), 0.F);
+   return true;
 
 }
 
@@ -296,14 +335,15 @@ TkGluedMeasurementDet::HitCollectorForRecHits::addProjected(const TransientTrack
     target_.push_back( proj.project( hit, *geomDet_, gdir));
 }
 
-TkGluedMeasurementDet::HitCollectorForFastMeasurements::HitCollectorForFastMeasurements(const GeomDet * geomDet, 
-        const SiStripRecHitMatcher * matcher, const StripClusterParameterEstimator* cpe,
-        const TrajectoryStateOnSurface& stateOnThisDet,
-        const MeasurementEstimator& est,
-        std::vector<TrajectoryMeasurement> & target) :
+TkGluedMeasurementDet::HitCollectorForFastMeasurements::HitCollectorForFastMeasurements
+(const GeomDet * geomDet, 
+ const SiStripRecHitMatcher * matcher, const StripClusterParameterEstimator* cpe,
+ const TrajectoryStateOnSurface& stateOnThisDet,
+ const MeasurementEstimator& est,
+ TempMeasurements & target) :
   geomDet_(geomDet), matcher_(matcher), cpe_(cpe),stateOnThisDet_(stateOnThisDet), est_(est), target_(target),
-    collector_(boost::bind(&HitCollectorForFastMeasurements::add,boost::ref(*this),_1)),
-    hasNewHits_(false)
+  collector_(boost::bind(&HitCollectorForFastMeasurements::add,boost::ref(*this),_1)),
+  hasNewHits_(false)
 {
 }
 
@@ -316,11 +356,8 @@ TkGluedMeasurementDet::HitCollectorForFastMeasurements::add(SiStripMatchedRecHit
   std::pair<bool,double> diffEst = est_.estimate( stateOnThisDet_, *cache);
   if ( diffEst.first) {
     cache->clonePersistentHit(); // clone and take ownership of the persistent 2D hit
-    target_.push_back( 
-		      TrajectoryMeasurement( stateOnThisDet_, 
-					     RecHitPointer(cache.release()), 
-					     diffEst.second)
-		       );
+    target_.add(RecHitPointer(cache.release()), 
+		diffEst.second);
   } else {
     cache->clearPersistentHit(); // drop ownership
   } 
@@ -333,10 +370,10 @@ TkGluedMeasurementDet::HitCollectorForFastMeasurements::addProjected(const Trans
 {
     // here we're ok with some extra casual new's and delete's
     TrackingRecHitProjector<ProjectedRecHit2D> proj;
-    RecHitPointer phit = proj.project( hit, *geomDet_, gdir );
+    RecHitPointer && phit = proj.project( hit, *geomDet_, gdir );
     std::pair<bool,double> diffEst = est_.estimate( stateOnThisDet_, *phit);
     if ( diffEst.first) {
-        target_.push_back( TrajectoryMeasurement( stateOnThisDet_, phit, diffEst.second) );
+      target_.add(phit, diffEst.second);
     }
 
 }

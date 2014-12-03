@@ -15,14 +15,12 @@
 //
 //
 
-#include "FastSimulation/EgammaElectronAlgos/interface/FastPixelHitMatcher.h"
+#include "FastPixelHitMatcher.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "FastSimulation/TrackerSetup/interface/TrackerInteractionGeometry.h"
 #include "FastSimulation/TrackerSetup/interface/TrackerLayer.h"
 #include "FastSimulation/Tracking/interface/TrackerRecHit.h"
 #include "FastSimulation/ParticlePropagator/interface/ParticlePropagator.h"
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
 
 #include "DataFormats/DetId/interface/DetId.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"

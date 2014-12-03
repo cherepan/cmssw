@@ -1,6 +1,6 @@
 //emacs settings:-*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 /*
- * $Id: LaserSorter.cc,v 1.15 2012/02/03 11:11:46 vskarupe Exp $
+ * $Id: LaserSorter.cc,v 1.19 2012/10/09 19:00:18 wdd Exp $
  */
 
 /***************************************************
@@ -98,6 +98,7 @@ LaserSorter::LaserSorter(const edm::ParameterSet& pset)
     iNoEcalDataMess_(0),
     maxNoEcalDataMess_(pset.getParameter<int>("maxNoEcalDataMess")),
     lumiBlockSpan_(pset.getParameter<int>("lumiBlockSpan")),
+    fedRawDataCollectionTag_(pset.getParameter<edm::InputTag>("fedRawDataCollectionTag")),
     stats_(stats_init)
 {
 
@@ -198,7 +199,7 @@ LaserSorter::analyze(const edm::Event& event, const edm::EventSetup& es){
   }
   
   edm::Handle<FEDRawDataCollection> rawdata;
-  event.getByType(rawdata);  
+  event.getByLabel(fedRawDataCollectionTag_, rawdata);  
   
   //The "detailed trigger type DCC field content:
   double dttProba = 0;

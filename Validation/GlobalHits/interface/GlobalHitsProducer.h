@@ -7,8 +7,8 @@
  *  containing information about various sub-systems in global coordinates 
  *  with full geometry
  *
- *  $Date: 2009/05/25 15:08:35 $
- *  $Revision: 1.13 $
+ *  $Date: 2013/02/27 13:28:59 $
+ *  $Revision: 1.16 $
  *  \author M. Strang SUNY-Buffalo
  */
 
@@ -23,6 +23,7 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 #include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
 #include "DataFormats/DetId/interface/DetId.h"
 
@@ -84,7 +85,7 @@ class GlobalHitsProducer : public edm::EDProducer
   virtual ~GlobalHitsProducer();
   virtual void beginJob( void );
   virtual void endJob();  
-  virtual void produce(edm::Event&, const edm::EventSetup&);
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
   
  private:
 
@@ -123,6 +124,9 @@ class GlobalHitsProducer : public edm::EDProducer
   FloatVector G4VtxZ; 
   FloatVector G4TrkPt; 
   FloatVector G4TrkE;
+
+  edm::InputTag G4VtxSrc_;
+  edm::InputTag G4TrkSrc_;
 
   // Electromagnetic info
   // ECal info

@@ -1,4 +1,4 @@
-// $Id: EventStreamHttpReader.h,v 1.28 2011/07/05 12:06:04 mommsen Exp $
+// $Id: EventStreamHttpReader.h,v 1.30 2012/10/31 17:09:27 wmtan Exp $
 /// @file: EventStreamHttpReader.h
 
 #ifndef StorageManager_EventStreamHttpReader_h
@@ -26,9 +26,9 @@ namespace edm
     already be done if this was inherenting from the standard
     framework input source. Currently we inherit from InputSource.
 
-    $Author: mommsen $
-    $Revision: 1.28 $
-    $Date: 2011/07/05 12:06:04 $
+    $Author: wmtan $
+    $Revision: 1.30 $
+    $Date: 2012/10/31 17:09:27 $
   */
 
   class EventStreamHttpReader : public edm::StreamerInputSource
@@ -41,9 +41,9 @@ namespace edm
     );
     virtual ~EventStreamHttpReader() {};
 
-    virtual EventPrincipal* read();
-
   private:
+    virtual bool checkNextEvent();
+
     void readHeader();
     void initializeDQMStore();
     

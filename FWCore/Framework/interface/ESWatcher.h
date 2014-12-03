@@ -16,7 +16,7 @@
 //
 // Original Author:  Chris Jones
 //         Created:  Fri Sep 22 18:19:24 EDT 2006
-// $Id: ESWatcher.h,v 1.1 2006/09/23 01:41:26 chrjones Exp $
+// $Id: ESWatcher.h,v 1.3 2012/09/27 15:21:21 eulisse Exp $
 //
 
 // system include files
@@ -45,7 +45,7 @@ namespace edm {
     ESWatcher(TFunc iFunctor):callback_(iFunctor),cacheId_(0) {}
     
     template <class TObj, class TMemFunc>
-    ESWatcher(TObj& iObj, TMemFunc iFunc):
+    ESWatcher(TObj const& iObj, TMemFunc iFunc):
     callback_(boost::bind(iFunc,iObj,_1)),
     cacheId_(0)
      {}

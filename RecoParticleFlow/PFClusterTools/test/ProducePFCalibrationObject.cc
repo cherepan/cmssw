@@ -2,8 +2,8 @@
 /*
  *  See header file for a description of this class.
  *
- *  $Date: 2011/02/22 15:47:14 $
- *  $Revision: 1.2 $
+ *  $Date: 2012/12/03 21:52:34 $
+ *  $Revision: 1.4 $
  *  \author G. Cerminara - CERN
  */
 
@@ -255,7 +255,6 @@ void ProducePFCalibrationObject::beginRun(const edm::Run& run, const edm::EventS
 }
 
      
-#include "FWCore/PluginManager/interface/ModuleDef.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 DEFINE_FWK_MODULE(ProducePFCalibrationObject);

@@ -10,44 +10,58 @@
  *  using the static build() methods. 
  *  (The normal constructor will become private in the future).
  *
- *  $Date: 2010/12/22 10:46:28 $
- *  $Revision: 1.5 $
+ *  $Date: 2012/12/26 18:08:23 $
+ *  $Revision: 1.12 $
  */
 
 #include "DataFormats/GeometrySurface/interface/Surface.h"
 #include "DataFormats/GeometrySurface/interface/Plane.h"
+#include "DataFormats/GeometrySurface/interface/SimpleCylinderBounds.h"
 
-class Cylinder : public virtual Surface {
+class Cylinder GCC11_FINAL  : public Surface {
 public:
+
+  template<typename... Args>
+    Cylinder(Scalar radius, Args&& ... args) :
+    Surface(std::forward<Args>(args)...), theRadius(radius){}
+
+  Cylinder(const PositionType& pos, const RotationType& rot, SimpleCylinderBounds const & bounds) :
+    Surface(pos,rot, bounds.clone()),  theRadius(computeRadius(bounds)){}
+  
+  // average Rmin Rmax...
+  static float computeRadius(Bounds const & bounds) {
+    return  0.5f*(bounds.width() - bounds.thickness());
+  }
+
+
   typedef ReferenceCountingPointer<Cylinder> CylinderPointer;
   typedef ConstReferenceCountingPointer<Cylinder> ConstCylinderPointer;
+  typedef ReferenceCountingPointer<Cylinder> BoundCylinderPointer;
+  typedef ConstReferenceCountingPointer<Cylinder> ConstBoundCylinderPointer;
 
 
   /// Construct a cylinder with the specified radius.
   /// The reference frame is defined by pos and rot;
   /// the cylinder axis is parallel to the local Z axis.
-  static CylinderPointer build(const PositionType& pos,
-			       const RotationType& rot,
-			       Scalar radius,
-			       MediumProperties* mp=0) {
-    return CylinderPointer(new Cylinder(pos, rot, radius, mp));
+  /*
+  template<typename... Args>
+  static CylinderPointer build(Args&& ... args) {
+    return CylinderPointer(new Cylinder(std::forward<Args>(args)...));
+  }
+  */
+
+  static CylinderPointer build(const PositionType& pos, const RotationType& rot,
+			       Scalar radius, Bounds* bounds=0) {
+    return CylinderPointer(new Cylinder(radius,pos,rot,bounds));
   }
 
+  static CylinderPointer build(Scalar radius, const PositionType& pos, const RotationType& rot,
+			       Bounds* bounds=0) {
+    return CylinderPointer(new Cylinder(radius,pos,rot,bounds));
+  }
 
-  // -- DEPRECATED CONSTRUCTORS
+  ~Cylinder(){}
 
-  /// Do not use this constructor directly; use the static build method,
-  /// which returns a ReferenceCountingPointer.
-  /// This constructor will soon become private
-  Cylinder( const PositionType& pos, const RotationType& rot, Scalar radius) :
-    Surface( pos, rot), theRadius(radius) {}
-
-  /// Do not use this constructor directly; use the static build method,
-  /// which returns a ReferenceCountingPointer.
-  /// This constructor will soon become private
-  Cylinder( const PositionType& pos, const RotationType& rot, Scalar radius,
-	 MediumProperties* mp) : 
-    Surface( pos, rot, mp), theRadius(radius) {}
 
   // -- Extension of Surface interface for cylinder
 

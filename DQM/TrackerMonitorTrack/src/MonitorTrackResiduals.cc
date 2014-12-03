@@ -14,10 +14,6 @@
 #include "DataFormats/GeometryCommonDetAlgo/interface/MeasurementVector.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
 #include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
-#include "DataFormats/SiStripDetId/interface/TECDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIBDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIDDetId.h"
-#include "DataFormats/SiStripDetId/interface/TOBDetId.h"
 #include "TrackingTools/TrackFitters/interface/TrajectoryStateCombiner.h"
 #include "Alignment/OfflineValidation/interface/TrackerValidationVariables.h"
 #include "Alignment/TrackerAlignment/interface/TrackerAlignableId.h"
@@ -43,6 +39,10 @@ void MonitorTrackResiduals::beginJob(void) {
 
 void MonitorTrackResiduals::beginRun(edm::Run const& run, edm::EventSetup const& iSetup) {
   
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  iSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
   
   unsigned long long cacheID = iSetup.get<SiStripDetCablingRcd>().cacheIdentifier();
   if (m_cacheID_ != cacheID) {
@@ -54,7 +54,7 @@ void MonitorTrackResiduals::beginRun(edm::Run const& run, edm::EventSetup const&
       for(std::map<int32_t, MonitorElement*>::const_iterator it = HitResidual.begin(), 
 	    itEnd = HitResidual.end(); it!= itEnd;++it) {
 	this->resetModuleMEs(it->first);
-	this->resetLayerMEs(folder_organizer.GetSubDetAndLayer(it->first));
+	this->resetLayerMEs(folder_organizer.GetSubDetAndLayer(it->first, tTopo));
       }
     } else {
       for(std::map< std::pair<std::string,int32_t>, MonitorElement*>::const_iterator it = m_SubdetLayerResiduals.begin(), 
@@ -69,6 +69,12 @@ void MonitorTrackResiduals::beginRun(edm::Run const& run, edm::EventSetup const&
 }
 
 void MonitorTrackResiduals::createMEs(const edm::EventSetup& iSetup){
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  iSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+
   Parameters = conf_.getParameter<edm::ParameterSet>("TH1ResModules");
   int32_t i_residuals_Nbins =  Parameters.getParameter<int32_t>("Nbinx");
   double d_residual_xmin = Parameters.getParameter<double>("xmin");
@@ -105,7 +111,7 @@ void MonitorTrackResiduals::createMEs(const edm::EventSetup& iSetup){
       // is this a StripModule?
       if( SiStripDetId(ModuleID).subDetector() != 0 ) {
 	
-	folder_organizer.setDetectorFolder(ModuleID); //  detid sets appropriate detector folder		
+	folder_organizer.setDetectorFolder(ModuleID, tTopo); //  detid sets appropriate detector folder		
 	// Book module histogramms? 
 	if (ModOn) { 
 	  std::string hid = hidmanager.createHistoId("HitResiduals","det",ModuleID);
@@ -118,8 +124,8 @@ void MonitorTrackResiduals::createMEs(const edm::EventSetup& iSetup){
 	  NormedHitResiduals[ModuleID]->setAxisTitle("(x_{pred} - x_{rec})'/#sigma");
 	}
 	// book layer level histogramms
-	std::pair<std::string,int32_t> subdetandlayer = folder_organizer.GetSubDetAndLayer(ModuleID);
-	folder_organizer.setLayerFolder(ModuleID,subdetandlayer.second);
+	std::pair<std::string,int32_t> subdetandlayer = folder_organizer.GetSubDetAndLayer(ModuleID, tTopo);
+	folder_organizer.setLayerFolder(ModuleID,tTopo,subdetandlayer.second);
 	if(! m_SubdetLayerResiduals[subdetandlayer ] ) {
 	  // book histogramms on layer level, check for barrel for correct labeling
 	  std::string histoname = Form(subdetandlayer.first.find("B") != std::string::npos ? 
@@ -175,6 +181,11 @@ void MonitorTrackResiduals::analyze(const edm::Event& iEvent, const edm::EventSe
   // Filter out events if Trigger Filtering is requested                                                                                           
   if (genTriggerEventFlag_->on()&& ! genTriggerEventFlag_->accept( iEvent, iSetup) ) return;
 
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  iSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+
   TrackerValidationVariables avalidator_(iSetup,conf_);
   std::vector<TrackerValidationVariables::AVHitStruct> v_hitstruct;
   avalidator_.fillHitQuantities(iEvent,v_hitstruct);
@@ -188,7 +199,7 @@ void MonitorTrackResiduals::analyze(const edm::Event& iEvent, const edm::EventSe
 	HitResidual[RawId]->Fill(it->resXprime);
 	NormedHitResiduals[RawId]->Fill(it->resXprime/it->resXprimeErr);
       }
-      std::pair<std::string, int32_t> subdetandlayer = folder_organizer.GetSubDetAndLayer(RawId);
+      std::pair<std::string, int32_t> subdetandlayer = folder_organizer.GetSubDetAndLayer(RawId, tTopo);
       if(m_SubdetLayerResiduals[subdetandlayer]) {
 	m_SubdetLayerResiduals[subdetandlayer]->Fill(it->resXprime);
 	m_SubdetLayerNormedResiduals[subdetandlayer]->Fill(it->resXprime/it->resXprimeErr);

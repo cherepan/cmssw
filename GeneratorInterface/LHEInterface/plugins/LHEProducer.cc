@@ -7,7 +7,7 @@
 #include <HepMC/GenEvent.h>
 #include <HepMC/SimpleVector.h>
 
-#include "FWCore/Framework/interface/EDFilter.h"
+#include "FWCore/Framework/interface/one/EDFilter.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Run.h"
@@ -30,17 +30,19 @@
 
 using namespace lhef;
 
-class LHEProducer : public edm::EDFilter {
+class LHEProducer : public edm::one::EDFilter<edm::EndRunProducer,
+                                              edm::one::WatchRuns> {
     public:
 	explicit LHEProducer(const edm::ParameterSet &params);
 	virtual ~LHEProducer();
 
     protected:
-  virtual void beginJob();
-	virtual void endJob();
-	virtual bool beginRun(edm::Run &run, const edm::EventSetup &es);
-	virtual bool endRun(edm::Run &run, const edm::EventSetup &es);
-	virtual bool filter(edm::Event &event, const edm::EventSetup &es);
+        virtual void beginJob() override;
+	virtual void endJob() override;
+	virtual void beginRun(edm::Run const& run, const edm::EventSetup &es) override;
+	virtual void endRun(edm::Run const&run, const edm::EventSetup &es) override;
+	virtual void endRunProduce(edm::Run &run, const edm::EventSetup &es) override;
+	virtual bool filter(edm::Event &event, const edm::EventSetup &es) override;
 
     private:
 	double matching(const HepMC::GenEvent *event, bool shower) const;
@@ -136,18 +138,19 @@ void LHEProducer::endJob()
 	jetMatching.reset();
 }
 
-bool LHEProducer::beginRun(edm::Run &run, const edm::EventSetup &es)
+void LHEProducer::beginRun(edm::Run const& run, const edm::EventSetup &es)
 {
 	edm::Handle<LHERunInfoProduct> product;
 	run.getByLabel("source", product);
 
 	runInfo.reset(new LHERunInfo(*product));
 	index = 0;
-
-	return true;
+}
+void LHEProducer::endRun(edm::Run const& run, const edm::EventSetup &es)
+{
 }
 
-bool LHEProducer::endRun(edm::Run &run, const edm::EventSetup &es)
+void LHEProducer::endRunProduce(edm::Run &run, const edm::EventSetup &es)
 {
 	hadronisation->statistics();
 
@@ -168,8 +171,6 @@ bool LHEProducer::endRun(edm::Run &run, const edm::EventSetup &es)
 	run.put(runInfo);
 
 	runInfo.reset();
-
-	return true;
 }
 
 bool LHEProducer::filter(edm::Event &event, const edm::EventSetup &es)

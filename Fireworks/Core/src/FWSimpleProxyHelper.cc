@@ -8,14 +8,15 @@
 //
 // Original Author:  Chris Jones
 //         Created:  Tue Dec  2 15:13:22 EST 2008
-// $Id: FWSimpleProxyHelper.cc,v 1.3 2010/08/18 10:30:14 amraktad Exp $
+// $Id: FWSimpleProxyHelper.cc,v 1.7 2013/02/18 23:42:56 wmtan Exp $
 //
 
 // system include files
 #include <sstream>
+#include <cassert>
 
-#include "Reflex/Object.h"
-#include "Reflex/Type.h"
+#include "FWCore/Utilities/interface/ObjectWithDict.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 #include "TClass.h"
 
 // user include files
@@ -68,12 +69,10 @@ void
 FWSimpleProxyHelper::itemChanged(const FWEventItem* iItem)
 {
    if(0!=iItem) {
-      Reflex::Type myType = Reflex::Type::ByTypeInfo(*m_itemType);
-      Reflex::Object dummy(Reflex::Type::ByTypeInfo(*(iItem->modelType()->GetTypeInfo())),
-                   reinterpret_cast<void*>(0xFFFF));
-      Reflex::Object castTo = dummy.CastObject(myType);
-      assert(0!=castTo.Address());
-      m_objectOffset=static_cast<char*>(dummy.Address())-static_cast<char*>(castTo.Address());
+      edm::TypeWithDict baseType(*m_itemType);
+      edm::TypeWithDict mostDerivedType(*(iItem->modelType()->GetTypeInfo()));
+      // The - sign is there because this is the address of a derived object minus the address of the base object.
+      m_objectOffset = -mostDerivedType.getBaseClassOffset(baseType);
    }
 }
 

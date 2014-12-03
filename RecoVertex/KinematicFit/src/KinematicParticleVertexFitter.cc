@@ -18,13 +18,13 @@ KinematicParticleVertexFitter::KinematicParticleVertexFitter()
   setup(pSet);
 }
 
-KinematicParticleVertexFitter::KinematicParticleVertexFitter(const edm::ParameterSet pSet)
+KinematicParticleVertexFitter::KinematicParticleVertexFitter(const edm::ParameterSet &pSet)
 {
   setup(pSet);
 }
 
 void
-KinematicParticleVertexFitter::setup(const edm::ParameterSet pSet)
+KinematicParticleVertexFitter::setup(const edm::ParameterSet &pSet)
 { 
 
   pointFinder =  new DefaultLinearizationPointFinder();
@@ -54,7 +54,7 @@ edm::ParameterSet KinematicParticleVertexFitter::defaultParameters() const
   return pSet;
 }
  
-RefCountedKinematicTree KinematicParticleVertexFitter::fit(std::vector<RefCountedKinematicParticle> particles) const
+RefCountedKinematicTree KinematicParticleVertexFitter::fit(const std::vector<RefCountedKinematicParticle> &particles) const
 {
  typedef ReferenceCountingPointer<VertexTrack<6> > RefCountedVertexTrack;
 //sorting the input 
@@ -76,8 +76,14 @@ RefCountedKinematicTree KinematicParticleVertexFitter::fit(std::vector<RefCounte
  
 //vector of Vertex Tracks to fit
  std::vector<RefCountedVertexTrack> ttf; 
- for(std::vector<RefCountedKinematicParticle>::const_iterator i = newPart.begin();i != newPart.end();i++)
- {ttf.push_back(vFactory->vertexTrack((*i)->particleLinearizedTrackState(linPoint),state,1.));}
+ TrackKinematicStatePropagator propagator_;
+ for(std::vector<RefCountedKinematicParticle>::const_iterator i = newPart.begin();i != newPart.end();i++){
+   if( !(*i)->currentState().isValid() || !propagator_.propagateToTheTransversePCA((*i)->currentState(), linPoint).isValid() ) {
+     // std::cout << "Here's the bad state." << std::endl;
+     return ReferenceCountingPointer<KinematicTree>(new KinematicTree()); // return invalid vertex
+   }
+   ttf.push_back(vFactory->vertexTrack((*i)->particleLinearizedTrackState(linPoint),state,1.));
+ }
 
 // //debugging code to check neutrals: 
 //  for(std::vector<RefCountedVertexTrack>::const_iterator i = ttf.begin(); i!=ttf.end(); i++)

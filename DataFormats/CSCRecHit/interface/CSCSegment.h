@@ -6,7 +6,7 @@
  *  This is 4-dimensional since it has an origin (x,y) and a direction (x,y)
  *  in the local coordinate system of the chamber.
  *
- *  $Date: 2010/11/23 13:46:30 $
+ *  $Date: 2013/04/22 22:41:32 $
  *  \author Matteo Sani
  *  \author Rick Wilkinson
  *  \author Tim Cox
@@ -19,7 +19,7 @@
 
 class CSCDetId;
 
-class CSCSegment : public RecSegment {
+class CSCSegment GCC11_FINAL : public RecSegment {
 
 public:
 
@@ -27,7 +27,7 @@ public:
     CSCSegment() : theChi2(0.), aME11a_duplicate(false) {}
 	
     /// Constructor
-    CSCSegment(std::vector<const CSCRecHit2D*> proto_segment, LocalPoint origin, 
+    CSCSegment(const std::vector<const CSCRecHit2D*>& proto_segment, LocalPoint origin, 
         	LocalVector direction, AlgebraicSymMatrix errors, double chi2);
   
     /// Destructor

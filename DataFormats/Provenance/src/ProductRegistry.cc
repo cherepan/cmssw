@@ -10,14 +10,18 @@
 
 #include "DataFormats/Provenance/interface/ProductRegistry.h"
 
+#include "DataFormats/Provenance/interface/ProductHolderIndexHelper.h"
+
 #include "FWCore/Utilities/interface/Algorithms.h"
 #include "FWCore/Utilities/interface/EDMException.h"
-#include "FWCore/Utilities/interface/ReflexTools.h"
+#include "FWCore/Utilities/interface/DictionaryTools.h"
+#include "FWCore/Utilities/interface/TypeWithDict.h"
 #include "FWCore/Utilities/interface/WrappedClassName.h"
 
-#include <algorithm>
+#include <iterator>
 #include <limits>
 #include <sstream>
+#include <ostream>
 
 namespace edm {
   namespace {
@@ -41,25 +45,35 @@ namespace edm {
       constProductList_(),
       productProduced_(),
       anyProductProduced_(false),
-      productLookup_(),
-      elementLookup_(),
+      eventProductLookup_(new ProductHolderIndexHelper),
+      lumiProductLookup_(new ProductHolderIndexHelper),
+      runProductLookup_(new ProductHolderIndexHelper),
+      eventNextIndexValue_(0),
+      lumiNextIndexValue_(0),
+      runNextIndexValue_(0),
+
       branchIDToIndex_(),
       producedBranchListIndex_(std::numeric_limits<BranchListIndex>::max()),
       missingDictionaries_() {
-    for(size_t i = 0; i < productProduced_.size(); ++i) productProduced_[i] = false;
+    for(bool& isProduced : productProduced_) isProduced = false;
   }
 
   void
   ProductRegistry::Transients::reset() {
     frozen_ = false;
     constProductList_.clear();
-    for (size_t i = 0; i < productProduced_.size(); ++i) productProduced_[i] = false;
-     anyProductProduced_ = false;
-     productLookup_.reset();
-     elementLookup_.reset();
-     branchIDToIndex_.clear();
-     producedBranchListIndex_ = std::numeric_limits<BranchListIndex>::max();
-     missingDictionaries_.clear();
+    for(bool& isProduced : productProduced_) isProduced = false;
+    anyProductProduced_ = false;
+    eventProductLookup_.reset(new ProductHolderIndexHelper);
+    lumiProductLookup_.reset(new ProductHolderIndexHelper);
+    runProductLookup_.reset(new ProductHolderIndexHelper);
+    eventNextIndexValue_ = 0;
+    lumiNextIndexValue_ = 0;
+    runNextIndexValue_ = 0;
+
+    branchIDToIndex_.clear();
+    producedBranchListIndex_ = std::numeric_limits<BranchListIndex>::max();
+    missingDictionaries_.clear();
   }
 
   ProductRegistry::ProductRegistry(ProductList const& productList, bool toBeFrozen) :
@@ -82,6 +96,20 @@ namespace edm {
         << "Please modify the configuration file to use a distinct process name.\n";
     }
     addCalled(productDesc, fromListener);
+  }
+
+  void
+  ProductRegistry::addLabelAlias(BranchDescription const& productDesc,
+                                 std::string const& labelAlias,
+                                 std::string const& instanceAlias) {
+    assert(productDesc.produced());
+    assert(productDesc.branchID().isValid());
+    throwIfFrozen();
+    BranchDescription bd(productDesc, labelAlias, instanceAlias);
+    std::pair<ProductList::iterator, bool> ret =
+         productList_.insert(std::make_pair(BranchKey(bd), bd));
+    assert(ret.second);
+    addCalled(bd, false);
   }
 
   void
@@ -109,6 +137,13 @@ namespace edm {
       }
     }
     return false;
+  }
+
+  boost::shared_ptr<ProductHolderIndexHelper> const&
+  ProductRegistry::productLookup(BranchType branchType) const {
+    if (branchType == InEvent) return transient_.eventProductLookup_;
+    if (branchType == InLumi) return transient_.lumiProductLookup_;
+    return transient_.runProductLookup_;
   }
 
   void
@@ -145,11 +180,9 @@ namespace edm {
     std::vector<std::string> result;
     result.reserve(productList().size());
 
-    ProductList::const_iterator it = productList().begin();
-    ProductList::const_iterator end = productList().end();
-
-    for(; it != end; ++it) result.push_back(it->second.branchName());
-
+    for(auto const& product : productList()) {
+      result.push_back(product.second.branchName());
+    }
     return result;
   }
 
@@ -158,26 +191,23 @@ namespace edm {
     std::vector<BranchDescription const*> result;
     result.reserve(productList().size());
 
-    ProductList::const_iterator it = productList().begin();
-    ProductList::const_iterator end = productList().end();
-
-    for(; it != end; ++it) result.push_back(&(it->second));
+    for(auto const& product : productList()) {
+      result.push_back(&product.second);
+    }
     return result;
   }
 
   void
   ProductRegistry::updateFromInput(ProductList const& other) {
-    for(ProductList::const_iterator it = other.begin(), itEnd = other.end();
-        it != itEnd; ++it) {
-      copyProduct(it->second);
+    for(auto const& product : other) {
+      copyProduct(product.second);
     }
   }
 
   void
   ProductRegistry::updateFromInput(std::vector<BranchDescription> const& other) {
-    for(std::vector<BranchDescription>::const_iterator it = other.begin(), itEnd = other.end();
-        it != itEnd; ++it) {
-      copyProduct(*it);
+    for(BranchDescription const& branchDescription : other) {
+      copyProduct(branchDescription);
     }
   }
 
@@ -204,6 +234,8 @@ namespace edm {
           differences << "    but not in previous files.\n";
         } else {
           productList_.insert(*i);
+          transient_.branchIDToIndex_[i->second.branchID()] = nextIndexValue(i->second.branchType());
+          ++nextIndexValue(i->second.branchType());
         }
         ++i;
       } else if(i == e || (j != s && j->first < i->first)) {
@@ -223,110 +255,97 @@ namespace edm {
         ++j;
       }
     }
-    initializeLookupTables();
+    updateConstProductRegistry();
     return differences.str();
   }
 
-  static void
-  fillLookup(Reflex::Type const& type,
-             ProductTransientIndex const& index,
-             ConstBranchDescription const* branchDesc,
-             TransientProductLookupMap::FillFromMap& oMap) {
-    oMap[std::make_pair(TypeInBranchType(TypeID(type.TypeInfo()),
-                                         branchDesc->branchType()),
-                                         branchDesc)] = index;
+  void ProductRegistry::updateConstProductRegistry() {
+    constProductList().clear();
+    for(auto const& product : productList_) {
+      auto const& key = product.first;
+      auto const& desc = product.second;
+      constProductList().insert(std::make_pair(key, ConstBranchDescription(desc)));
+    }
   }
 
   void ProductRegistry::initializeLookupTables() const {
-    StringSet savedMissingTypes;
-    savedMissingTypes.swap(missingTypes());
-    StringSet savedFoundTypes;
-    savedFoundTypes.swap(foundTypes());
-    constProductList().clear();
-    transient_.branchIDToIndex_.clear();
-    ProductTransientIndex index = 0;
 
-    //NOTE it might be possible to remove the need for this temporary map because the productList is ordered by the
-    // BranchKey and for the same C++ class type the BranchKey will sort just like CompareTypeInBranchTypeConstBranchDescription
-    typedef TransientProductLookupMap::FillFromMap TempLookupMap;
-    TempLookupMap tempProductLookupMap;
-    TempLookupMap tempElementLookupMap;
-
-    StringSet usedProcessNames;
     StringSet missingDicts;
-    for(ProductList::const_iterator i = productList_.begin(), e = productList_.end(); i != e; ++i, ++index) {
-      if(i->second.produced()) {
-        setProductProduced(i->second.branchType());
+    transient_.branchIDToIndex_.clear();
+    constProductList().clear();
+
+    for(auto const& product : productList_) {
+      auto const& key = product.first;
+      auto const& desc = product.second;
+
+      constProductList().insert(std::make_pair(key, ConstBranchDescription(desc)));
+
+      if(desc.produced()) {
+        setProductProduced(desc.branchType());
       }
 
-      //insert returns a pair<iterator, bool> and we want the address of the ConstBranchDescription that was created in the map
-      // this is safe since items in a map always retain their memory address
-      ConstBranchDescription const* pBD = &(constProductList().insert(std::make_pair(i->first, ConstBranchDescription(i->second))).first->second);
-
-      transient_.branchIDToIndex_[i->second.branchID()] = index;
-
-      usedProcessNames.insert(pBD->processName());
-
       //only do the following if the data is supposed to be available in the event
-      if(i->second.present()) {
-        Reflex::Type type(Reflex::Type::ByName(i->second.className()));
-        Reflex::Type wrappedType(Reflex::Type::ByName(wrappedClassName(i->second.className())));
+      if(desc.present()) {
+        TypeWithDict type(TypeWithDict::byName(desc.className()));
+        TypeWithDict wrappedType(TypeWithDict::byName(wrappedClassName(desc.className())));
         if(!bool(type) || !bool(wrappedType)) {
-          missingDicts.insert(i->second.className());
-          continue;
-        }
-        fillLookup(type, index, pBD, tempProductLookupMap);
+          missingDicts.insert(desc.className());
+        } else {
+          ProductHolderIndex index =
+            productLookup(desc.branchType())->insert(type,
+                                                     desc.moduleLabel().c_str(),
+                                                     desc.productInstanceName().c_str(),
+                                                     desc.processName().c_str());
 
-        if(bool(type)) {
-          // Here we look in the object named "type" for a typedef
-          // named "value_type" and get the Reflex::Type for it.
-          // Then check to ensure the Reflex dictionary is defined
-          // for this value_type.
-          // I do not throw an exception here if the check fails
-          // because there are known cases where the dictionary does
-          // not exist and we do not need to support those cases.
-          Reflex::Type valueType;
-          if((is_RefVector(type, valueType) ||
-              is_PtrVector(type, valueType) ||
-              is_RefToBaseVector(type, valueType) ||
-              value_type_of(type, valueType))
-              && bool(valueType)) {
-
-            fillLookup(valueType, index, pBD, tempElementLookupMap);
-
-            // Repeat this for all public base classes of the value_type
-            std::vector<Reflex::Type> baseTypes;
-            public_base_classes(valueType, baseTypes);
-
-            for(std::vector<Reflex::Type>::iterator iter = baseTypes.begin(),
-                iend = baseTypes.end();
-                iter != iend;
-                ++iter) {
-              fillLookup(*iter, index, pBD, tempElementLookupMap);
-            }
-          }
+          transient_.branchIDToIndex_[desc.branchID()] = index;
         }
       }
     }
+    productLookup(InEvent)->setFrozen();
+    productLookup(InLumi)->setFrozen();
+    productLookup(InRun)->setFrozen();
+
+    transient_.eventNextIndexValue_ = productLookup(InEvent)->nextIndexValue();
+    transient_.lumiNextIndexValue_ = productLookup(InLumi)->nextIndexValue();
+    transient_.runNextIndexValue_ = productLookup(InRun)->nextIndexValue();
+
+    for(auto const& product : productList_) {
+      auto const& desc = product.second;
+      if (transient_.branchIDToIndex_.find(desc.branchID()) == transient_.branchIDToIndex_.end()) {
+        transient_.branchIDToIndex_[desc.branchID()] = nextIndexValue(desc.branchType());
+        ++nextIndexValue(desc.branchType());
+      }
+    }
+
     missingDictionaries().reserve(missingDicts.size());
     copy_all(missingDicts, std::back_inserter(missingDictionaries()));
-    productLookup().fillFrom(tempProductLookupMap);
-    elementLookup().fillFrom(tempElementLookupMap);
-    savedMissingTypes.swap(missingTypes());
-    savedFoundTypes.swap(foundTypes());
   }
 
-  ProductTransientIndex ProductRegistry::indexFrom(BranchID const& iID) const {
-    std::map<BranchID, ProductTransientIndex>::iterator itFind = transient_.branchIDToIndex_.find(iID);
+  ProductHolderIndex ProductRegistry::indexFrom(BranchID const& iID) const {
+    std::map<BranchID, ProductHolderIndex>::iterator itFind = transient_.branchIDToIndex_.find(iID);
     if(itFind == transient_.branchIDToIndex_.end()) {
-      return kInvalidIndex;
+      return ProductHolderIndexInvalid;
     }
     return itFind->second;
   }
 
   void ProductRegistry::print(std::ostream& os) const {
-    for(ProductList::const_iterator i = productList_.begin(), e = productList_.end(); i != e; ++i) {
-      os << i->second << "\n-----\n";
+    for(auto const& product: productList_) {
+      os << product.second << "\n-----\n";
     }
+  }
+
+  ProductHolderIndex const&
+  ProductRegistry::getNextIndexValue(BranchType branchType) const {
+    if (branchType == InEvent) return transient_.eventNextIndexValue_;
+    if (branchType == InLumi) return  transient_.lumiNextIndexValue_;
+    return transient_.runNextIndexValue_;
+  }
+
+  ProductHolderIndex&
+  ProductRegistry::nextIndexValue(BranchType branchType) const {
+    if (branchType == InEvent) return transient_.eventNextIndexValue_;
+    if (branchType == InLumi) return  transient_.lumiNextIndexValue_;
+    return transient_.runNextIndexValue_;
   }
 }

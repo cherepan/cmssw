@@ -26,7 +26,7 @@ DQMOffline_SecondStep_PreDPG = cms.Sequence( dqmDcsInfoClient *
                                              rpcTier0Client *
                                              cscOfflineCollisionsClients *
                                              es_dqm_client_offline *
-                                             HcalDQMOfflinePostProcessor *
+                                             HcalDQMOfflinePostProcessor * 
                                              dqmFEDIntegrityClient )
 
 DQMOffline_SecondStepDPG = cms.Sequence( dqmRefHistoRootFileGetter *
@@ -43,10 +43,10 @@ from DQMOffline.JetMET.SusyPostProcessor_cff import *
 
 DQMOffline_SecondStep_PrePOG = cms.Sequence( muonQualityTests *
                                              egammaPostProcessing *
-                                             l1TriggerDqmOfflineClient *
+#                                             l1TriggerDqmOfflineClient *
                                              triggerOfflineDQMClient *
                                              hltOfflineDQMClient *
-                                             bTagCollectorSequence *
+                                             bTagCollectorSequenceDATA *
                                              alcaBeamMonitorClient *
                                              SusyPostProcessorSequence *
                                              runTauEff)
@@ -60,7 +60,7 @@ DQMOffline_SecondStep = cms.Sequence( dqmRefHistoRootFileGetter *
                                       DQMOffline_SecondStep_PrePOG *
                                       DQMMessageLoggerClientSeq )
 
-DQMOffline_SecondStep_PrePOGMC = cms.Sequence( bTagCollectorSequence )
+DQMOffline_SecondStep_PrePOGMC = cms.Sequence( bTagCollectorSequenceDATA )
 
 DQMOffline_SecondStepPOGMC = cms.Sequence( dqmRefHistoRootFileGetter *
                                            DQMOffline_SecondStep_PrePOGMC *
@@ -72,24 +72,24 @@ DQMHarvestCommon = cms.Sequence( dqmRefHistoRootFileGetter *
                                  dqmDcsInfoClient *
                                  SiStripOfflineDQMClient *
                                  PixelOfflineDQMClientNoDataCertification *
-                                 l1TriggerDqmOfflineClient *
+#                                 l1TriggerDqmOfflineClient *
                                  triggerOfflineDQMClient *
                                  hltOfflineDQMClient *
                                  dqmFEDIntegrityClient *
                                  alcaBeamMonitorClient *
-                                 runTauEff
+                                 runTauEff 
                                 )
 DQMHarvestCommonSiStripZeroBias = cms.Sequence(dqmRefHistoRootFileGetter *
                                                DQMMessageLoggerClientSeq *
                                                dqmDcsInfoClient *
                                                SiStripOfflineDQMClient *
                                                PixelOfflineDQMClientNoDataCertification *
-                                               l1TriggerDqmOfflineClient *
+#                                               l1TriggerDqmOfflineClient *
                                                triggerOfflineDQMClient *
                                                hltOfflineDQMClient *
                                                dqmFEDIntegrityClient *
                                                alcaBeamMonitorClient *
-                                               runTauEff
+                                               runTauEff 
                                                )
 
 DQMHarvestMuon = cms.Sequence( dtClients *
@@ -104,4 +104,6 @@ DQMHarvestHcal = cms.Sequence( hcalOfflineDQMClient )
 
 DQMHarvestJetMET = cms.Sequence( SusyPostProcessorSequence )
 
-DQMHarvestEGamma = cms.Sequence( photonOfflineClient )
+DQMHarvestEGamma = cms.Sequence( egammaPostProcessing )                                             
+
+DQMHarvestBTag = cms.Sequence( bTagCollectorSequenceDATA )                                             

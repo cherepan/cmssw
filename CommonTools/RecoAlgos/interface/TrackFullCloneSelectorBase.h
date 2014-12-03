@@ -6,9 +6,9 @@
  * 
  * \author Giovanni Petrucciani 
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.4 $
  *
- * $Id: TrackFullCloneSelectorBase.h,v 1.2 2009/08/21 16:25:46 wmtan Exp $
+ * $Id: TrackFullCloneSelectorBase.h,v 1.4 2013/02/28 00:12:51 wmtan Exp $
  *
  */
 
@@ -56,7 +56,7 @@ public:
   
 private:
   /// process one event
-  void produce( edm::Event& evt, const edm::EventSetup& es ) {
+  void produce( edm::Event& evt, const edm::EventSetup& es) override {
       edm::Handle<reco::TrackCollection> hSrcTrack;
       edm::Handle< std::vector<Trajectory> > hTraj;
       edm::Handle< TrajTrackAssociationCollection > hTTAss;

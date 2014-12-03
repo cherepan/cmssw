@@ -1,6 +1,6 @@
 //
 // Original Author:  Fedor Ratnikov Nov 9, 2007
-// $Id: JetCorrectorParameters.cc,v 1.19 2011/01/27 12:14:13 kkousour Exp $
+// $Id: JetCorrectorParameters.cc,v 1.22 2012/12/10 09:43:15 srappocc Exp $
 //
 // Generic parameters for Jet corrections
 //
@@ -344,7 +344,7 @@ JetCorrectorParametersCollection::labelsArray_[JetCorrectorParametersCollection:
     "L1FastJet",
     "UncertaintyAbsolute", 
     "UncertaintyHighPtExtra", 
-    "UncertaintySinglePion", 
+    "UncertaintySinglePionECAL", 
     "UncertaintyFlavor", 
     "UncertaintyTime",
     "UncertaintyRelativeJEREC1", 
@@ -355,9 +355,20 @@ JetCorrectorParametersCollection::labelsArray_[JetCorrectorParametersCollection:
     "UncertaintyRelativeFSR",
     "UncertaintyPileUpDataMC", 
     "UncertaintyPileUpOOT", 
-    "UncertaintyPileUpPt", 
+    "UncertaintyPileUpPtBB", 
     "UncertaintyPileUpBias", 
-    "UncertaintyPileUpJetRate"
+    "UncertaintyPileUpJetRate",
+    "UncertaintySinglePionHCAL",
+    "UncertaintyRelativePtEC1",
+    "UncertaintyRelativePtEC2",
+    "UncertaintyRelativePtHF",
+    "UncertaintyRelativeSample",
+    "UncertaintyPileUpPtEC", 
+    "UncertaintyPileUpPtHF",
+    "UncertaintyAux1", 
+    "UncertaintyAux2", 
+    "UncertaintyAux3", 
+    "UncertaintyAux4", 
   }; 
 
 const char *

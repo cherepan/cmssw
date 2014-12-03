@@ -115,16 +115,16 @@ void HybridClusterAlgo::makeClusters(const EcalRecHitCollection*recColl,
 	LogTrace("EcalClusters") << "Seed crystal: " ;
 
 	if (ET > eb_st) {
-	  // avoid seeding for anomalous channels (recoFlag based)
-	  uint32_t rhFlag = (*it).recoFlag();
-	  LogTrace("EcalClusters") << "rhFlag: " << rhFlag ;
-	 ;
-	  std::vector<int>::const_iterator vit = std::find( v_chstatus_.begin(), v_chstatus_.end(), rhFlag );
-	  if ( vit != v_chstatus_.end() ){
-	    if (excludeFromCluster_)
-	      excludedCrys_.insert(it->id());
-	    continue; // the recHit has to be excluded from seeding
+	  
+
+	  // avoid seeding for anomalous channels 	
+	  if(! it->checkFlag(EcalRecHit::kGood)){ // if rechit is good, no need for further checks
+	    if (it->checkFlags( v_chstatus_ )) {		
+	      if (excludeFromCluster_) excludedCrys_.insert(it->id());
+	      continue; // the recHit has to be excluded from seeding		
+	    }	    
 	  }
+
 
 	  int severityFlag =  sevLv->severityLevel( it->id(), *recHits_);
 	  std::vector<int>::const_iterator sit = std::find( v_severitylevel_.begin(), v_severitylevel_.end(), severityFlag);
@@ -202,7 +202,7 @@ void HybridClusterAlgo::mainSearch(const EcalRecHitCollection* hits, const CaloS
 		
 
 		//Make a navigator, and set it to the seed cell.
-		EcalBarrelNavigator navigator(itID, topo_);
+		EcalBarrelNavigatorHT navigator(itID, topo_);
 
 		//Now use the navigator to start building dominoes.
 
@@ -242,7 +242,7 @@ void HybridClusterAlgo::mainSearch(const EcalRecHitCollection* hits, const CaloS
 			if (centerD.null())
 				continue;
                         LogTrace("EcalClusters") << "Step ++" << i << " @ " << EBDetId(centerD) ;
-			EcalBarrelNavigator dominoNav(centerD, topo_);
+			EcalBarrelNavigatorHT dominoNav(centerD, topo_);
 
 			//Go get the new domino.
 			std::vector <EcalRecHit> dcells;
@@ -264,7 +264,7 @@ void HybridClusterAlgo::mainSearch(const EcalRecHitCollection* hits, const CaloS
 				continue;
 
 			LogTrace("EcalClusters") << "Step --" << i << " @ " << EBDetId(centerD) ;
-			EcalBarrelNavigator dominoNav(centerD, topo_);
+			EcalBarrelNavigatorHT dominoNav(centerD, topo_);
 
 			//Go get the new domino.
 			std::vector <EcalRecHit> dcells;
@@ -539,7 +539,7 @@ reco::SuperClusterCollection HybridClusterAlgo::makeSuperClusters(const reco::Ca
 	return SCcoll;
 }
 
-double HybridClusterAlgo::makeDomino(EcalBarrelNavigator &navigator, std::vector <EcalRecHit> &cells)
+double HybridClusterAlgo::makeDomino(EcalBarrelNavigatorHT &navigator, std::vector <EcalRecHit> &cells)
 {
 	//At the beginning of this function, the navigator starts at the middle of the domino,
 	//and that's where EcalBarrelNavigator::home() should send it.
@@ -623,7 +623,7 @@ double HybridClusterAlgo::makeDomino(EcalBarrelNavigator &navigator, std::vector
 	return Etot;
 }
 
-double HybridClusterAlgo::et25(EcalBarrelNavigator &navigator, 
+double HybridClusterAlgo::et25(EcalBarrelNavigatorHT &navigator, 
 		const EcalRecHitCollection *hits, 
 		const CaloSubdetectorGeometry *geometry)
 {
@@ -663,7 +663,7 @@ double HybridClusterAlgo::et25(EcalBarrelNavigator &navigator,
 }
 
 
-double HybridClusterAlgo::e2Et(EcalBarrelNavigator &navigator, 
+double HybridClusterAlgo::e2Et(EcalBarrelNavigatorHT &navigator, 
 				const EcalRecHitCollection *hits, 
 				const CaloSubdetectorGeometry *geometry)
 {

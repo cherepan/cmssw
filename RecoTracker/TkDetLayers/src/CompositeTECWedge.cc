@@ -10,7 +10,7 @@
 #include "TrackingTools/DetLayers/interface/DetLayerException.h"
 
 #include "TrackingTools/DetLayers/interface/rangesIntersect.h"
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
 #include "TrackingTools/GeomPropagators/interface/HelixForwardPlaneCrossing.h"
 
 #include "TkDetUtil.h"
@@ -22,13 +22,15 @@ using namespace std;
 typedef GeometricSearchDet::DetWithState DetWithState;
 
 // --------- Temporary solution. DetSorting.h has to be used.
-class DetPhiLess {
-public:
-  bool operator()(const GeomDet* a,const GeomDet* b) 
-  {
-    return Geom::phiLess(a->surface(), b->surface());
-  } 
-};
+namespace {
+  class DetPhiLess {
+  public:
+    bool operator()(const GeomDet* a,const GeomDet* b) 
+    {
+      return Geom::phiLess(a->surface(), b->surface());
+    } 
+  };
+}
 // ---------------------
 
 CompositeTECWedge::CompositeTECWedge(vector<const GeomDet*>& innerDets,
@@ -123,7 +125,7 @@ CompositeTECWedge::groupedCompatibleDetsV( const TrajectoryStateOnSurface& tsos,
   		   nextResult, true);
 
   int crossingSide = LayerCrossingSide().endcapSide( closestGel.trajectoryState(), prop);
-  DetGroupMerger::orderAndMergeTwoLevels( closestResult, nextResult, result,
+  DetGroupMerger::orderAndMergeTwoLevels( std::move(closestResult), std::move(nextResult), result,
 					  crossings.closestIndex(), crossingSide);
 }
 
@@ -255,7 +257,7 @@ void CompositeTECWedge::searchNeighbors( const TrajectoryStateOnSurface& tsos,
 int
 CompositeTECWedge::findClosestDet( const GlobalPoint& startPos,int sectorId) const
 {
-  vector<const GeomDet*> myDets = sectorId==0 ? theFrontDets : theBackDets;
+  vector<const GeomDet*> const & myDets = sectorId==0 ? theFrontDets : theBackDets;
 
   int close = 0;
   float closeDist = fabs( (myDets.front()->toLocal(startPos)).x());

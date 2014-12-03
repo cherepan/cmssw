@@ -1,6 +1,7 @@
 #include "RecoTracker/TkSeedingLayers/interface/SeedComparitor.h"
 #include "RecoTracker/TkSeedingLayers/interface/SeedComparitorFactory.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "RecoPixelVertexing/PixelLowPtUtilities/interface/ClusterShapeHitFilter.h"
 #include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHit.h"
 #include "DataFormats/TrackerRecHit2D/interface/SiStripRecHit2D.h"
@@ -13,6 +14,8 @@
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include <cstdio>
 #include <cassert>
+
+#include<iostream>
 
 class PixelClusterShapeSeedComparitor : public SeedComparitor {
     public:
@@ -83,6 +86,9 @@ PixelClusterShapeSeedComparitor::compatible(const SeedingHitSet  &hits,
         const TrackingRegion & region) const 
 { 
     if (!filterAtHelixStage_) return true;
+
+    if(!helix.isValid()) edm::LogWarning("InvalidHelix") << "PixelClusterShapeSeedComparitor helix is not valid, result is bad";
+
     float xc = helix.circle().x0(), yc = helix.circle().y0();
 
     GlobalPoint  vertex = helixStateAtVertex.position();

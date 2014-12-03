@@ -7,9 +7,9 @@
  * 
  * \author Luca Lista, INFN
  *
- * \version $Revision: 1.9 $
+ * \version $Revision: 1.2 $
  *
- * $Id: ObjectPairCollectionSelector.h,v 1.9 2008/02/04 10:44:27 llista Exp $
+ * $Id: ObjectPairCollectionSelector.h,v 1.2 2013/02/28 00:34:26 wmtan Exp $
  *
  */
 
@@ -58,3 +58,4 @@ private:
 };
 
 #endif
+

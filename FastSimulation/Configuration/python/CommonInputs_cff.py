@@ -25,22 +25,19 @@ from RecoMuon.GlobalTrackingTools.GlobalTrajectoryBuilderCommon_cff import Globa
 GlobalTrajectoryBuilderCommon.TrackerRecHitBuilder = 'WithoutRefit'
 GlobalTrajectoryBuilderCommon.TrackTransformer.TrackerRecHitBuilder = 'WithoutRefit'
 
-# The condDB setup (the global tag refers to DevDB, IntDB or ProDB whenever needed)
-#from Configuration.StandardSequences.FrontierConditions_GlobalTag_cfi import *
-
-# not needed any longer in 30X
-#from RecoLocalCalo.HcalRecAlgos.hcalRecAlgoESProd_cfi import *
-
-#from CalibMuon.CSCCalibration.CSC_BadChambers_cfi import *
-#hcal_db_producer = cms.ESProducer("HcalDbProducer",
-#    dump = cms.untracked.vstring(''),
-#    file = cms.untracked.string('')
-#)
-
-#es_hardcode = cms.ESSource("HcalHardcodeCalibrations",
-#    toGet = cms.untracked.vstring('GainWidths')
-#)
-
+# ECAL severity
 from RecoLocalCalo.EcalRecAlgos.EcalSeverityLevelESProducer_cfi import *
 
+# CaloMode is defined here
+# 0: custom local reco bypassing digis, ECAL and HCAL; default before 61x
+# 1: as 0, but full digi + std local reco in ECAL <---- DEFAULT
+# 2: as 0, but full digi + std local reco in HCAL
+# 3: full digi + std local reco in ECAL and HCAL; planned to become default soon
 
+CaloMode = 3
+
+# This flag is to switch between GEN-level and SIM/RECO-level pileup mixing
+# 1: GEN-level <---- DEFAULT
+# 2: SIM/RECO-level; to be used only if CaloMode==3
+
+MixingMode = 1

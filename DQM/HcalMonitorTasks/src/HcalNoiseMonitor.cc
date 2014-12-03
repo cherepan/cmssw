@@ -61,6 +61,7 @@ HcalNoiseMonitor::HcalNoiseMonitor(const edm::ParameterSet& ps)
    mMaxHPDNoOtherHitCount = ps.getUntrackedParameter<int>("MaxHPDNoOtherHitCount");
    mMaxADCZeros           = ps.getUntrackedParameter<int>("MaxADCZeros");
    mTotalZeroMinEnergy    = ps.getUntrackedParameter<double>("TotalZeroMinEnergy");
+   setupDone_ = false;
 }
 
 HcalNoiseMonitor::~HcalNoiseMonitor() {}
@@ -97,6 +98,9 @@ void HcalNoiseMonitor::beginRun(const edm::Run& run, const edm::EventSetup& c)
 
 void HcalNoiseMonitor::setup()
 {
+   if (setupDone_)
+     return;
+   setupDone_ = true;
    HcalBaseDQMonitor::setup();
 
    if(debug_ > 1)
@@ -233,7 +237,7 @@ void HcalNoiseMonitor::analyze(edm::Event const &iEvent, edm::EventSetup const &
       HcalDetId id = iter->id();
       const HcalCalibrations &Calibrations = hConditions->getHcalCalibrations(id);
       const HcalQIECoder *ChannelCoder = hConditions->getHcalCoder(id);
-      const HcalQIEShape *Shape = hConditions->getHcalShape();
+      const HcalQIEShape *Shape = hConditions->getHcalShape(ChannelCoder);
       HcalCoderDb Coder(*ChannelCoder, *Shape);
       CaloSamples Tool;
       Coder.adc2fC(*iter, Tool);

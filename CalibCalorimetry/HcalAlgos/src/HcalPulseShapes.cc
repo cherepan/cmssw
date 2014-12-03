@@ -9,6 +9,9 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "Geometry/CaloTopology/interface/HcalTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
+
 // #include "CalibCalorimetry/HcalAlgos/interface/HcalDbASCIIIO.h"
 #include <cmath>
 
@@ -17,6 +20,7 @@
 
 HcalPulseShapes::HcalPulseShapes() 
 : theMCParams(0),
+  theTopology(0),
   theRecoParams(0),
   theShapes()
 {
@@ -98,8 +102,9 @@ Reco  MC
 
 
 HcalPulseShapes::~HcalPulseShapes() {
-  delete theMCParams;
-  delete theRecoParams;
+  if (theMCParams) delete theMCParams;
+  if (theRecoParams) delete theRecoParams;
+  if (theTopology) delete theTopology;
 }
 
 
@@ -109,9 +114,15 @@ void HcalPulseShapes::beginRun(edm::EventSetup const & es)
   es.get<HcalMCParamsRcd>().get(p);
   theMCParams = new HcalMCParams(*p.product());
 
+  edm::ESHandle<HcalTopology> htopo;
+  es.get<IdealGeometryRecord>().get(htopo);
+  theTopology=new HcalTopology(*htopo);
+  theMCParams->setTopo(theTopology);
+
   edm::ESHandle<HcalRecoParams> q;
   es.get<HcalRecoParamsRcd>().get(q);
   theRecoParams = new HcalRecoParams(*q.product());
+  theRecoParams->setTopo(theTopology);
 
 //      std::cout<<" skdump in HcalPulseShapes::beginRun   dupm MCParams "<<std::endl;
 //      std::ofstream skfile("skdumpMCParamsNewFormat.txt");
@@ -121,11 +132,14 @@ void HcalPulseShapes::beginRun(edm::EventSetup const & es)
 
 void HcalPulseShapes::endRun()
 {
-  delete theMCParams;
-  theMCParams = 0;
+  if (theMCParams) delete theMCParams;
+  if (theRecoParams) delete theRecoParams;
+  if (theTopology) delete theTopology;
 
-  delete theRecoParams;
+
+  theMCParams = 0;
   theRecoParams = 0;
+  theTopology = 0;
 }
 
 
@@ -272,7 +286,8 @@ void HcalPulseShapes::computeHFShape() {
 
 void HcalPulseShapes::computeSiPMShape()
 {
-  unsigned int nbin = 512;
+  unsigned int nbin = 100; // to avoid big drop of integral for previous 512
+                       // due to negative afterpulse (May 6, 2013. S.Abdullin) 
   siPMShape_.setNBin(nbin);
   std::vector<float> nt(nbin,0.0);  //
 
@@ -318,6 +333,7 @@ HcalPulseShapes::shape(const HcalDetId & detId) const
     return defaultShape(detId);
   }
   int shapeType = theMCParams->getValues(detId)->signalShape();
+
   /*
 	  int sub     = detId.subdet();
 	  int depth   = detId.depth();
@@ -330,6 +346,7 @@ HcalPulseShapes::shape(const HcalDetId & detId) const
 		    << "  " << depth  << " => ShapeId "<<  shapeType 
 		    << std::endl;
   */
+
   ShapeMap::const_iterator shapeMapItr = theShapes.find(shapeType);
   if(shapeMapItr == theShapes.end()) {
     return defaultShape(detId);
@@ -345,6 +362,7 @@ HcalPulseShapes::shapeForReco(const HcalDetId & detId) const
     return defaultShape(detId);
   }
   int shapeType = theRecoParams->getValues(detId.rawId())->pulseShapeID();
+
   /*
 	  int sub     = detId.subdet();
 	  int depth   = detId.depth();

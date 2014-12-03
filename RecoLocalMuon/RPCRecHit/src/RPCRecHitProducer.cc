@@ -1,7 +1,7 @@
 /** \file
  *
- *  $Date: 2008/12/04 16:13:44 $
- *  $Revision: 1.9 $
+ *  $Date: 2013/05/28 06:00:27 $
+ *  $Revision: 1.12 $
  *  \author M. Maggi -- INFN Bari
 */
 
@@ -28,6 +28,7 @@
 #include "CondFormats/DataRecord/interface/RPCMaskedStripsRcd.h"
 #include "CondFormats/RPCObjects/interface/RPCDeadStrips.h"
 #include "CondFormats/DataRecord/interface/RPCDeadStripsRcd.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include <string>
 
@@ -103,7 +104,7 @@ RPCRecHitProducer::~RPCRecHitProducer(){
 
 
 
-void RPCRecHitProducer::beginRun( edm::Run& r, const edm::EventSetup& setup){
+void RPCRecHitProducer::beginRun(const edm::Run& r, const edm::EventSetup& setup){
 
   // Getting the masked-strip information
 
@@ -178,6 +179,10 @@ void RPCRecHitProducer::produce(Event& event, const EventSetup& setup) {
 
     // Get the GeomDet from the setup
     const RPCRoll* roll = rpcGeom->roll(rpcId);
+    if (roll == 0){
+      edm::LogError("BadDigiInput")<<"Failed to find RPCRoll for ID "<<rpcId;
+      continue;
+    }
 
     // Get the iterators over the digis associated with this LayerId
     const RPCDigiCollection::Range& range = (*rpcdgIt).second;

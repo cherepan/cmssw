@@ -17,6 +17,8 @@
 #include "CondFormats/DataRecord/interface/EcalTimeCalibConstantsRcd.h"
 #include "CondFormats/EcalObjects/interface/EcalChannelStatus.h"
 #include "CondFormats/DataRecord/interface/EcalChannelStatusRcd.h"
+#include "CondFormats/EcalObjects/interface/EcalLinearCorrections.h"
+#include "CondFormats/DataRecord/interface/EcalLinearCorrectionsRcd.h"
 #include "CondFormats/EcalObjects/interface/EcalIntercalibConstants.h"
 #include "CondFormats/DataRecord/interface/EcalIntercalibConstantsRcd.h"
 #include "CondFormats/EcalObjects/interface/EcalIntercalibConstantsMC.h"
@@ -64,6 +66,9 @@
 #include "CondFormats/AlignmentRecord/interface/ESAlignmentRcd.h"
 #include "CondFormats/EcalObjects/interface/EcalTimeOffsetConstant.h"
 #include "CondFormats/DataRecord/interface/EcalTimeOffsetConstantRcd.h"
+
+#include "CondFormats/EcalObjects/interface/EcalSampleMask.h"
+#include "CondFormats/DataRecord/interface/EcalSampleMaskRcd.h"
 
 #include <vector>
 
@@ -119,6 +124,8 @@ bool EcalDBCopy::shouldCopy(const edm::EventSetup& evtSetup, std::string contain
     cacheID = evtSetup.get<EcalPedestalsRcd>().cacheIdentifier();
   } else if (container == "EcalADCToGeVConstant") {
     cacheID = evtSetup.get<EcalADCToGeVConstantRcd>().cacheIdentifier();
+  } else if (container == "EcalLinearCorrections") {
+    cacheID = evtSetup.get<EcalLinearCorrectionsRcd>().cacheIdentifier();
   } else if (container == "EcalIntercalibConstants") {
     cacheID = evtSetup.get<EcalIntercalibConstantsRcd>().cacheIdentifier();
   } else if (container == "EcalIntercalibConstantsMC") {
@@ -169,6 +176,8 @@ bool EcalDBCopy::shouldCopy(const edm::EventSetup& evtSetup, std::string contain
     cacheID = evtSetup.get<ESAlignmentRcd>().cacheIdentifier();
   } else if (container == "EcalTimeOffsetConstant") {
     cacheID = evtSetup.get<EcalTimeOffsetConstantRcd>().cacheIdentifier();
+  } else if (container == "EcalSampleMask") {
+    cacheID = evtSetup.get<EcalSampleMaskRcd>().cacheIdentifier();
   }
 
   else {
@@ -267,13 +276,19 @@ void EcalDBCopy::copyToDB(const edm::EventSetup& evtSetup, std::string container
    dbOutput->createNewIOV<const EcalTPGCrystalStatus>( new EcalTPGCrystalStatus(*obj),dbOutput->beginOfTime(), dbOutput->endOfTime(),recordName);
 
 
-  }
-else if (container == "EcalIntercalibConstants") {
+  } else if (container == "EcalIntercalibConstants") {
     edm::ESHandle<EcalIntercalibConstants> handle;
     evtSetup.get<EcalIntercalibConstantsRcd>().get(handle);
     const EcalIntercalibConstants* obj = handle.product();
     std::cout << "inter pointer is: "<< obj<< std::endl;
    dbOutput->createNewIOV<const EcalIntercalibConstants>( new EcalIntercalibConstants(*obj),dbOutput->beginOfTime(), dbOutput->endOfTime(),recordName);
+
+  } else if (container == "EcalLinearCorrections") {
+    edm::ESHandle<EcalLinearCorrections> handle;
+    evtSetup.get<EcalLinearCorrectionsRcd>().get(handle);
+    const EcalLinearCorrections* obj = handle.product();
+    std::cout << "inter pointer is: "<< obj<< std::endl;
+   dbOutput->createNewIOV<const EcalLinearCorrections>( new EcalLinearCorrections(*obj),dbOutput->beginOfTime(), dbOutput->endOfTime(),recordName);
 
   }
 else if (container == "EcalIntercalibConstantsMC") {
@@ -399,7 +414,14 @@ else if (container == "EcalIntercalibConstantsMC") {
     std::cout << "TimeOffset pointer is: "<< obj<< std::endl;
     dbOutput->createNewIOV<const EcalTimeOffsetConstant>( new EcalTimeOffsetConstant(*obj),dbOutput->beginOfTime(), dbOutput->endOfTime(),recordName);
 
-  } else {
+ } else if (container == "EcalSampleMask") {
+   edm::ESHandle<EcalSampleMask> handle;
+   evtSetup.get<EcalSampleMaskRcd>().get(handle);
+   const EcalSampleMask* obj = handle.product();
+   std::cout << "sample mask pointer is: "<< obj<< std::endl;
+   dbOutput->createNewIOV<const EcalSampleMask>( new EcalSampleMask(*obj),dbOutput->beginOfTime(), dbOutput->endOfTime(),recordName);
+
+ } else {
     throw cms::Exception("Unknown container");
   }
 

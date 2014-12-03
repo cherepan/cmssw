@@ -7,9 +7,9 @@
  * 
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: EventSelectorBase.h,v 1.1 2009/01/22 13:35:13 veelken Exp $
+ * $Id: EventSelectorBase.h,v 1.2 2013/02/28 00:34:26 wmtan Exp $
  *
  */
 
@@ -37,3 +37,4 @@ class EventSelectorBase
 typedef edmplugin::PluginFactory<EventSelectorBase* (const edm::ParameterSet&)> EventSelectorPluginFactory;
 
 #endif
+

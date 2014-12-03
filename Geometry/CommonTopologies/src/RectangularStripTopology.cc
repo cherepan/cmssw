@@ -50,6 +50,11 @@ RectangularStripTopology::strip(const LocalPoint& lp) const {
   return aStrip;
 }
 
+float 
+RectangularStripTopology::coveredStrips(const LocalPoint& lp1, const LocalPoint& lp2)  const {
+  return (lp1.x()-lp2.x())/thePitch;
+}
+
 MeasurementPoint 
 RectangularStripTopology::measurementPosition(const LocalPoint& lp) const {
   return MeasurementPoint((lp.x()-theOffset)/thePitch,
@@ -62,30 +67,5 @@ RectangularStripTopology::measurementError(const LocalPoint& /*lp*/,
   return MeasurementError(lerr.xx()/(thePitch*thePitch),
   			  lerr.xy()/(thePitch*theStripLength),
 			  lerr.yy()/(theStripLength*theStripLength));
-}
-
-int 
-RectangularStripTopology::channel(const LocalPoint& lp) const {
-  return std::min(int(strip(lp)),theNumberOfStrips-1);
-}
-
-float 
-RectangularStripTopology::pitch() const { 
-  return thePitch;
-}
-  
-float 
-RectangularStripTopology::localPitch(const LocalPoint& /*lp*/) const {
-  return thePitch;
-}
-  
-float 
-RectangularStripTopology::stripAngle(float /*strip*/) const {
-  return 0;
-}
-  
-int 
-RectangularStripTopology::nstrips() const { 
-  return theNumberOfStrips;
 }
 

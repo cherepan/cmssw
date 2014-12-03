@@ -10,9 +10,9 @@
 // Original Author: Steve Wagner, stevew@pizero.colorado.edu
 // Created:         Sat Jan 14 22:00:00 UTC 2006
 //
-// $Author: wmtan $
-// $Date: 2011/06/20 20:28:26 $
-// $Revision: 1.5 $
+// $Author: mwalker $
+// $Date: 2013/04/16 16:23:54 $
+// $Revision: 1.11 $
 //
 
 #include "FWCore/Framework/interface/EDProducer.h"
@@ -41,7 +41,7 @@ namespace cms
 
     virtual ~TrackListMerger();
 
-    virtual void produce(edm::Event& e, const edm::EventSetup& c);
+    virtual void produce(edm::Event& e, const edm::EventSetup& c) override;
 
   private:
     std::auto_ptr<reco::TrackCollection> outputTrks;
@@ -55,7 +55,6 @@ namespace cms
     reco::TrackExtraRefProd refTrkExtras;
     TrackingRecHitRefProd refTrkHits;
     edm::RefProd< std::vector<Trajectory> > refTrajs;
-    std::vector<reco::TrackRef> trackRefs;
     edm::RefProd< TrajectorySeedCollection > refTrajSeeds;
     
     bool copyExtras_;
@@ -65,15 +64,17 @@ namespace cms
     double maxNormalizedChisq_;
     double minPT_;
     unsigned int minFound_;
-    double epsilon_;
-    double shareFrac_;
-    double foundHitBonus_;
-    double lostHitPenalty_;
+    float epsilon_;
+    float shareFrac_;
+    float foundHitBonus_;
+    float lostHitPenalty_;
+    std::vector<double> indivShareFrac_;
 
     std::vector< std::vector< int> > listsToMerge_;
     std::vector<bool> promoteQuality_;
     std::vector<int> hasSelector_;
     std::vector<edm::InputTag> selectors_;
+    std::vector<edm::InputTag> mvaStores_;
 
     bool allowFirstHitShare_;
     reco::TrackBase::TrackQuality qualityToSet_;

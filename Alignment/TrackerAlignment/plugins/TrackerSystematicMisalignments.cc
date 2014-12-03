@@ -33,7 +33,8 @@
 // made some variables constant, removed obviously dead code and comments
 
 TrackerSystematicMisalignments::TrackerSystematicMisalignments(const edm::ParameterSet& cfg)
-  : theAlignableTracker(0)
+  : theAlignableTracker(0),
+    theParameterSet(cfg)
 {
 	// use existing geometry
 	m_fromDBGeom = cfg.getUntrackedParameter< bool > ("fromDBGeom");
@@ -105,10 +106,14 @@ void TrackerSystematicMisalignments::beginJob()
 
 void TrackerSystematicMisalignments::analyze(const edm::Event& event, const edm::EventSetup& setup){
 	
+	//Retrieve tracker topology from geometry
+	edm::ESHandle<TrackerTopology> tTopoHandle;
+	setup.get<IdealGeometryRecord>().get(tTopoHandle);
+	const TrackerTopology* const tTopo = tTopoHandle.product();
 	
 	edm::ESHandle<GeometricDet>  geom;
 	setup.get<IdealGeometryRecord>().get(geom);	 
-	TrackerGeometry* tracker = TrackerGeomBuilderFromGeometricDet().build(&*geom);
+	TrackerGeometry* tracker = TrackerGeomBuilderFromGeometricDet().build(&*geom, theParameterSet);
 	
 	//take geometry from DB or randomly generate geometry
 	if (m_fromDBGeom){
@@ -125,7 +130,7 @@ void TrackerSystematicMisalignments::analyze(const edm::Event& event, const edm:
 		
 	}
 	
-	theAlignableTracker = new AlignableTracker(&(*tracker));
+	theAlignableTracker = new AlignableTracker(&(*tracker), tTopo);
 	
 	applySystematicMisalignment( &(*theAlignableTracker) );
 	

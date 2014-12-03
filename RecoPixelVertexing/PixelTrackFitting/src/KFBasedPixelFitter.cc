@@ -55,7 +55,7 @@
 template <class T> inline T sqr( T t) {return t*t;}
 
 KFBasedPixelFitter::MyBeamSpotHit::MyBeamSpotHit (const reco::BeamSpot &beamSpot, const GeomDet * geom)
-  : TransientTrackingRecHit(geom, DetId(0))
+  : TValidTrackingRecHit(geom, 0)
 {
   localPosition_ = LocalPoint(0.,0.,0.);
   localError_ = LocalError( sqr(beamSpot.BeamWidthX()), 0.0, sqr(beamSpot.sigmaZ())); //neglect XY differences and BS slope
@@ -214,7 +214,7 @@ reco::Track* KFBasedPixelFitter::run(
   if (theUseBeamSpot) {
     edm::Handle<reco::BeamSpot> beamSpot;
     ev.getByLabel( "offlineBeamSpot", beamSpot);
-    MyBeamSpotGeomDet bsgd(BoundPlane::build(impactPointState.surface().position(), impactPointState.surface().rotation(),OpenBounds()));
+    MyBeamSpotGeomDet bsgd(Plane::build(impactPointState.surface().position(), impactPointState.surface().rotation()));
     MyBeamSpotHit     bsrh(*beamSpot, &bsgd);
     impactPointState = updator.update(impactPointState, bsrh); //update
     impactPointState = TransverseImpactPointExtrapolator(&*field).extrapolate( impactPointState, vertexPos); //reextrapolate

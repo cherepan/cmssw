@@ -2,12 +2,14 @@
  *  
  *  See header file for description of class
  *
- *  $Date: 2010/01/06 14:18:54 $
- *  $Revision: 1.14 $
+ *  $Date: 2013/01/03 23:50:06 $
+ *  $Revision: 1.18 $
  *  \author M. Strang SUNY-Buffalo
  */
 
 #include "Validation/GlobalDigis/interface/GlobalDigisProducer.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 
 GlobalDigisProducer::GlobalDigisProducer(const edm::ParameterSet& iPSet) :
   fName(""), verbosity(0), frequency(0), label(""), getAllProvenances(false),
@@ -681,7 +683,6 @@ void GlobalDigisProducer::fillHCal(edm::Event& iEvent,
       << "Unable to find HCalconditions in event!";
     return;
   } 
-  const HcalQIEShape *shape = HCalconditions->getHcalShape();
   //HcalCalibrations calibrations;
   CaloSamples tool;
 
@@ -745,6 +746,8 @@ void GlobalDigisProducer::fillHCal(edm::Event& iEvent,
       const HcalCalibrations& calibrations = 
 	HCalconditions->getHcalCalibrations(cell);
       const HcalQIECoder *channelCoder = HCalconditions->getHcalCoder(cell);
+      const HcalQIEShape *shape = HCalconditions->getHcalShape(channelCoder);
+
       HcalCoderDb coder(*channelCoder, *shape);
       coder.adc2fC(*ihbhe, tool);
       
@@ -811,6 +814,8 @@ void GlobalDigisProducer::fillHCal(edm::Event& iEvent,
       const HcalCalibrations& calibrations = 
 	HCalconditions->getHcalCalibrations(cell);
       const HcalQIECoder *channelCoder = HCalconditions->getHcalCoder(cell);
+      const HcalQIEShape *shape = HCalconditions->getHcalShape(channelCoder);
+
       HcalCoderDb coder (*channelCoder, *shape);
       coder.adc2fC(*iho, tool);
 
@@ -854,6 +859,8 @@ void GlobalDigisProducer::fillHCal(edm::Event& iEvent,
       const HcalCalibrations& calibrations = 
 	HCalconditions->getHcalCalibrations(cell);
       const HcalQIECoder *channelCoder = HCalconditions->getHcalCoder(cell);
+      const HcalQIEShape *shape = HCalconditions->getHcalShape(channelCoder);
+
       HcalCoderDb coder (*channelCoder, *shape);
       coder.adc2fC(*ihf, tool);
 
@@ -937,6 +944,12 @@ void GlobalDigisProducer::storeHCal(PGlobalDigi& product)
 void GlobalDigisProducer::fillTrk(edm::Event& iEvent, 
 				   const edm::EventSetup& iSetup)
 {
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  iSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+
+
   std::string MsgLoggerCat = "GlobalDigisProducer_fillTrk";
 
   TString eventout;
@@ -964,22 +977,22 @@ void GlobalDigisProducer::fillTrk(edm::Event& iEvent,
     
     // get TIB
     if (detId.subdetId() == sdSiTIB) {
-      TIBDetId tibid(id);
+      
       for (iter = begin; iter != end; ++iter) {
 	++nStripBrl;
-	if (tibid.layer() == 1) {
+	if (tTopo->tibLayer(id) == 1) {
 	  TIBL1ADC.push_back((*iter).adc());
 	  TIBL1Strip.push_back((*iter).strip());
 	}
-	if (tibid.layer() == 2) {
+	if (tTopo->tibLayer(id) == 2) {
 	  TIBL2ADC.push_back((*iter).adc());
 	  TIBL2Strip.push_back((*iter).strip());
 	}	
-	if (tibid.layer() == 3) {
+	if (tTopo->tibLayer(id) == 3) {
 	  TIBL3ADC.push_back((*iter).adc());
 	  TIBL3Strip.push_back((*iter).strip());
 	}
-	if (tibid.layer() == 4) {
+	if (tTopo->tibLayer(id) == 4) {
 	  TIBL4ADC.push_back((*iter).adc());
 	  TIBL4Strip.push_back((*iter).strip());
 	}
@@ -988,22 +1001,22 @@ void GlobalDigisProducer::fillTrk(edm::Event& iEvent,
     
     // get TOB
     if (detId.subdetId() == sdSiTOB) {
-      TOBDetId tobid(id);
+      
       for (iter = begin; iter != end; ++iter) {
 	++nStripBrl;
-	if (tobid.layer() == 1) {
+	if (tTopo->tobLayer(id) == 1) {
 	  TOBL1ADC.push_back((*iter).adc());
 	  TOBL1Strip.push_back((*iter).strip());
 	}
-	if (tobid.layer() == 2) {
+	if (tTopo->tobLayer(id) == 2) {
 	  TOBL2ADC.push_back((*iter).adc());
 	  TOBL2Strip.push_back((*iter).strip());
 	}	
-	if (tobid.layer() == 3) {
+	if (tTopo->tobLayer(id) == 3) {
 	  TOBL3ADC.push_back((*iter).adc());
 	  TOBL3Strip.push_back((*iter).strip());
 	}
-	if (tobid.layer() == 4) {
+	if (tTopo->tobLayer(id) == 4) {
 	  TOBL4ADC.push_back((*iter).adc());
 	  TOBL4Strip.push_back((*iter).strip());
 	}
@@ -1012,18 +1025,18 @@ void GlobalDigisProducer::fillTrk(edm::Event& iEvent,
     
     // get TID
     if (detId.subdetId() == sdSiTID) {
-      TIDDetId tidid(id);
+      
       for (iter = begin; iter != end; ++iter) {
 	++nStripFwd;
-	if (tidid.wheel() == 1) {
+	if (tTopo->tidWheel(id) == 1) {
 	  TIDW1ADC.push_back((*iter).adc());
 	  TIDW1Strip.push_back((*iter).strip());
 	}
-	if (tidid.wheel() == 2) {
+	if (tTopo->tidWheel(id) == 2) {
 	  TIDW2ADC.push_back((*iter).adc());
 	  TIDW2Strip.push_back((*iter).strip());
 	}
-	if (tidid.wheel() == 3) {
+	if (tTopo->tidWheel(id) == 3) {
 	  TIDW3ADC.push_back((*iter).adc());
 	  TIDW3Strip.push_back((*iter).strip());
 	}
@@ -1032,38 +1045,38 @@ void GlobalDigisProducer::fillTrk(edm::Event& iEvent,
 
     // get TEC
     if (detId.subdetId() == sdSiTEC) {
-      TECDetId tecid(id);
+      
       for (iter = begin; iter != end; ++iter) {
 	++nStripFwd;
-	if (tecid.wheel() == 1) {
+	if (tTopo->tecWheel(id) == 1) {
 	  TECW1ADC.push_back((*iter).adc());
 	  TECW1Strip.push_back((*iter).strip());
 	}
-	if (tecid.wheel() == 2) {
+	if (tTopo->tecWheel(id) == 2) {
 	  TECW2ADC.push_back((*iter).adc());
 	  TECW2Strip.push_back((*iter).strip());
 	}
-	if (tecid.wheel() == 3) {
+	if (tTopo->tecWheel(id) == 3) {
 	  TECW3ADC.push_back((*iter).adc());
 	  TECW3Strip.push_back((*iter).strip());
 	}
-	if (tecid.wheel() == 4) {
+	if (tTopo->tecWheel(id) == 4) {
 	  TECW4ADC.push_back((*iter).adc());
 	  TECW4Strip.push_back((*iter).strip());
 	}
-	if (tecid.wheel() == 5) {
+	if (tTopo->tecWheel(id) == 5) {
 	  TECW5ADC.push_back((*iter).adc());
 	  TECW5Strip.push_back((*iter).strip());
 	}
-	if (tecid.wheel() == 6) {
+	if (tTopo->tecWheel(id) == 6) {
 	  TECW6ADC.push_back((*iter).adc());
 	  TECW6Strip.push_back((*iter).strip());
 	}
-	if (tecid.wheel() == 7) {
+	if (tTopo->tecWheel(id) == 7) {
 	  TECW7ADC.push_back((*iter).adc());
 	  TECW7Strip.push_back((*iter).strip());
 	}
-	if (tecid.wheel() == 8) {
+	if (tTopo->tecWheel(id) == 8) {
 	  TECW8ADC.push_back((*iter).adc());
 	  TECW8Strip.push_back((*iter).strip());
 	}
@@ -1102,20 +1115,20 @@ void GlobalDigisProducer::fillTrk(edm::Event& iEvent,
 
     // get Barrel pixels
     if (detId.subdetId() == sdPxlBrl) {
-      PXBDetId bdetid(id);
+      
       for (iter = begin; iter != end; ++iter) {
 	++nPxlBrl;
-	if (bdetid.layer() == 1) {
+	if (tTopo->pxbLayer(id) == 1) {
 	  BRL1ADC.push_back((*iter).adc());
 	  BRL1Row.push_back((*iter).row());
 	  BRL1Col.push_back((*iter).column());	  
 	}
-	if (bdetid.layer() == 2) {
+	if (tTopo->pxbLayer(id) == 2) {
 	  BRL2ADC.push_back((*iter).adc());
 	  BRL2Row.push_back((*iter).row());
 	  BRL2Col.push_back((*iter).column());	  
 	}
-	if (bdetid.layer() == 3) {
+	if (tTopo->pxbLayer(id) == 3) {
 	  BRL3ADC.push_back((*iter).adc());
 	  BRL3Row.push_back((*iter).row());
 	  BRL3Col.push_back((*iter).column());	  
@@ -1125,28 +1138,28 @@ void GlobalDigisProducer::fillTrk(edm::Event& iEvent,
 
     // get Forward pixels
     if (detId.subdetId() == sdPxlFwd) {
-      PXFDetId fdetid(id);
+      
       for (iter = begin; iter != end; ++iter) {
 	++nPxlFwd;
-	if (fdetid.disk() == 1) {
-	  if (fdetid.side() == 1) {
+	if (tTopo->pxfDisk(id) == 1) {
+	  if (tTopo->pxfSide(id) == 1) {
 	    FWD1nADC.push_back((*iter).adc());
 	    FWD1nRow.push_back((*iter).row());
 	    FWD1nCol.push_back((*iter).column());
 	  }
-	  if (fdetid.side() == 2) {
+	  if (tTopo->pxfSide(id) == 2) {
 	    FWD1pADC.push_back((*iter).adc());
 	    FWD1pRow.push_back((*iter).row());
 	    FWD1pCol.push_back((*iter).column());
 	  }
 	}
-	if (fdetid.disk() == 2) {
-	  if (fdetid.side() == 1) {
+	if (tTopo->pxfDisk(id) == 2) {
+	  if (tTopo->pxfSide(id) == 1) {
 	    FWD2nADC.push_back((*iter).adc());
 	    FWD2nRow.push_back((*iter).row());
 	    FWD2nCol.push_back((*iter).column());
 	  }
-	  if (fdetid.side() == 2) {
+	  if (tTopo->pxfSide(id) == 2) {
 	    FWD2pADC.push_back((*iter).adc());
 	    FWD2pRow.push_back((*iter).row());
 	    FWD2pCol.push_back((*iter).column());

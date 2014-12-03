@@ -7,9 +7,9 @@
  *
  * \author Luca Lista, INFN
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.5 $
  *
- * $Id: CandidateProducer.h,v 1.3 2010/01/18 16:53:01 hegner Exp $
+ * $Id: CandidateProducer.h,v 1.5 2013/02/28 00:15:23 wmtan Exp $
  *
  */
 #include "FWCore/Utilities/interface/InputTag.h"
@@ -80,14 +80,14 @@ public:
   
 private:
   /// begin job (first run)
-  void beginRun(edm::Run&, const edm::EventSetup& es) {
+  void beginRun(const edm::Run&, const edm::EventSetup& es) override {
     if (!initialized_) {
       converter_.beginFirstRun(es);
       initialized_ = true;
     }
   }
   /// process one event
-  void produce(edm::Event& evt, const edm::EventSetup& es) {
+  void produce(edm::Event& evt, const edm::EventSetup& es) override {
     edm::Handle<TColl> src;
     evt.getByLabel(src_, src);
     Init::init(selector_, evt, es);

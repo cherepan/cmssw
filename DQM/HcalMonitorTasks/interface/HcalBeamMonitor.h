@@ -15,8 +15,8 @@
 
 /** \class HcalBeamMonitor
   *
-  * $Date: 2010/03/25 11:00:57 $
-  * $Revision: 1.17 $
+  * $Date: 2012/06/27 13:20:28 $
+  * $Revision: 1.19 $
   * \author J. Temple - Univ. of Maryland
   */
 
@@ -131,6 +131,7 @@ class HcalBeamMonitor:  public HcalBaseDQMonitor {
   unsigned int lastProcessedLS_;
   int runNumber_;
   bool Overwrite_;
+  bool setupDone_;
 
   int minBadCells_;  // number of channels that must be bad to be included in problem summary
   edm::InputTag digiLabel_;

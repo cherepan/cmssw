@@ -21,9 +21,11 @@ class MatrixReader(object):
 
         self.wm=opt.wmcontrol
         self.addCommand=opt.command
+        self.apply=opt.apply
         self.commandLineWf=opt.workflow
         self.overWrite=opt.overWrite
-        
+
+        self.noRun = opt.noRun
         return
 
     def reset(self, what='all'):
@@ -42,6 +44,7 @@ class MatrixReader(object):
                              'relval_generator': 'gen-'  ,
                              'relval_production': 'prod-'  ,
                              'relval_ged': 'ged-',
+                             'relval_upgrade':'upg-',
                              'relval_identity':'id-'
                              }
 
@@ -51,7 +54,8 @@ class MatrixReader(object):
                       'relval_generator',
                       'relval_production',
                       'relval_ged',
-                      'relval_identity'
+                      'relval_upgrade',
+                      'relval_identity'                      
                       ]
 
         self.relvalModule = None
@@ -193,7 +197,10 @@ class MatrixReader(object):
                 stepName=step
                 if self.wm:
                     #cannot put a certain number of things in wm
-                    if stepName in ['HARVEST','HARVESTD','HARVESTDreHLT','RECODFROMRAWRECO','SKIMD','SKIMCOSD','SKIMDreHLT']:
+                    if stepName in [
+                        #'HARVEST','HARVESTD','HARVESTDreHLT',
+                        'RECODFROMRAWRECO','SKIMD','SKIMCOSD','SKIMDreHLT'
+                        ]:
                         continue
                     
                 #replace stepName is needed
@@ -223,6 +230,8 @@ class MatrixReader(object):
 
                 if input:
                     cmd = input
+                    if self.noRun:
+                        cmd.run=[]
                 else:
                     if cfg:
                         cmd  = 'cmsDriver.py '+cfg+' '+opts
@@ -231,9 +240,14 @@ class MatrixReader(object):
                     if self.wm:
                         cmd+=' --io %s.io --python %s.py'%(stepName,stepName)
                     if self.addCommand:
-                        cmd +=' '+self.addCommand
+                        if self.apply:
+                            if stepIndex in self.apply or stepName in self.apply:
+                                cmd +=' '+self.addCommand
+                        else:
+                            cmd +=' '+self.addCommand
                     if self.wm:
                         cmd=cmd.replace('DQMROOT','DQM')
+                        cmd=cmd.replace('--filetype DQM','')
                 commands.append(cmd)
                 ranStepList.append(stepName)
                 stepIndex+=1
@@ -411,7 +425,10 @@ class MatrixReader(object):
             if self.what != 'all' and self.what not in matrixFile:
                 print "ignoring non-requested file",matrixFile
                 continue
-
+            if self.what == 'all' and ('upgrade' in matrixFile):
+                print "ignoring",matrixFile,"from default matrix"
+                continue
+            
             try:
                 self.readMatrix(matrixFile, useInput, refRel, fromScratch)
             except Exception, e:

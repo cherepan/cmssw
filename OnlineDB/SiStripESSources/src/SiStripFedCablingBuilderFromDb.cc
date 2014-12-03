@@ -1,4 +1,4 @@
-// Last commit: $Id: SiStripFedCablingBuilderFromDb.cc,v 1.57 2009/04/06 17:08:39 lowette Exp $
+// Last commit: $Id: SiStripFedCablingBuilderFromDb.cc,v 1.59 2013/05/30 21:52:09 gartung Exp $
 
 #include "OnlineDB/SiStripESSources/interface/SiStripFedCablingBuilderFromDb.h"
 #include "CalibFormats/SiStripObjects/interface/SiStripFecCabling.h"
@@ -857,8 +857,8 @@ void SiStripFedCablingBuilderFromDb::buildFecCablingFromDetIds( SiStripConfigDb*
 // -----------------------------------------------------------------------------
 /** */
 void SiStripFedCablingBuilderFromDb::assignDcuAndDetIds( SiStripFecCabling& fec_cabling,
-							 std::vector< std::pair<uint32_t,TkDcuInfo*> > in ) {
-  
+							 const std::vector< std::pair<uint32_t,TkDcuInfo*> >& _in ) {
+  std::vector< std::pair<uint32_t,TkDcuInfo*> > in = _in; 
   // ---------- Check if entries found in DCU-DetId vector ----------
 
   if ( in.empty() ) { 

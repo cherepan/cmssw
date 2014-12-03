@@ -1,5 +1,5 @@
 //
-// $Id: LogErrorEventFilter.cc,v 1.1 2012/03/23 20:42:51 venturia Exp $
+// $Id: LogErrorEventFilter.cc,v 1.5 2013/05/17 21:41:49 chrjones Exp $
 //
 
 /**
@@ -7,11 +7,11 @@
   \brief    Use StandAlone track to define the 4-momentum of a PAT Muon (normally the global one is used)
             
   \author   Giovanni Petrucciani
-  \version  $Id: LogErrorEventFilter.cc,v 1.1 2012/03/23 20:42:51 venturia Exp $
+  \version  $Id: LogErrorEventFilter.cc,v 1.5 2013/05/17 21:41:49 chrjones Exp $
 */
 
 
-#include "FWCore/Framework/interface/EDFilter.h"
+#include "FWCore/Framework/interface/one/EDFilter.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
@@ -30,16 +30,19 @@
 #define foreach BOOST_FOREACH
 
 
-class LogErrorEventFilter : public edm::EDFilter {
+class LogErrorEventFilter : public edm::one::EDFilter<edm::one::WatchRuns,
+                                                      edm::one::WatchLuminosityBlocks,
+                                                      edm::EndLuminosityBlockProducer> {
     public:
         explicit LogErrorEventFilter(const edm::ParameterSet & iConfig);
         virtual ~LogErrorEventFilter() { }
 
-        virtual bool filter(edm::Event & iEvent, const edm::EventSetup & iSetup);
-        virtual bool beginLuminosityBlock(edm::LuminosityBlock &lumi, const edm::EventSetup &iSetup);
-        virtual bool endLuminosityBlock(edm::LuminosityBlock &lumi, const edm::EventSetup &iSetup);
-        virtual bool beginRun(edm::Run &run, const edm::EventSetup &iSetup);
-        virtual bool endRun(edm::Run &run, const edm::EventSetup &iSetup);
+        virtual bool filter(edm::Event & iEvent, const edm::EventSetup& iSetup) override;
+        virtual void beginLuminosityBlock(const edm::LuminosityBlock &lumi, const edm::EventSetup &iSetup) override;
+        virtual void endLuminosityBlock(const edm::LuminosityBlock &lumi, const edm::EventSetup &iSetup) override;
+        virtual void endLuminosityBlockProduce(edm::LuminosityBlock &lumi, const edm::EventSetup &iSetup) override;
+        virtual void beginRun(const edm::Run &run, const edm::EventSetup &iSetup) override;
+        virtual void endRun(const edm::Run &run, const edm::EventSetup &iSetup) override;
         virtual void endJob();
 
     private:
@@ -131,8 +134,8 @@ LogErrorEventFilter::LogErrorEventFilter(const edm::ParameterSet & iConfig) :
 
 }
 
-bool
-LogErrorEventFilter::beginLuminosityBlock(edm::LuminosityBlock &lumi, const edm::EventSetup &iSetup) {
+void
+LogErrorEventFilter::beginLuminosityBlock(const edm::LuminosityBlock &lumi, const edm::EventSetup &iSetup) {
     npassLumi_ = 0; nfailLumi_ = 0;
     errorCollectionThisLumi_.clear();
     if (readSummaryMode_) {
@@ -147,37 +150,37 @@ LogErrorEventFilter::beginLuminosityBlock(edm::LuminosityBlock &lumi, const edm:
         npassRun_ += npassLumi_;
         nfailRun_ += nfailLumi_;
     }
-    return true;
+}
+void
+LogErrorEventFilter::endLuminosityBlock(edm::LuminosityBlock const &lumi, const edm::EventSetup &iSetup) {
+   statsPerLumi_[std::pair<uint32_t,uint32_t>(lumi.run(), lumi.luminosityBlock())] = std::pair<size_t,size_t>(npassLumi_, nfailLumi_);
+   if (nfailLumi_ < thresholdPerLumi_*(npassLumi_+nfailLumi_)) {
+       increment(errorCollectionThisRun_, errorCollectionThisLumi_);
+   }
+   if (verbose_) {
+       if (!errorCollectionThisLumi_.empty()) {
+           std::cout << "\n === REPORT FOR RUN " << lumi.run() << " LUMI " << lumi.luminosityBlock() << " === " << std::endl;
+           print(errorCollectionThisLumi_);
+       }
+   }
 }
 
-bool
-LogErrorEventFilter::endLuminosityBlock(edm::LuminosityBlock &lumi, const edm::EventSetup &iSetup) {
-    statsPerLumi_[std::pair<uint32_t,uint32_t>(lumi.run(), lumi.luminosityBlock())] = std::pair<size_t,size_t>(npassLumi_, nfailLumi_);
-    if (nfailLumi_ < thresholdPerLumi_*(npassLumi_+nfailLumi_)) {
-        increment(errorCollectionThisRun_, errorCollectionThisLumi_);
-    }
-    if (verbose_) {
-        if (!errorCollectionThisLumi_.empty()) {
-            std::cout << "\n === REPORT FOR RUN " << lumi.run() << " LUMI " << lumi.luminosityBlock() << " === " << std::endl;
-            print(errorCollectionThisLumi_);
-        }
-    }
+void
+LogErrorEventFilter::endLuminosityBlockProduce(edm::LuminosityBlock &lumi, const edm::EventSetup &iSetup) {
     lumi.put(serialize(errorCollectionThisLumi_));
     std::auto_ptr<int> outpass(new int(npassLumi_)); lumi.put(outpass, "pass");
     std::auto_ptr<int> outfail(new int(nfailLumi_)); lumi.put(outfail, "fail");
-    return true;
 }
 
 
-bool
-LogErrorEventFilter::beginRun(edm::Run &run, const edm::EventSetup &iSetup) {
+void
+LogErrorEventFilter::beginRun(const edm::Run &run, const edm::EventSetup &iSetup) {
     npassRun_ = 0; nfailRun_ = 0;
     errorCollectionThisRun_.clear();
-    return true;
 }
 
-bool
-LogErrorEventFilter::endRun(edm::Run &run, const edm::EventSetup &iSetup) {
+void
+LogErrorEventFilter::endRun(const edm::Run &run, const edm::EventSetup &iSetup) {
     statsPerRun_[run.run()] = std::pair<size_t,size_t>(npassRun_, nfailRun_);
     if (nfailRun_ < thresholdPerRun_*(npassRun_+nfailRun_)) {
         increment(errorCollectionAll_, errorCollectionThisRun_);
@@ -189,7 +192,6 @@ LogErrorEventFilter::endRun(edm::Run &run, const edm::EventSetup &iSetup) {
         }
     }
     //run.put(serialize(errorCollectionThisRun_));
-    return true;
 }
 
 void
@@ -204,14 +206,14 @@ LogErrorEventFilter::endJob() {
         typedef std::pair<uint32_t, counter> hitRun;
         foreach(const hitRun &hit, statsPerRun_) {
             double fract = hit.second.second/double(hit.second.first + hit.second.second);
-            printf("run %6d: fail %7lu, pass %7lu, fraction %7.3f%%%s\n", hit.first, hit.second.second, hit.second.first, fract*100., (fract >= thresholdPerRun_ ? " (run excluded from summary list)" : ""));
+            printf("run %6d: fail %7zu, pass %7zu, fraction %7.3f%%%s\n", hit.first, hit.second.second, hit.second.first, fract*100., (fract >= thresholdPerRun_ ? " (run excluded from summary list)" : ""));
         }
  
         std::cout << "\n === SCOREBOARD PER LUMI === " << std::endl;
         typedef std::pair<std::pair<uint32_t,uint32_t>, counter> hitLumi;
         foreach(const hitLumi &hit, statsPerLumi_) {
             double fract = hit.second.second/double(hit.second.first + hit.second.second);
-            printf("run %6d, lumi %4d: fail %7lu, pass %7lu, fraction %7.3f%%%s\n", hit.first.first, hit.first.second, hit.second.second, hit.second.first, fract*100., (fract >= thresholdPerLumi_ ? " (lumi excluded from run list)" : ""));
+            printf("run %6d, lumi %4d: fail %zu, pass %zu, fraction %7.3f%%%s\n", hit.first.first, hit.first.second, hit.second.second, hit.second.first, fract*100., (fract >= thresholdPerLumi_ ? " (lumi excluded from run list)" : ""));
         }
     }
 }

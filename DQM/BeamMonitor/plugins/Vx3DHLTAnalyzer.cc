@@ -13,13 +13,14 @@
 //
 // Original Author:  Mauro Dinardo,28 S-020,+41227673777,
 //         Created:  Tue Feb 23 13:15:31 CET 2010
-// $Id: Vx3DHLTAnalyzer.cc,v 1.101 2011/08/03 12:48:47 dinardo Exp $
+// $Id: Vx3DHLTAnalyzer.cc,v 1.106 2012/12/07 10:03:22 eulisse Exp $
 
 
 #include "DQM/BeamMonitor/plugins/Vx3DHLTAnalyzer.h"
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 
 #include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
 #include "DataFormats/TrackReco/interface/Track.h"
@@ -116,7 +117,7 @@ void Vx3DHLTAnalyzer::analyze(const Event& iEvent, const EventSetup& iSetup)
 		  for (j = 0; j < DIM; j++)
 		    {
 		      MyVertex.Covariance[i][j] = it3DVx->covariance(i,j);
-		      if (std::isnan(MyVertex.Covariance[i][j]) == true) break;
+		      if (edm::isNotFinite(MyVertex.Covariance[i][j]) == true) break;
 		    }
 		  if (j != DIM) break;
 		}
@@ -321,8 +322,8 @@ int Vx3DHLTAnalyzer::MyFit(vector<double>* vals)
 	  Gauss3D->GetStats(amin, edm, errdef, nvpar, nparx);
 
 	  if (counterVx < minNentries) goodData = -2;
-	  else if (std::isnan(edm) == true) goodData = -1;
-	  else for (unsigned int j = 0; j < nParams; j++) if (std::isnan(Gauss3D->GetParError(j)) == true) { goodData = -1; break; }
+	  else if (edm::isNotFinite(edm) == true) goodData = -1;
+	  else for (unsigned int j = 0; j < nParams; j++) if (edm::isNotFinite(Gauss3D->GetParError(j)) == true) { goodData = -1; break; }
 	  if (goodData == 0)
 	    {
 	      covyz = Gauss3D->GetParameter(4)*(std::fabs(Gauss3D->GetParameter(2))-std::fabs(Gauss3D->GetParameter(1))) - Gauss3D->GetParameter(5)*Gauss3D->GetParameter(3);
@@ -376,8 +377,8 @@ int Vx3DHLTAnalyzer::MyFit(vector<double>* vals)
 	  Gauss3D->GetStats(amin, edm, errdef, nvpar, nparx);
 
 	  if (counterVx < minNentries) goodData = -2;
-	  else if (std::isnan(edm) == true) goodData = -1;
-	  else for (unsigned int j = 0; j < nParams; j++) if (std::isnan(Gauss3D->GetParError(j)) == true) { goodData = -1; break; }
+	  else if (edm::isNotFinite(edm) == true) goodData = -1;
+	  else for (unsigned int j = 0; j < nParams; j++) if (edm::isNotFinite(Gauss3D->GetParError(j)) == true) { goodData = -1; break; }
 	  if (goodData == 0)
 	    {
 	      covyz = Gauss3D->GetParameter(4)*(std::fabs(Gauss3D->GetParameter(2))-std::fabs(Gauss3D->GetParameter(1))) - Gauss3D->GetParameter(5)*Gauss3D->GetParameter(3);
@@ -432,8 +433,8 @@ int Vx3DHLTAnalyzer::MyFit(vector<double>* vals)
 	  Gauss3D->GetStats(amin, edm, errdef, nvpar, nparx);
 
 	  if (counterVx < minNentries) goodData = -2;
-	  else if (std::isnan(edm) == true) goodData = -1;
-	  else for (unsigned int j = 0; j < nParams; j++) if (std::isnan(Gauss3D->GetParError(j)) == true) { goodData = -1; break; }
+	  else if (edm::isNotFinite(edm) == true) goodData = -1;
+	  else for (unsigned int j = 0; j < nParams; j++) if (edm::isNotFinite(Gauss3D->GetParError(j)) == true) { goodData = -1; break; }
 	  if (goodData == 0)
 	    {
 	      covyz = Gauss3D->GetParameter(4)*(std::fabs(Gauss3D->GetParameter(2))-std::fabs(Gauss3D->GetParameter(1))) - Gauss3D->GetParameter(5)*Gauss3D->GetParameter(3);
@@ -477,8 +478,8 @@ int Vx3DHLTAnalyzer::MyFit(vector<double>* vals)
       Gauss3D->GetStats(amin, edm, errdef, nvpar, nparx);
       
       if (counterVx < minNentries) goodData = -2;
-      else if (std::isnan(edm) == true) goodData = -1;
-      else for (unsigned int j = 0; j < nParams; j++) if (std::isnan(Gauss3D->GetParError(j)) == true) { goodData = -1; break; }
+      else if (edm::isNotFinite(edm) == true) goodData = -1;
+      else for (unsigned int j = 0; j < nParams; j++) if (edm::isNotFinite(Gauss3D->GetParError(j)) == true) { goodData = -1; break; }
       if (goodData == 0)
 	{
 	  covyz = Gauss3D->GetParameter(4)*(std::fabs(Gauss3D->GetParameter(2))-std::fabs(Gauss3D->GetParameter(1))) - Gauss3D->GetParameter(5)*Gauss3D->GetParameter(3);
@@ -524,8 +525,8 @@ int Vx3DHLTAnalyzer::MyFit(vector<double>* vals)
 	      Gauss3D->GetStats(amin, edm, errdef, nvpar, nparx);
       
 	      if (counterVx < minNentries) goodData = -2;
-	      else if (std::isnan(edm) == true) goodData = -1;
-	      else for (unsigned int j = 0; j < nParams; j++) if (std::isnan(Gauss3D->GetParError(j)) == true) { goodData = -1; break; }
+	      else if (edm::isNotFinite(edm) == true) goodData = -1;
+	      else for (unsigned int j = 0; j < nParams; j++) if (edm::isNotFinite(Gauss3D->GetParError(j)) == true) { goodData = -1; break; }
 	      if (goodData == 0)
 		{
 		  covyz = Gauss3D->GetParameter(4)*(std::fabs(Gauss3D->GetParameter(2))-std::fabs(Gauss3D->GetParameter(1))) - Gauss3D->GetParameter(5)*Gauss3D->GetParameter(3);
@@ -863,14 +864,14 @@ void Vx3DHLTAnalyzer::endLuminosityBlock(const LuminosityBlock& lumiBlock,
 	      vals.push_back(std::sqrt(std::fabs(fitResults[0])));
 	      vals.push_back(std::sqrt(std::fabs(fitResults[1])));
 
-	      vals.push_back(powf(fitResults[6+nParams],2.));
-	      vals.push_back(powf(fitResults[7+nParams],2.));
-	      vals.push_back(powf(fitResults[8+nParams],2.));
-	      vals.push_back(powf(std::fabs(fitResults[2+nParams]) / (2.*std::sqrt(std::fabs(fitResults[2]))),2.));
-	      vals.push_back(powf(fitResults[5+nParams],2.));
-	      vals.push_back(powf(fitResults[4+nParams],2.));
-	      vals.push_back(powf(std::fabs(fitResults[0+nParams]) / (2.*std::sqrt(std::fabs(fitResults[0]))),2.));
-	      vals.push_back(powf(std::fabs(fitResults[1+nParams]) / (2.*std::sqrt(std::fabs(fitResults[1]))),2.));
+	      vals.push_back(std::pow(fitResults[6+nParams],2.));
+	      vals.push_back(std::pow(fitResults[7+nParams],2.));
+	      vals.push_back(std::pow(fitResults[8+nParams],2.));
+	      vals.push_back(std::pow(std::fabs(fitResults[2+nParams]) / (2.*std::sqrt(std::fabs(fitResults[2]))),2.));
+	      vals.push_back(std::pow(fitResults[5+nParams],2.));
+	      vals.push_back(std::pow(fitResults[4+nParams],2.));
+	      vals.push_back(std::pow(std::fabs(fitResults[0+nParams]) / (2.*std::sqrt(std::fabs(fitResults[0]))),2.));
+	      vals.push_back(std::pow(std::fabs(fitResults[1+nParams]) / (2.*std::sqrt(std::fabs(fitResults[1]))),2.));
 	    }
 	  else for (unsigned int i = 0; i < 8*2; i++) vals.push_back(0.0);
 
@@ -893,14 +894,14 @@ void Vx3DHLTAnalyzer::endLuminosityBlock(const LuminosityBlock& lumiBlock,
 	    vals.push_back(Vx_X->getTH1F()->GetRMS());
 	    vals.push_back(Vx_Y->getTH1F()->GetRMS());
 	    
-	    vals.push_back(powf(Vx_X->getTH1F()->GetMeanError(),2.));
-	    vals.push_back(powf(Vx_Y->getTH1F()->GetMeanError(),2.));
-	    vals.push_back(powf(Vx_Z->getTH1F()->GetMeanError(),2.));
-	    vals.push_back(powf(Vx_Z->getTH1F()->GetRMSError(),2.));
+	    vals.push_back(std::pow(Vx_X->getTH1F()->GetMeanError(),2.));
+	    vals.push_back(std::pow(Vx_Y->getTH1F()->GetMeanError(),2.));
+	    vals.push_back(std::pow(Vx_Z->getTH1F()->GetMeanError(),2.));
+	    vals.push_back(std::pow(Vx_Z->getTH1F()->GetRMSError(),2.));
 	    vals.push_back(0.0);
 	    vals.push_back(0.0);
-	    vals.push_back(powf(Vx_X->getTH1F()->GetRMSError(),2.));
-	    vals.push_back(powf(Vx_Y->getTH1F()->GetRMSError(),2.));
+	    vals.push_back(std::pow(Vx_X->getTH1F()->GetRMSError(),2.));
+	    vals.push_back(std::pow(Vx_Y->getTH1F()->GetRMSError(),2.));
 	    }
 	  else
 	    {
@@ -1186,7 +1187,7 @@ void Vx3DHLTAnalyzer::beginJob()
   reset("scratch");
   prescaleHistory      = 1;
   maxLumiIntegration   = 15;
-  minVxDoF             = 4.;
+  minVxDoF             = 10.;
   // For vertex fitter without track-weight: d.o.f. = 2*NTracks - 3
   // For vertex fitter with track-weight:    d.o.f. = sum_NTracks(2*track_weight) - 3
   internalDebug        = false;

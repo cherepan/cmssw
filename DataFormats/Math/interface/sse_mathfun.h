@@ -1,6 +1,7 @@
 #ifndef SSE_MATHFUN_H
 #define SSE_MATHFUN_H
 
+#if !defined(__arm__)
 #if (defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ > 4)) || defined(__clang__)
 #include <x86intrin.h>
 #define CMS_USE_SSE
@@ -12,15 +13,16 @@
 
 #include <mmintrin.h>
 #include <emmintrin.h>
-#endif
+#endif /* __SSE2__ */
 #ifdef __SSE3__
 #include <pmmintrin.h>
-#endif
+#endif /* __SSE3__ */
 #ifdef __SSE4_1__
 #include <smmintrin.h>
-#endif
+#endif /* __SSE4_1__ */
 
-#endif
+#endif /* (defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ > 4)) || defined(__clang__) */
+#endif /* !defined(__arm__) */
 
 #ifdef CMS_USE_SSE
 
@@ -292,7 +294,7 @@ _PS_CONST(cephes_exp_p4, 1.6666665459E-1);
 _PS_CONST(cephes_exp_p5, 5.0000001201E-1);
 
 inline v4sf exp_ps(v4sf x) {
-  v4sf tmp = _mm_setzero_ps(), fx;
+  v4sf tmp, fx;
 #ifdef USE_SSE2
   v4si emm0;
 #else
@@ -314,6 +316,7 @@ inline v4sf exp_ps(v4sf x) {
   /* how to perform a floorf with SSE: just below */
 #ifndef USE_SSE2
   /* step 1 : cast to int */
+  tmp = _mm_setzero_ps()
   tmp = _mm_movehl_ps(tmp, fx);
   mm0 = _mm_cvttps_pi32(fx);
   mm1 = _mm_cvttps_pi32(tmp);
@@ -415,7 +418,7 @@ _PS_CONST(cephes_FOPI, 1.27323954473516); // 4 / M_PI
    deliver full speed.
 */
 inline v4sf sin_ps(v4sf x) { // any x
-  v4sf xmm1, xmm2 = _mm_setzero_ps(), xmm3, sign_bit, y;
+  v4sf xmm1, xmm2, xmm3, sign_bit, y;
 
 #ifdef USE_SSE2
   v4si emm0, emm2;
@@ -456,6 +459,7 @@ inline v4sf sin_ps(v4sf x) { // any x
   sign_bit = _mm_xor_ps(sign_bit, swap_sign_bit);
 #else
   /* store the integer part of y in mm0:mm1 */
+  xmm2 = _mm_setzero_ps(); 
   xmm2 = _mm_movehl_ps(xmm2, y);
   mm2 = _mm_cvttps_pi32(y);
   mm3 = _mm_cvttps_pi32(xmm2);
@@ -532,7 +536,7 @@ inline v4sf sin_ps(v4sf x) { // any x
 
 /* almost the same as sin_ps */
 inline v4sf cos_ps(v4sf x) { // any x
-  v4sf xmm1, xmm2 = _mm_setzero_ps(), xmm3, y;
+  v4sf xmm1, xmm2, xmm3, y;
 #ifdef USE_SSE2
   v4si emm0, emm2;
 #else
@@ -565,6 +569,7 @@ inline v4sf cos_ps(v4sf x) { // any x
   v4sf poly_mask = _mm_castsi128_ps(emm2);
 #else
   /* store the integer part of y in mm0:mm1 */
+  xmm2 = _mm_setzero_ps();
   xmm2 = _mm_movehl_ps(xmm2, y);
   mm2 = _mm_cvttps_pi32(y);
   mm3 = _mm_cvttps_pi32(xmm2);
@@ -651,7 +656,7 @@ inline v4sf cos_ps(v4sf x) { // any x
 /* since sin_ps and cos_ps are almost identical, sincos_ps could replace both of them..
    it is almost as fast, and gives you a free cosine with your sine */
 inline void sincos_ps(v4sf x, v4sf *s, v4sf *c) {
-  v4sf xmm1, xmm2, xmm3 = _mm_setzero_ps(), sign_bit_sin, y;
+  v4sf xmm1, xmm2, xmm3, sign_bit_sin, y;
 #ifdef USE_SSE2
   v4si emm0, emm2, emm4;
 #else
@@ -688,6 +693,7 @@ inline void sincos_ps(v4sf x, v4sf *s, v4sf *c) {
   v4sf poly_mask = _mm_castsi128_ps(emm2);
 #else
   /* store the integer part of y in mm2:mm3 */
+  xmm3 = _mm_setzero_ps();
   xmm3 = _mm_movehl_ps(xmm3, y);
   mm2 = _mm_cvttps_pi32(y);
   mm3 = _mm_cvttps_pi32(xmm3);

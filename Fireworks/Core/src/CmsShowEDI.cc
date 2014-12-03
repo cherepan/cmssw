@@ -260,7 +260,7 @@ CmsShowEDI::fillEDIFrame() {
          m_colorSelectWidget->SetColorByIndex(p.color(),kFALSE);
          m_opacitySlider->SetPosition(100 - p.transparency());
          m_isVisibleButton->SetDisabledAndSelected(p.isVisible());
-         m_validator->setType(ROOT::Reflex::Type::ByTypeInfo(*(iItem->modelType()->GetTypeInfo())));
+         m_validator->setType(edm::TypeWithDict(*(iItem->modelType()->GetTypeInfo())));
          m_filterExpressionEntry->SetText(iItem->filterExpression().c_str());
          m_filterError->Clear();
          m_selectError->Clear();

@@ -53,7 +53,7 @@ Ring 0 L0 : Width Tray 6:266.6, 5&4:325.6, 3:330.6, 2:341.6, 1:272.6
 //
 // Original Author:  Gobinda Majumder
 //         Created:  Fri Jul  6 17:17:21 CEST 2007
-// $Id: AlCaHOCalibProducer.cc,v 1.24 2010/10/15 22:44:30 wmtan Exp $
+// $Id: AlCaHOCalibProducer.cc,v 1.27 2012/12/26 15:36:24 innocent Exp $
 //
 //
 
@@ -423,7 +423,6 @@ AlCaHOCalibProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
   if (m_digiInput) {
     if (irunold !=irun)  { 
       iSetup.get<HcalDbRecord>().get(conditions_);
-      m_shape = (*conditions_).getHcalShape();
 
       for (int i=0; i<netamx; i++) {
 	for (int j=0; j<nphimx; j++) {
@@ -488,9 +487,10 @@ AlCaHOCalibProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
     if ((*ho).size()>0) {
       for (HODigiCollection::const_iterator j=(*ho).begin(); j!=(*ho).end(); j++){
 	HcalDetId id =(*j).id();
+  	m_coder = (*conditions_).getHcalCoder(id);
+	m_shape = (*conditions_).getHcalShape(m_coder);
   	int tmpeta= id.ieta();
   	int tmpphi= id.iphi();
-  	m_coder = (*conditions_).getHcalCoder(id);
   	float tmpdata[nchnmx];
   	int tmpeta1 = (tmpeta>0) ? tmpeta -1 : -tmpeta +14; 
   	for (int i=0; i<(*j).size() && i<nchnmx; i++) {
@@ -503,10 +503,11 @@ AlCaHOCalibProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
     if ((*hbhe).size()>0) {
       for (HBHEDigiCollection::const_iterator j=(*hbhe).begin(); j!=(*hbhe).end(); j++){
 	HcalDetId id =(*j).id();
+  	m_coder = (*conditions_).getHcalCoder(id);
+	m_shape = (*conditions_).getHcalShape(m_coder);
   	int tmpeta= id.ieta();
   	int tmpphi= id.iphi();
   	int tmpdepth =id.depth();
-  	m_coder = (*conditions_).getHcalCoder(id);
   	int tmpeta1 =  (tmpeta>0) ? tmpeta -15 : -tmpeta + 1; 
   	if (tmpdepth==1) tmpeta1 =  (tmpeta>0) ? tmpeta -1 : -tmpeta +29;  
   	for (int i=0; i<(*j).size() && i<nchnmx; i++) {
@@ -768,9 +769,9 @@ AlCaHOCalibProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  Surface::PositionType pos(radial*cos(phipos), radial*sin(phipos), 0.);
 	  PlaneBuilder::ReturnType aPlane = PlaneBuilder().plane(pos,rot);
 
-	  Surface* aPlane2 = new Plane(pos,rot);
+	  auto aPlane2 = new Plane(pos,rot);
 
-	  SteppingHelixStateInfo steppingHelixstateinfo_ = myHelix.propagate(freetrajectorystate_, (*aPlane2));
+	  SteppingHelixStateInfo steppingHelixstateinfo_ = myHelix.propagate(SteppingHelixStateInfo(freetrajectorystate_), (*aPlane2));
 
 	  if (steppingHelixstateinfo_.isValid()) {
 
@@ -879,9 +880,10 @@ AlCaHOCalibProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 		  //		  const HBHEDataFrame digi = (const HBHEDataFrame)(*j);
 		  //		  HcalDetId id =digi.id();
 		  HcalDetId id =(*j).id();
+		  m_coder = (*conditions_).getHcalCoder(id);
+		  m_shape = (*conditions_).getHcalShape(m_coder);
 		  int tmpeta= id.ieta();
 		  int tmpphi= id.iphi();
-		  m_coder = (*conditions_).getHcalCoder(id);
 		  calibped = conditions_->getHcalCalibrations(id);
 		  
 		  int deta = tmpeta-ietaho;
@@ -964,9 +966,10 @@ AlCaHOCalibProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 		//		HcalDetId id =digi.id();
 
 		HcalDetId id =(*j).id();		
+		m_coder = (*conditions_).getHcalCoder(id);
+		m_shape = (*conditions_).getHcalShape(m_coder);
 		int tmpeta= id.ieta();
 		int tmpphi= id.iphi();
-		m_coder = (*conditions_).getHcalCoder(id);
 		
 		int ipass1 =0;
 		if (tmpeta >=etamn && tmpeta <=etamx) {
@@ -1130,9 +1133,10 @@ AlCaHOCalibProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 		  //		    const HODataFrame (*jcr) = (const HODataFrame)(*jcr);
 		  //		    HcalDetId idcr =(*jcr).id();
 		  HcalDetId id =(*jcr).id();
+		  m_coder = (*conditions_).getHcalCoder(idcr);
+		  m_shape = (*conditions_).getHcalShape(m_coder);
 		    int etacr= idcr.ieta();
 		    int phicr= idcr.iphi();
-		    m_coder = (*conditions_).getHcalCoder(idcr);
 		    
 		    if (tmpeta==etacr && crphi ==phicr) {
 		      

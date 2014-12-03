@@ -12,6 +12,7 @@ These products should be informational products about the filter decision.
 ----------------------------------------------------------------------*/
 
 #include "FWCore/Framework/interface/ProducerBase.h"
+#include "FWCore/Framework/interface/EDConsumerBase.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/ParameterSet/interface/ParameterSetfwd.h"
 #include "DataFormats/Provenance/interface/ModuleDescription.h"
@@ -21,13 +22,13 @@ These products should be informational products about the filter decision.
 
 namespace edm {
 
-  class EDFilter : public ProducerBase {
+  class EDFilter : public ProducerBase, public EDConsumerBase {
   public:
     template <typename T> friend class WorkerT;
     typedef EDFilter ModuleType;
     typedef WorkerT<EDFilter> WorkerType;
     
-     EDFilter() : ProducerBase() , moduleDescription_(), current_context_(0), 
+     EDFilter() : ProducerBase() , moduleDescription_(), current_context_(nullptr), 
      previousParentage_(), previousParentageId_() {
     }
     virtual ~EDFilter();
@@ -46,14 +47,14 @@ namespace edm {
     bool doEvent(EventPrincipal& ep, EventSetup const& c,
 		  CurrentProcessingContext const* cpc);
     void doBeginJob();
-    void doEndJob();
-    bool doBeginRun(RunPrincipal& rp, EventSetup const& c,
+    void doEndJob();    
+    void doBeginRun(RunPrincipal& rp, EventSetup const& c,
 		   CurrentProcessingContext const* cpc);
-    bool doEndRun(RunPrincipal& rp, EventSetup const& c,
+    void doEndRun(RunPrincipal& rp, EventSetup const& c,
 		   CurrentProcessingContext const* cpc);
-    bool doBeginLuminosityBlock(LuminosityBlockPrincipal& lbp, EventSetup const& c,
+    void doBeginLuminosityBlock(LuminosityBlockPrincipal& lbp, EventSetup const& c,
 		   CurrentProcessingContext const* cpc);
-    bool doEndLuminosityBlock(LuminosityBlockPrincipal& lbp, EventSetup const& c,
+    void doEndLuminosityBlock(LuminosityBlockPrincipal& lbp, EventSetup const& c,
 		   CurrentProcessingContext const* cpc);
     void doRespondToOpenInputFile(FileBlock const& fb);
     void doRespondToCloseInputFile(FileBlock const& fb);
@@ -62,7 +63,7 @@ namespace edm {
     void doPreForkReleaseResources();
     void doPostForkReacquireResources(unsigned int iChildIndex, unsigned int iNumberOfChildren);
 
-    void registerAnyProducts(EDFilter* module, ProductRegistry* reg) {
+    void registerProductsAndCallbacks(EDFilter* module, ProductRegistry* reg) {
       registerProducts(module, reg, moduleDescription_);
     }
 
@@ -71,10 +72,11 @@ namespace edm {
     virtual bool filter(Event&, EventSetup const&) = 0;
     virtual void beginJob(){}
     virtual void endJob(){}
-    virtual bool beginRun(Run&, EventSetup const&){return true;}
-    virtual bool endRun(Run&, EventSetup const&){return true;}
-    virtual bool beginLuminosityBlock(LuminosityBlock&, EventSetup const&){return true;}
-    virtual bool endLuminosityBlock(LuminosityBlock&, EventSetup const&){return true;}
+
+    virtual void beginRun(Run const& iR, EventSetup const& iE){ }
+    virtual void endRun(Run const& iR, EventSetup const& iE){}
+    virtual void beginLuminosityBlock(LuminosityBlock const& iL, EventSetup const& iE){}
+    virtual void endLuminosityBlock(LuminosityBlock const& iL, EventSetup const& iE){}
     virtual void respondToOpenInputFile(FileBlock const&) {}
     virtual void respondToCloseInputFile(FileBlock const&) {}
     virtual void respondToOpenOutputFiles(FileBlock const&) {}

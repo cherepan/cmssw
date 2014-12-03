@@ -4,8 +4,8 @@
 /** \class MuonTrackValidatorBase
  *  Base class for analyzers that produces histograms to validate Muon Track Reconstruction performances
  *
- *  $Date: 2010/03/26 17:43:34 $
- *  $Revision: 1.4 $
+ *  $Date: 2011/02/07 11:02:26 $
+ *  $Revision: 1.5 $
  */
 
 #include <memory>
@@ -24,7 +24,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 
 #include "CommonTools/RecoAlgos/interface/RecoTrackSelector.h"
-#include "CommonTools/RecoAlgos/interface/TrackingParticleSelector.h"
+#include "SimGeneral/TrackingAnalysis/interface/TrackingParticleSelector.h"
 #include "CommonTools/RecoAlgos/interface/CosmicTrackingParticleSelector.h"
 
 #include <iostream>

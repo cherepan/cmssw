@@ -34,7 +34,7 @@ namespace edm {
         boost::shared_ptr<RunAuxiliary> aux,
         boost::shared_ptr<ProductRegistry const> reg,
         ProcessConfiguration const& pc,
-        HistoryAppender* historyAppender = 0);
+        HistoryAppender* historyAppender);
     ~RunPrincipal() {}
 
     void fillRunPrincipal(DelayedReader* reader = 0);
@@ -75,14 +75,22 @@ namespace edm {
 
     void readImmediate() const;
 
+    void setComplete() {
+      complete_ = true;
+    }
+
   private:
 
-    virtual bool unscheduledFill(std::string const&) const {return false;}
+    virtual bool isComplete_() const override {return complete_;}
 
-    void resolveProductImmediate(Group const& g) const;
+    virtual bool unscheduledFill(std::string const&) const override {return false;}
 
-    // A vector of groups.
+    void resolveProductImmediate(ProductHolderBase const& phb) const;
+
+    // A vector of product holders.
     boost::shared_ptr<RunAuxiliary> aux_;
+
+    bool complete_;
   };
 }
 #endif

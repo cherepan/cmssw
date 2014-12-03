@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 from RecoJets.FFTJetProducers.fftjetcommon_cfi import *
 
-fftjet_pf_pileup_cleaner = cms.EDProducer(
+fftjetPfPileupCleaner = cms.EDProducer(
     "FFTJetPFPileupCleaner",
     #
     # Label for the input collection of PFCandidate objects
@@ -11,9 +11,17 @@ fftjet_pf_pileup_cleaner = cms.EDProducer(
     # Label for the collection of primary vertices
     Vertices = cms.InputTag("offlinePrimaryVertices"),
     #
+    # Info about fake primary vertices
+    useFakePrimaryVertex = cms.bool(False),
+    FakePrimaryVertices = cms.InputTag("vertexadder", "FFTJetFudgedVertices"),
+    #
     # Find the closest vertex even if the track is not associated
     # with any good vertex?
     checkClosestZVertex = cms.bool(True),
+    #
+    # Associate all tracks neigboring the main vertex with it?
+    # This switch is meaningful only if "checkClosestZVertex" it true.
+    keepIfPVneighbor = cms.bool(True),
     #
     # Remove the objects associated with the main primary vertex?
     removeMainVertex = cms.bool(False),
@@ -25,7 +33,7 @@ fftjet_pf_pileup_cleaner = cms.EDProducer(
     reverseRemovalDecision = cms.bool(False),
     #
     # Various removal flags by object type. See PFCandidate header
-    # for dobject type etails.
+    # for object type details.
     remove_X = cms.bool(False),
     remove_h = cms.bool(True),
     remove_e = cms.bool(True),
@@ -39,6 +47,7 @@ fftjet_pf_pileup_cleaner = cms.EDProducer(
     etaMin = cms.double(-fftjet_standard_eta_range),
     etaMax = cms.double(fftjet_standard_eta_range),
     #
-    # Vertex quality cut
-    vertexNdofCut = cms.double(4.0)
+    # Vertex quality cuts
+    vertexNdofCut = cms.double(4.0),
+    vertexZmaxCut = cms.double(24.0)
 )

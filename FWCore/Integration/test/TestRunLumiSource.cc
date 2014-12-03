@@ -2,6 +2,7 @@
 ----------------------------------------------------------------------*/
 
 #include "FWCore/Integration/test/TestRunLumiSource.h"
+#include "DataFormats/Provenance/interface/BranchIDListHelper.h"
 #include "DataFormats/Provenance/interface/EventID.h"
 #include "DataFormats/Provenance/interface/EventAuxiliary.h"
 #include "DataFormats/Provenance/interface/LuminosityBlockAuxiliary.h"
@@ -62,10 +63,10 @@ namespace edm {
     if (whenToThrow_ == kEndRun) throw cms::Exception("TestThrow") << "TestRunLumiSource::endRun";
   }
 
-  boost::shared_ptr<FileBlock>
+  std::unique_ptr<FileBlock>
   TestRunLumiSource::readFile_() {
     if (whenToThrow_ == kReadFile) throw cms::Exception("TestThrow") << "TestRunLumiSource::readFile_";
-    return boost::shared_ptr<FileBlock>(new FileBlock);
+    return std::unique_ptr<FileBlock>(new FileBlock);
   }
 
   void
@@ -95,10 +96,10 @@ namespace edm {
   }
 
   EventPrincipal*
-  TestRunLumiSource::readEvent_() {
+  TestRunLumiSource::readEvent_(EventPrincipal& eventPrincipal) {
     if (whenToThrow_ == kReadEvent) throw cms::Exception("TestThrow") << "TestRunLumiSource::readEvent_";
 
-    EventSourceSentry(*this);
+    EventSourceSentry sentry{*this};
     unsigned int run = runLumiEvent_[currentIndex_];
     unsigned int lumi = runLumiEvent_[currentIndex_ + 1];
     unsigned int event = runLumiEvent_[currentIndex_ + 2];
@@ -106,18 +107,21 @@ namespace edm {
 
     boost::shared_ptr<RunAuxiliary> runAux(new RunAuxiliary(run, ts, Timestamp::invalidTimestamp()));
     boost::shared_ptr<RunPrincipal> rp2(
-        new RunPrincipal(runAux, productRegistry(), processConfiguration()));
+                                        new RunPrincipal(runAux, productRegistry(), processConfiguration(), &historyAppender_));
 
     boost::shared_ptr<LuminosityBlockAuxiliary> lumiAux(
 	new LuminosityBlockAuxiliary(rp2->run(), lumi, ts, Timestamp::invalidTimestamp()));
     boost::shared_ptr<LuminosityBlockPrincipal> lbp2(
-        new LuminosityBlockPrincipal(lumiAux, productRegistry(), processConfiguration(), rp2));
+        new LuminosityBlockPrincipal(lumiAux, productRegistry(), processConfiguration(), &historyAppender_));
+    lbp2->setRunPrincipal(rp2);
 
     EventID id(run, lbp2->luminosityBlock(), event);
     currentIndex_ += 3;
     EventAuxiliary eventAux(id, processGUID(), ts, false);
-    EventPrincipal* result(new EventPrincipal(productRegistry(), processConfiguration()));
-    result->fillEventPrincipal(eventAux, lbp2);
+    boost::shared_ptr<BranchIDListHelper> branchIDListHelper(new BranchIDListHelper());
+    EventPrincipal* result(new EventPrincipal(productRegistry(), branchIDListHelper, processConfiguration(), &historyAppender_));
+    result->fillEventPrincipal(eventAux);
+    result->setLuminosityBlockPrincipal(lbp2);
     return result;
   }
 

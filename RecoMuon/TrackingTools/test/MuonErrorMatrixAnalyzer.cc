@@ -60,7 +60,7 @@ MuonErrorMatrixAnalyzer::MuonErrorMatrixAnalyzer(const edm::ParameterSet& iConfi
   if (theRadius!=0){
     GlobalPoint O(0,0,0);
     Surface::RotationType R;
-    refRSurface = Cylinder::build(O,R,theRadius);
+    refRSurface = Cylinder::build(theRadius,O,R);
     thePropagatorName = iConfig.getParameter<std::string>("propagatorName");
     theZ = iConfig.getParameter<double>("z");
     if (theZ!=0){
@@ -221,7 +221,7 @@ MuonErrorMatrixAnalyzer::analyze_from_pull(const edm::Event& iEvent, const edm::
   iSetup.get<TrackAssociatorRecord>().get(theAssocLabel,theAssociator);
 
   //associate  
-  reco::RecoToSimCollection recSimColl = theAssociator->associateRecoToSim(tracks,TPtracks, &iEvent);
+  reco::RecoToSimCollection recSimColl = theAssociator->associateRecoToSim(tracks,TPtracks, &iEvent,&iSetup);
 
   LogDebug(theCategory)<<"I have found: "<<recSimColl.size()<<" associations in total.";
   

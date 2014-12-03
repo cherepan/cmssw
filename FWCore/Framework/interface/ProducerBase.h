@@ -9,12 +9,21 @@ EDProducts into an Event.
 ----------------------------------------------------------------------*/
 
 #include "FWCore/Framework/interface/ProductRegistryHelper.h"
-#include "boost/bind.hpp"
-#include "boost/function.hpp"
+
+#include <functional>
+
 namespace edm {
   class BranchDescription;
   class ModuleDescription;
   class ProductRegistry;
+  
+  class EDProducer;
+  class EDFilter;
+  namespace one {
+    class EDProducerBase;
+    class EDFilterBase;
+  }
+  
   class ProducerBase : private ProductRegistryHelper {
   public:
     typedef ProductRegistryHelper::TypeLabelList TypeLabelList;
@@ -22,7 +31,7 @@ namespace edm {
     virtual ~ProducerBase();
  
     /// used by the fwk to register list of products
-    boost::function<void(const BranchDescription&)> registrationCallback() const;
+    std::function<void(BranchDescription const&)> registrationCallback() const;
 
     void registerProducts(ProducerBase*,
 			ProductRegistry*,
@@ -32,16 +41,27 @@ namespace edm {
     using ProductRegistryHelper::typeLabelList;
 
   protected:
-    template<class TProducer, class TMethod>
-    void callWhenNewProductsRegistered(TProducer* iProd, TMethod iMethod) {
-       callWhenNewProductsRegistered_ = boost::bind(iMethod,iProd,_1);
+    void callWhenNewProductsRegistered(std::function<void(BranchDescription const&)> const& func) {
+       callWhenNewProductsRegistered_ = func;
     }
           
   private:
-    boost::function<void(const BranchDescription&)> callWhenNewProductsRegistered_;
+    friend class EDProducer;
+    friend class EDFilter;
+    friend class one::EDProducerBase;
+    friend class one::EDFilterBase;
+    
+    template< typename P>
+    void commit_(P& iPrincipal) {
+      iPrincipal.commit_();
+    }
+
+    template< typename P, typename L, typename I>
+    void commit_(P& iPrincipal, L* iList, I* iID) {
+      iPrincipal.commit_(iList,iID);
+    }
+
+    std::function<void(BranchDescription const&)> callWhenNewProductsRegistered_;
   };
-
-
 }
-
 #endif

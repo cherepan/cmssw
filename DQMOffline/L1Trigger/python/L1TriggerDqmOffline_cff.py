@@ -44,8 +44,16 @@ import DQMServices.Components.DQMEnvironment_cfi
 dqmEnvL1TEMU = DQMServices.Components.DQMEnvironment_cfi.dqmEnv.clone()
 dqmEnvL1TEMU.subSystemFolder = 'L1TEMU'
 
+# DQM Offline Step 1 cfi/cff imports
+from DQMOffline.L1Trigger.L1TRate_Offline_cfi import *
+from DQMOffline.L1Trigger.L1TSync_Offline_cfi import *
 from DQMOffline.L1Trigger.L1TEmulatorMonitorOffline_cff import *  
+
+# DQM Offline Step 2 cfi/cff imports
+from DQMOffline.L1Trigger.L1TSync_Harvest_cfi import *
 from DQMOffline.L1Trigger.L1TEmulatorMonitorClientOffline_cff import *
+from DQMOffline.L1Trigger.L1TEmulatorMonitorClientOffline_cff import *
+
 
 #
 # define sequences 
@@ -73,17 +81,19 @@ l1TriggerEmulatorOffline = cms.Sequence(
                                 l1TriggerEmulatorOnline                                
                                 )
 #
-                                
+
+# DQM Offline Step 1 sequence
 l1TriggerDqmOffline = cms.Sequence(
-                                l1TriggerOffline 
+                                l1TriggerOffline
+                                * l1tRate_Offline
+                                * l1tSync_Offline
                                 * l1TriggerEmulatorOffline
                                 )                                  
 
-
-# second step in offline environment
-                                 
+# DQM Offline Step 2 sequence                                 
 l1TriggerDqmOfflineClient = cms.Sequence(
                                 l1tMonitorClient
+                                * l1tSync_Harvest
                                 * l1EmulatorMonitorClient
                                 )
 
@@ -119,7 +129,6 @@ l1TriggerDqmOfflineClient = cms.Sequence(
 #l1TriggerOnline.remove(l1tMonitorOnline)
 #
 l1tMonitorOnline.remove(bxTiming)
-l1tMonitorOnline.remove(l1tLtc)
 #l1tMonitorOnline.remove(l1tDttf)
 #l1tMonitorOnline.remove(l1tCsctf) 
 #l1tMonitorOnline.remove(l1tRpctf)
@@ -133,6 +142,7 @@ l1tMonitorOnline.remove(l1tLtc)
 #l1tMonitorOnline.remove(l1ExtraDqmSeq)
 #
 l1tMonitorOnline.remove(l1tRate)
+l1tMonitorOnline.remove(l1tBPTX)
 #l1tMonitorOnline.remove(l1tRctSeq)
 #l1tMonitorOnline.remove(l1tGctSeq)
 
@@ -177,5 +187,3 @@ l1TriggerClients.remove(l1tTestsSummary)
 #l1EmulatorMonitorClient.remove(l1EmulatorQualityTests)
 l1EmulatorMonitorClient.remove(l1EmulatorErrorFlagClient)
 #l1EmulatorMonitorClient.remove(l1EmulatorEventInfoClient)
-                                  
-                                    

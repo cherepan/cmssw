@@ -11,7 +11,7 @@
 
 #include <memory>
 
-#include "FWCore/Framework/interface/EDFilter.h"
+#include "FWCore/Framework/interface/one/EDFilter.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/FileBlock.h"
@@ -19,7 +19,11 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/BranchType.h"
 #include "FWCore/Utilities/interface/EDMException.h"
+#include "FWCore/Utilities/interface/InputTag.h"
+#include "FWCore/Utilities/interface/TypeID.h"
+#include "DataFormats/Provenance/interface/BranchDescription.h"
 
 // #include "GeneratorInterface/ExternalDecays/interface/ExternalDecayDriver.h"
 
@@ -37,7 +41,9 @@
 
 namespace edm
 {
-  template <class HAD, class DEC> class HadronizerFilter : public EDFilter
+  template <class HAD, class DEC> class HadronizerFilter : public one::EDFilter<EndRunProducer,
+                                                                                one::WatchRuns,
+                                                                                one::WatchLuminosityBlocks>
   {
   public:
     typedef HAD Hadronizer;
@@ -49,23 +55,20 @@ namespace edm
 
     virtual ~HadronizerFilter();
 
-    virtual bool filter(Event& e, EventSetup const& es);
-    virtual void endJob();
-    virtual bool beginRun(Run &, EventSetup const&);
-    virtual bool endRun(Run &, EventSetup const&);
-    virtual bool beginLuminosityBlock(LuminosityBlock &, EventSetup const&);
-    virtual bool endLuminosityBlock(LuminosityBlock &, EventSetup const&);
-    virtual void respondToOpenInputFile(FileBlock const& fb);
-    virtual void respondToCloseInputFile(FileBlock const& fb);
-    virtual void respondToOpenOutputFiles(FileBlock const& fb);
-    virtual void respondToCloseOutputFiles(FileBlock const& fb);
+    virtual bool filter(Event& e, EventSetup const& es) override;
+    virtual void beginRun(Run const&, EventSetup const&) override;
+    virtual void endRun(Run const&, EventSetup const&) override;
+    virtual void endRunProduce(Run &, EventSetup const&) override;
+    virtual void beginLuminosityBlock(LuminosityBlock const&, EventSetup const&) override;
+    virtual void endLuminosityBlock(LuminosityBlock const&, EventSetup const&) override;
 
   private:
     Hadronizer hadronizer_;
     // gen::ExternalDecayDriver* decayer_;
     Decayer* decayer_;
     bool fromSource_;
-
+    InputTag runInfoProductTag_;
+    unsigned int counterRunInfoProducts_;
   };
 
   //------------------------------------------------------------------------
@@ -77,8 +80,20 @@ namespace edm
     EDFilter(),
     hadronizer_(ps),
     decayer_(0),
-    fromSource_(true)
+    fromSource_(true),
+    runInfoProductTag_(),
+    counterRunInfoProducts_(0)
   {
+    callWhenNewProductsRegistered([this]( BranchDescription const& iBD) {
+      //this is called each time a module registers that it will produce a LHERunInfoProduct
+      if (iBD.unwrappedTypeID() == edm::TypeID(typeid(LHERunInfoProduct)) &&
+          iBD.branchType() == InRun) {
+        ++(this->counterRunInfoProducts_);
+        if(iBD.moduleLabel()=="externalLHEProducer") { this->fromSource_=false; }
+        this->runInfoProductTag_ = InputTag(iBD.moduleLabel(), iBD.productInstanceName(), iBD.processName());
+      }
+    });
+
     // TODO:
     // Put the list of types produced by the filters here.
     // The current design calls for:
@@ -176,40 +191,33 @@ namespace edm
 
   template <class HAD, class DEC>
   void
-  HadronizerFilter<HAD,DEC>::endJob()
-  { }
-
-  template <class HAD, class DEC>
-  bool
-  HadronizerFilter<HAD,DEC>::beginRun(Run& run, EventSetup const& es)
+  HadronizerFilter<HAD,DEC>::beginRun(Run const& run, EventSetup const& es)
   {
         
     // this is run-specific
     
     // get LHE stuff and pass to hadronizer!
 
-    std::vector< edm::Handle<LHERunInfoProduct> > productV;
-
-    run.getManyByType(productV); 
-
-    if ( productV.size() > 1 ) 
-      throw edm::Exception(errors::EventCorruption) 
+    if(counterRunInfoProducts_ > 1)
+      throw edm::Exception(errors::EventCorruption)
         << "More than one LHERunInfoProduct present";
-    else
-      {
-        if ( productV[0].provenance()->moduleLabel() == "externalLHEProducer" ) 
-          fromSource_ = false;
-      }
 
-    hadronizer_.setLHERunInfo( new lhef::LHERunInfo(*productV[0]) ) ;
-       
-    return true;
-  
+    if(counterRunInfoProducts_ == 0)
+      throw edm::Exception(errors::EventCorruption)
+        << "No LHERunInfoProduct present";
+
+    edm::Handle<LHERunInfoProduct> lheRunInfoProduct;
+    run.getByLabel(runInfoProductTag_, lheRunInfoProduct);
+    hadronizer_.setLHERunInfo( new lhef::LHERunInfo(*lheRunInfoProduct) );
   }
 
   template <class HAD, class DEC>
-  bool
-  HadronizerFilter<HAD,DEC>::endRun(Run& r, EventSetup const&)
+  void
+  HadronizerFilter<HAD,DEC>::endRun(Run const& r, EventSetup const&) {}
+
+  template <class HAD, class DEC>
+  void
+  HadronizerFilter<HAD,DEC>::endRunProduce(Run& r, EventSetup const&)
   {
     // Retrieve the LHE run info summary and transfer determined
     // cross-section into the generator run info
@@ -231,13 +239,11 @@ namespace edm
 
     std::auto_ptr<GenRunInfoProduct> griproduct( new GenRunInfoProduct(genRunInfo) );
     r.put(griproduct);
-    
-    return true;
   }
 
   template <class HAD, class DEC>
-  bool
-  HadronizerFilter<HAD,DEC>::beginLuminosityBlock(LuminosityBlock &, EventSetup const& es)
+  void
+  HadronizerFilter<HAD,DEC>::beginLuminosityBlock(LuminosityBlock const&, EventSetup const& es)
   {
    
     if ( !hadronizer_.readSettings(1) )
@@ -265,42 +271,12 @@ namespace edm
 	<< "Failed to initialize hadronizer "
 	<< hadronizer_.classname()
 	<< " for internal parton generation\n";
-
-    return true;
-
-  }
-
-  template <class HAD, class DEC>
-  bool
-  HadronizerFilter<HAD,DEC>::endLuminosityBlock(LuminosityBlock &, EventSetup const&)
-  {
-    // If relevant, record the integration luminosity of this
-    // luminosity block here.  To do so, we would need a standard
-    // function to invoke on the contained hadronizer that would
-    // report the integrated luminosity.
-    return true;
   }
 
   template <class HAD, class DEC>
   void
-  HadronizerFilter<HAD,DEC>::respondToOpenInputFile(FileBlock const& fb)
-  { }
-
-  template <class HAD, class DEC>
-  void
-  HadronizerFilter<HAD,DEC>::respondToCloseInputFile(FileBlock const& fb)
-  { }
-
-  template <class HAD, class DEC>
-  void
-  HadronizerFilter<HAD,DEC>::respondToOpenOutputFiles(FileBlock const& fb)
-  { }
-
-  template <class HAD, class DEC>
-  void
-  HadronizerFilter<HAD,DEC>::respondToCloseOutputFiles(FileBlock const& fb)
-  { }
-
+  HadronizerFilter<HAD,DEC>::endLuminosityBlock(LuminosityBlock const&, EventSetup const&)
+  {}
 }
 
 #endif // gen_HadronizerFilter_h

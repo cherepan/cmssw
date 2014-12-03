@@ -8,9 +8,9 @@
  *  additional constraints on eta, phi, r, x, y or z are possible.
  *  Furthermore stores the 'selection' of selected AlignmentParameters.
  *
- *  $Date: 2010/09/10 11:36:58 $
- *  $Revision: 1.9 $
- *  (last update by $Author: mussgill $)
+ *  $Date: 2013/01/07 20:56:25 $
+ *  $Revision: 1.11 $
+ *  (last update by $Author: wmtan $)
  */
 
 #include "Alignment/CommonAlignment/interface/Utilities.h"
@@ -96,6 +96,8 @@ class AlignmentParameterSelector {
   void setTIDDetIdCuts(const edm::ParameterSet &pSet);
   void setTOBDetIdCuts(const edm::ParameterSet &pSet);
   void setTECDetIdCuts(const edm::ParameterSet &pSet);
+
+  const AlignableTracker* alignableTracker() const;
   
  private:
   AlignableTracker* theTracker;

@@ -18,7 +18,7 @@
 //
 // Original Author:  "Salvatore Rappoccio"
 //         Created:  Tue Apr  8 16:19:45 CDT 2008
-// $Id: HFFilter.h,v 1.1 2008/04/11 15:17:40 srappocc Exp $
+// $Id: HFFilter.h,v 1.3 2013/02/27 23:16:51 wmtan Exp $
 //
 //
 
@@ -46,7 +46,7 @@ class HFFilter : public edm::EDFilter {
       explicit HFFilter(const edm::ParameterSet&);
       ~HFFilter();
 
-      virtual bool filter(edm::Event&, const edm::EventSetup&);
+      virtual bool filter(edm::Event&, const edm::EventSetup&) override;
       virtual void endJob() ;
 
    private:      

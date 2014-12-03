@@ -3,13 +3,18 @@
 
 #include "SimTracker/TrackAssociation/interface/TrackAssociatorBase.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "DataFormats/TrackerRecHit2D/interface/OmniClusterRef.h"
+
+#include "SimTracker/TrackerHitAssociation/interface/ClusterTPAssociationProducer.h"
+//#include "SimTracker/TrackerHitAssociation/plugins/Cluster2TPMapProducer.h"
+//#include "SimTracker/TrackerHitAssociation/plugins/TP2ClusterMapProducer.h"
 
 // Forward declarations
 class TrackerHitAssociator;
 
 /** @brief TrackAssociator that associates by hits a bit quicker than the normal TrackAssociatorByHits class.
  *
- * NOTE - Doesn't implement the TrajectorySeed or TrackCandidate association methods (from TrackAssociatorBase) so will always
+ * NOTE - Doesn't implement the TrackCandidate association methods (from TrackAssociatorBase) so will always
  * return empty associations for those.
  *
  * This track associator (mostly) does the same as TrackAssociatorByHits, but faster. I've tested it a fair bit and can't find
@@ -39,6 +44,11 @@ class TrackerHitAssociator;
  *
  * associateStrip - bool - Passed on to the hit associator.
  *
+ * requireStoredHits - bool - Whether or not to insist all TrackingParticles have at least one PSimHit. The PSimHits are not required
+ * for the association, but the old TrackAssociatorByHits still had this requirement. Storing PSimHits in the TrackingParticle is now
+ * optional (see TrackingTruthAccumulator which replaces TrackingTruthProducer). Having requireStoredHits set to true will mean no
+ * TrackingParticles will be associated if you have chosen not to store the hits. The flag is only kept in order to retain the old
+ * behaviour which can give very slightly different results.
  *
  * Note that the TrackAssociatorByHits parameters UseGrouped and UseSplitting are not used.
  *
@@ -69,9 +79,28 @@ public:
 												  const edm::RefVector<TrackingParticleCollection>& trackingParticleCollection,
 												  const edm::Event* pEvent=0,
 												  const edm::EventSetup* pSetup=0 ) const;
+
+	//seed
+	reco::RecoToSimCollectionSeed associateRecoToSim(edm::Handle<edm::View<TrajectorySeed> >&,
+							 edm::Handle<TrackingParticleCollection>&,
+							 const edm::Event * event ,
+							 const edm::EventSetup * setup ) const;
+	
+	reco::SimToRecoCollectionSeed associateSimToReco(edm::Handle<edm::View<TrajectorySeed> >&,
+							 edm::Handle<TrackingParticleCollection>&,
+							 const edm::Event * event ,
+							 const edm::EventSetup * setup ) const;
+
+        void prepareCluster2TPMap(const edm::Event* pEvent) const;
+
 private:
 	typedef std::pair<uint32_t,EncodedEventId> SimTrackIdentifiers;
 	enum SimToRecoDenomType {denomnone,denomsim,denomreco};
+
+	// - added by S. Sarkar
+	typedef std::vector<std::pair<OmniClusterRef, TrackingParticleRef> > ClusterTPAssociationList;
+	static bool clusterTPAssociationListGreater(std::pair<OmniClusterRef, TrackingParticleRef> i,std::pair<OmniClusterRef, TrackingParticleRef> j) { return (i.first.rawIndex()>j.first.rawIndex()); }
+	static bool tpIntPairGreater(std::pair<edm::Ref<TrackingParticleCollection>,size_t> i, std::pair<edm::Ref<TrackingParticleCollection>,size_t> j) { return (i.first.key()>j.first.key()); }
 
 	/** @brief The method that does the work for both overloads of associateRecoToSim.
 	 */
@@ -86,13 +115,15 @@ private:
 	 * Return value is a vector of pairs, where first is an edm::Ref to the associated TrackingParticle, and second is
 	 * the number of associated hits.
 	 */
-	std::vector< std::pair<edm::Ref<TrackingParticleCollection>,size_t> > associateTrack( const reco::Track* pTrack ) const;
+	template<typename iter> std::vector< std::pair<edm::Ref<TrackingParticleCollection>,size_t> > associateTrack( iter begin, iter end ) const;
+	template<typename iter> std::vector< std::pair<edm::Ref<TrackingParticleCollection>,size_t> > associateTrackByCluster( iter begin, iter end ) const;
+
 
 	/** @brief Returns true if the supplied TrackingParticle has the supplied g4 track identifiers. */
 	bool trackingParticleContainsIdentifier( const TrackingParticle* pTrackingParticle, const SimTrackIdentifiers& identifier ) const;
 
 	/** @brief This method was copied almost verbatim from the standard TrackAssociatorByHits. */
-	int getDoubleCount( trackingRecHit_iterator begin, trackingRecHit_iterator end, const TrackingParticle& associatedTrackingParticle ) const;
+	template<typename iter> int getDoubleCount( iter begin, iter end, TrackingParticleRef associatedTrackingParticle ) const;
 
 	/** @brief Returns a vector of pairs where first is a SimTrackIdentifiers (see typedef above) and second is the number of hits that came from that sim track.
 	 *
@@ -100,7 +131,18 @@ private:
 	 * E.g. If all the hits in the reco track come from the same sim track, then there will only be one entry with second as the number of hits in
 	 * the track.
 	 */
-	std::vector< std::pair<SimTrackIdentifiers,size_t> > getAllSimTrackIdentifiers( const reco::Track* pTrack ) const;
+	template<typename iter> std::vector< std::pair<SimTrackIdentifiers,size_t> > getAllSimTrackIdentifiers( iter begin, iter end ) const;
+
+        // Added by S. Sarkar
+	template<typename iter> std::vector< OmniClusterRef> getMatchedClusters( iter begin, iter end ) const;
+
+	const TrackingRecHit* getHitFromIter(trackingRecHit_iterator iter) const {
+	  return &(**iter);
+	}
+
+	const TrackingRecHit* getHitFromIter(TrackingRecHitCollection::const_iterator iter) const {
+	  return &(*iter);
+	}
 
 	//
 	// Members. Note that there are custom copy constructor and assignment operators, so if any members are added
@@ -149,6 +191,11 @@ private:
 	 * for reasons why.
 	 */
 	mutable const edm::RefVector<TrackingParticleCollection>* pTrackingParticleCollection_;
+
+        // Added by S. Sarkar
+        mutable bool useClusterTPAssociation_;
+	edm::InputTag cluster2TPSrc_;
+	mutable ClusterTPAssociationList pCluster2TPList_;
 }; // end of the QuickTrackAssociatorByHits class
 
 #endif // end of ifndef QuickTrackAssociatorByHits_h

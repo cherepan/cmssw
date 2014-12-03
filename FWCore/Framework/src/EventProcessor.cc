@@ -83,6 +83,9 @@
 #include <sched.h>
 #endif
 
+//Needed for introspection
+#include "Cintex/Cintex.h"
+
 namespace edm {
 
   namespace event_processor {
@@ -257,13 +260,13 @@ namespace edm {
     //  mRunID, mRunCount, mSetRun
 
   // ---------------------------------------------------------------
-  boost::shared_ptr<InputSource>
+  std::unique_ptr<InputSource>
   makeInput(ParameterSet& params,
             CommonParams const& common,
             ProductRegistry& preg,
-            PrincipalCache& pCache,
+            boost::shared_ptr<BranchIDListHelper> branchIDListHelper,
             boost::shared_ptr<ActivityRegistry> areg,
-            boost::shared_ptr<ProcessConfiguration> processConfiguration) {
+            boost::shared_ptr<ProcessConfiguration const> processConfiguration) {
     ParameterSet* main_input = params.getPSetForUpdate("@main_input");
     if(main_input == 0) {
       throw Exception(errors::Configuration)
@@ -309,12 +312,12 @@ namespace edm {
                          "source",
                          processConfiguration.get());
 
-    InputSourceDescription isdesc(md, preg, pCache, areg, common.maxEventsInput_, common.maxLumisInput_);
+    InputSourceDescription isdesc(md, preg, branchIDListHelper, areg, common.maxEventsInput_, common.maxLumisInput_);
     areg->preSourceConstructionSignal_(md);
-    boost::shared_ptr<InputSource> input;
+    std::unique_ptr<InputSource> input;
     try {
       try {
-        input = boost::shared_ptr<InputSource>(InputSourceFactory::get()->makeInputSource(*main_input, isdesc).release());
+        input = std::unique_ptr<InputSource>(InputSourceFactory::get()->makeInputSource(*main_input, isdesc).release());
       }
       catch (cms::Exception& e) { throw; }
       catch (std::bad_alloc& bda) { convertException::badAllocToEDM(); }
@@ -373,6 +376,7 @@ namespace edm {
     postProcessEventSignal_(),
     actReg_(),
     preg_(),
+    branchIDListHelper_(),
     serviceToken_(),
     input_(),
     espController_(new eventsetup::EventSetupsController),
@@ -396,7 +400,6 @@ namespace edm {
     my_sig_num_(getSigNum()),
     fb_(),
     looper_(),
-    machine_(),
     principalCache_(),
     shouldWeStop_(false),
     stateMachineWasInErrorState_(false),
@@ -426,6 +429,7 @@ namespace edm {
     postProcessEventSignal_(),
     actReg_(),
     preg_(),
+    branchIDListHelper_(),
     serviceToken_(),
     input_(),
     espController_(new eventsetup::EventSetupsController),
@@ -449,7 +453,6 @@ namespace edm {
     my_sig_num_(getSigNum()),
     fb_(),
     looper_(),
-    machine_(),
     principalCache_(),
     shouldWeStop_(false),
     stateMachineWasInErrorState_(false),
@@ -479,6 +482,7 @@ namespace edm {
     postProcessEventSignal_(),
     actReg_(),
     preg_(),
+    branchIDListHelper_(),
     serviceToken_(),
     input_(),
     espController_(new eventsetup::EventSetupsController),
@@ -502,7 +506,6 @@ namespace edm {
     my_sig_num_(getSigNum()),
     fb_(),
     looper_(),
-    machine_(),
     principalCache_(),
     shouldWeStop_(false),
     stateMachineWasInErrorState_(false),
@@ -528,6 +531,7 @@ namespace edm {
     postProcessEventSignal_(),
     actReg_(),
     preg_(),
+    branchIDListHelper_(),
     serviceToken_(),
     input_(),
     espController_(new eventsetup::EventSetupsController),
@@ -551,7 +555,6 @@ namespace edm {
     my_sig_num_(getSigNum()),
     fb_(),
     looper_(),
-    machine_(),
     principalCache_(),
     shouldWeStop_(false),
     stateMachineWasInErrorState_(false),
@@ -585,9 +588,8 @@ namespace edm {
                         serviceregistry::ServiceLegacy iLegacy) {
 
     //std::cerr << processDesc->dump() << std::endl;
-    // The BranchIDListRegistry and ProductIDListRegistry are indexed registries, and are singletons.
-    //  They must be cleared here because some processes run multiple EventProcessors in succession.
-    BranchIDListHelper::clearRegistries();
+   
+    ROOT::Cintex::Cintex::Enable();
 
     boost::shared_ptr<ParameterSet> parameterSet = processDesc->getProcessPSet();
     //std::cerr << parameterSet->dump() << std::endl;
@@ -604,6 +606,7 @@ namespace edm {
     numberOfForkedChildren_ = forking.getUntrackedParameter<int>("maxChildProcesses", 0);
     numberOfSequentialEventsPerChild_ = forking.getUntrackedParameter<unsigned int>("maxSequentialEventsPerChild", 1);
     setCpuAffinity_ = forking.getUntrackedParameter<bool>("setCpuAffinity", false);
+    continueAfterChildFailure_ = forking.getUntrackedParameter<bool>("continueAfterChildFailure",false);
     std::vector<ParameterSet> const& excluded = forking.getUntrackedParameterSetVector("eventSetupDataToExcludeFromPrefetching", std::vector<ParameterSet>());
     for(std::vector<ParameterSet>::const_iterator itPS = excluded.begin(), itPSEnd = excluded.end();
         itPS != itPSEnd;
@@ -639,43 +642,35 @@ namespace edm {
     }
 
     // initialize the input source
-    input_ = makeInput(*parameterSet, *common, *items.preg_, principalCache_, items.actReg_, items.processConfiguration_);
+    input_ = makeInput(*parameterSet, *common, *items.preg_, items.branchIDListHelper_, items.actReg_, items.processConfiguration_);
 
     // intialize the Schedule
     schedule_ = items.initSchedule(*parameterSet,subProcessParameterSet.get());
 
     // set the data members
-    act_table_ = items.act_table_;
+    act_table_ = std::move(items.act_table_);
     actReg_ = items.actReg_;
-    preg_ = items.preg_;
+    preg_.reset(items.preg_.release());
+    branchIDListHelper_ = items.branchIDListHelper_;
     processConfiguration_ = items.processConfiguration_;
 
     FDEBUG(2) << parameterSet << std::endl;
     connectSigs(this);
 
+    // Reusable event principal
+    boost::shared_ptr<EventPrincipal> ep(new EventPrincipal(preg_, branchIDListHelper_, *processConfiguration_, historyAppender_.get()));
+    principalCache_.insert(ep);
+      
     // initialize the subprocess, if there is one
     if(subProcessParameterSet) {
-      subProcess_.reset(new SubProcess(*subProcessParameterSet, *parameterSet, preg_, *espController_, *actReg_, token, serviceregistry::kConfigurationOverrides));
+      subProcess_.reset(new SubProcess(*subProcessParameterSet, *parameterSet, preg_, branchIDListHelper_, *espController_, *actReg_, token, serviceregistry::kConfigurationOverrides));
     }
-    espController_->clearComponents();
   }
 
   EventProcessor::~EventProcessor() {
     // Make the services available while everything is being deleted.
     ServiceToken token = getToken();
     ServiceRegistry::Operate op(token);
-
-    // The state machine should have already been cleaned up
-    // and destroyed at this point by a call to EndJob or
-    // earlier when it completed processing events, but if it
-    // has not been we'll take care of it here at the last moment.
-    // This could cause problems if we are already handling an
-    // exception and another one is thrown here ...  For a critical
-    // executable the solution to this problem is for the code using
-    // the EventProcessor to explicitly call EndJob or use runToCompletion,
-    // then the next line of code is never executed.
-    terminateMachine();
-
     try {
       changeState(mDtor);
     }
@@ -701,53 +696,6 @@ namespace edm {
     ParentageRegistry::instance()->data().clear();
     ProcessConfigurationRegistry::instance()->data().clear();
     ProcessHistoryRegistry::instance()->data().clear();
-    BranchIDListHelper::clearRegistries();
-  }
-
-  void
-  EventProcessor::rewind() {
-    beginJob(); //make sure this was called
-    changeState(mStopAsync);
-    changeState(mInputRewind);
-    {
-      StateSentry toerror(this);
-
-      //make the services available
-      ServiceRegistry::Operate operate(serviceToken_);
-
-      {
-        input_->repeat();
-        input_->rewind();
-      }
-      changeState(mCountComplete);
-      toerror.succeeded();
-    }
-    changeState(mFinished);
-  }
-
-  EventProcessor::StatusCode
-  EventProcessor::run(int numberEventsToProcess, bool) {
-    return runEventCount(numberEventsToProcess);
-  }
-
-  EventProcessor::StatusCode
-  EventProcessor::skip(int numberToSkip) {
-    beginJob(); //make sure this was called
-    changeState(mSkip);
-    {
-      StateSentry toerror(this);
-
-      //make the services available
-      ServiceRegistry::Operate operate(serviceToken_);
-
-      {
-        input_->skipEvents(numberToSkip);
-      }
-      changeState(mCountComplete);
-      toerror.succeeded();
-    }
-    changeState(mFinished);
-    return epSuccess;
   }
 
   void
@@ -790,7 +738,7 @@ namespace edm {
       ex.addContext("Calling beginJob for the source");
       throw;
     }
-    schedule_->beginJob();
+    schedule_->beginJob(*preg_);
     // toerror.succeeded(); // should we add this?
     if(hasSubProcess()) subProcess_->doBeginJob();
     actReg_->postBeginJobSignal_();
@@ -807,16 +755,16 @@ namespace edm {
     //make the services available
     ServiceRegistry::Operate operate(serviceToken_);
 
-    c.call(boost::bind(&EventProcessor::terminateMachine, this));
     schedule_->endJob(c);
     if(hasSubProcess()) {
       c.call(boost::bind(&SubProcess::doEndJob, subProcess_.get()));
     }
-    c.call(boost::bind(&InputSource::doEndJob, input_));
+    c.call(boost::bind(&InputSource::doEndJob, input_.get()));
     if(looper_) {
       c.call(boost::bind(&EDLooperBase::endOfJob, looper_));
     }
-    c.call(boost::bind(&ActivityRegistry::PostEndJob::operator(), &actReg_->postEndJobSignal_));
+    auto actReg = actReg_.get();
+    c.call([actReg](){actReg->postEndJobSignal_();});
     if(c.hasThrown()) {
       c.rethrow();
     }
@@ -835,6 +783,9 @@ namespace edm {
     volatile unsigned int num_children_done = 0;
     volatile int child_fail_exit_status = 0;
     volatile int child_fail_signal = 0;
+    
+    //NOTE: We setup the signal handler to run in the main thread which
+    // is also the same thread that then reads the above values
 
     extern "C" {
       void ep_sigchld(int, siginfo_t*, void*) {
@@ -1032,6 +983,22 @@ namespace edm {
 
   }
 
+  
+  void EventProcessor::possiblyContinueAfterForkChildFailure() {
+    if(child_failed && continueAfterChildFailure_) {
+      if (child_fail_signal) {
+        LogSystem("ForkedChildFailed") << "child process ended abnormally with signal " << child_fail_signal;
+        child_fail_signal=0;
+      } else if (child_fail_exit_status) {
+        LogSystem("ForkedChildFailed") << "child process ended abnormally with exit code " << child_fail_exit_status;
+        child_fail_exit_status=0;
+      } else {
+        LogSystem("ForkedChildFailed") << "child process ended abnormally for unknown reason";
+      }
+      child_failed =false;
+    }
+  }
+
   bool
   EventProcessor::forkProcess(std::string const& jobReportFile) {
 
@@ -1069,7 +1036,7 @@ namespace edm {
         eventsetup::EventSetupRecord const* recordPtr = es.find(*itKey);
         //see if this is on our exclusion list
         ExcludedDataMap::const_iterator itExcludeRec = eventSetupDataToExcludeFromPrefetching_.find(itKey->type().name());
-        ExcludedData const* excludedData(0);
+        ExcludedData const* excludedData(nullptr);
         if(itExcludeRec != eventSetupDataToExcludeFromPrefetching_.end()) {
           excludedData = &(itExcludeRec->second);
           if(excludedData->size() == 0 || excludedData->begin()->first == "*") {
@@ -1125,7 +1092,7 @@ namespace edm {
     childrenSocketsCopy.reserve(kMaxChildren);
     std::vector<int> childrenPipesCopy;
     childrenPipesCopy.reserve(kMaxChildren);
-    int pipes[2];
+    int pipes[] {0, 0};
 
     {
       // make the services available
@@ -1284,9 +1251,15 @@ namespace edm {
     MessageSenderToSource sender(childrenSockets, childrenPipes, numberOfSequentialEventsPerChild_);
     boost::thread senderThread(sender);
 
-    while(!too_many_fds && !shutdown_flag && !child_failed && (childrenIds.size() != num_children_done)) {
-      sigsuspend(&unblockingSigSet);
-      LogInfo("ForkingAwake") << "woke from sigwait" << std::endl;
+    if(not too_many_fds) {
+      //NOTE: a child could have failed before we got here and even after this call
+      // which is why the 'if' is conditional on continueAfterChildFailure_
+      possiblyContinueAfterForkChildFailure();
+      while(!shutdown_flag && (!child_failed or continueAfterChildFailure_) && (childrenIds.size() != num_children_done)) {
+        sigsuspend(&unblockingSigSet);
+        possiblyContinueAfterForkChildFailure();
+        LogInfo("ForkingAwake") << "woke from sigwait" << std::endl;
+      }
     }
     pthread_sigmask(SIG_SETMASK, &oldSigSet, NULL);
 
@@ -1312,7 +1285,7 @@ namespace edm {
     }
     // The senderThread will notice the pipes die off, one by one.  Once all children are gone, it will exit.
     senderThread.join();
-    if(child_failed) {
+    if(child_failed && !continueAfterChildFailure_) {
       if (child_fail_signal) {
         throw cms::Exception("ForkedChildFailed") << "child process ended abnormally with signal " << child_fail_signal;
       } else if (child_fail_exit_status) {
@@ -1332,8 +1305,8 @@ namespace edm {
     // When the FwkImpl signals are given, pass them to the
     // appropriate EventProcessor signals so that the outside world
     // can see the signal.
-    actReg_->preProcessEventSignal_.connect(ep->preProcessEventSignal_);
-    actReg_->postProcessEventSignal_.connect(ep->postProcessEventSignal_);
+    actReg_->preProcessEventSignal_.connect(std::cref(ep->preProcessEventSignal_));
+    actReg_->postProcessEventSignal_.connect(std::cref(ep->postProcessEventSignal_));
   }
 
   std::vector<ModuleDescription const*>
@@ -1403,7 +1376,7 @@ namespace edm {
     if(runNumber == 0) {
       runNumber = 1;
       LogWarning("Invalid Run")
-        << "EventProcessor::setRunNumber was called with an invalid run number (0)\n"
+        << "EventProcessor::setRunNumber was called with an invalid run number (nullptr)\n"
         << "Run number was set to 1 instead\n";
     }
 
@@ -1429,7 +1402,12 @@ namespace edm {
   EventProcessor::waitForAsyncCompletion(unsigned int timeout_seconds) {
     bool rc = true;
     boost::xtime timeout;
+
+#if BOOST_VERSION >= 105000
+    boost::xtime_get(&timeout, boost::TIME_UTC_);
+#else
     boost::xtime_get(&timeout, boost::TIME_UTC);
+#endif
     timeout.sec += timeout_seconds;
 
     // make sure to include a timeout here so we don't wait forever
@@ -1556,7 +1534,11 @@ namespace edm {
       last_rc_ = epSuccess; // forget the last value!
       event_loop_.reset(new boost::thread(boost::bind(EventProcessor::asyncRun, this)));
       boost::xtime timeout;
+#if BOOST_VERSION >= 105000
+      boost::xtime_get(&timeout, boost::TIME_UTC_);
+#else
       boost::xtime_get(&timeout, boost::TIME_UTC);
+#endif
       timeout.sec += 60; // 60 seconds to start!!!!
       if(starter_.timed_wait(sl, timeout) == false) {
           // yikes - the thread did not start
@@ -1582,7 +1564,7 @@ namespace edm {
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
 
     {
-      boost::mutex::scoped_lock(me->stop_lock_);
+      boost::mutex::scoped_lock sl(me->stop_lock_);
       me->event_loop_id_ = pthread_self();
       me->id_set_ = true;
       me->starter_.notify_all();
@@ -1628,16 +1610,235 @@ namespace edm {
     FDEBUG(2) << "asyncRun ending ......................\n";
   }
 
+  std::auto_ptr<statemachine::Machine>
+  EventProcessor::createStateMachine() {
+    statemachine::FileMode fileMode;
+    if(fileMode_.empty()) fileMode = statemachine::FULLMERGE;
+    else if(fileMode_ == std::string("NOMERGE")) fileMode = statemachine::NOMERGE;
+    else if(fileMode_ == std::string("FULLMERGE")) fileMode = statemachine::FULLMERGE;
+    else {
+      throw Exception(errors::Configuration, "Illegal fileMode parameter value: ")
+      << fileMode_ << ".\n"
+      << "Legal values are 'NOMERGE' and 'FULLMERGE'.\n";
+    }
+    
+    statemachine::EmptyRunLumiMode emptyRunLumiMode;
+    if(emptyRunLumiMode_.empty()) emptyRunLumiMode = statemachine::handleEmptyRunsAndLumis;
+    else if(emptyRunLumiMode_ == std::string("handleEmptyRunsAndLumis")) emptyRunLumiMode = statemachine::handleEmptyRunsAndLumis;
+    else if(emptyRunLumiMode_ == std::string("handleEmptyRuns")) emptyRunLumiMode = statemachine::handleEmptyRuns;
+    else if(emptyRunLumiMode_ == std::string("doNotHandleEmptyRunsAndLumis")) emptyRunLumiMode = statemachine::doNotHandleEmptyRunsAndLumis;
+    else {
+      throw Exception(errors::Configuration, "Illegal emptyMode parameter value: ")
+      << emptyRunLumiMode_ << ".\n"
+      << "Legal values are 'handleEmptyRunsAndLumis', 'handleEmptyRuns', and 'doNotHandleEmptyRunsAndLumis'.\n";
+    }
+    
+    std::auto_ptr<statemachine::Machine> machine(new statemachine::Machine(this,
+                                             fileMode,
+                                             emptyRunLumiMode));
+    
+    machine->initiate();
+    return machine;
+  }
+
 
   EventProcessor::StatusCode
   EventProcessor::runToCompletion(bool onlineStateTransitions) {
 
     StateSentry toerror(this);
 
-    int numberOfEventsToProcess = -1;
-    StatusCode returnCode = runCommon(onlineStateTransitions, numberOfEventsToProcess);
+    StatusCode returnCode=epSuccess;
+    std::auto_ptr<statemachine::Machine> machine;
+    {
+      beginJob(); //make sure this was called
+      
+      if(!onlineStateTransitions) changeState(mRunCount);
+      
+      //StatusCode returnCode = epSuccess;
+      stateMachineWasInErrorState_ = false;
+      
+      // make the services available
+      ServiceRegistry::Operate operate(serviceToken_);
 
-    if(machine_.get() != 0) {
+      machine = createStateMachine();
+      try {
+        try {
+          
+          InputSource::ItemType itemType;
+          
+          while(true) {
+            
+            bool more = true;
+            if(numberOfForkedChildren_ > 0) {
+              size_t size = preg_->size();
+              more = input_->skipForForking();
+              if(more) {
+                if(size < preg_->size()) {
+                  principalCache_.adjustIndexesAfterProductRegistryAddition();
+                }
+                principalCache_.adjustEventToNewProductRegistry(preg_);
+              }
+            } 
+            itemType = (more ? input_->nextItemType() : InputSource::IsStop);
+            
+            FDEBUG(1) << "itemType = " << itemType << "\n";
+            
+            // These are used for asynchronous running only and
+            // and are checking to see if stopAsync or shutdownAsync
+            // were called from another thread.  In the future, we
+            // may need to do something better than polling the state.
+            // With the current code this is the simplest thing and
+            // it should always work.  If the interaction between
+            // threads becomes more complex this may cause problems.
+            if(state_ == sStopping) {
+              FDEBUG(1) << "In main processing loop, encountered sStopping state\n";
+              forceLooperToEnd_ = true;
+              machine->process_event(statemachine::Stop());
+              forceLooperToEnd_ = false;
+              break;
+            }
+            else if(state_ == sShuttingDown) {
+              FDEBUG(1) << "In main processing loop, encountered sShuttingDown state\n";
+              forceLooperToEnd_ = true;
+              machine->process_event(statemachine::Stop());
+              forceLooperToEnd_ = false;
+              break;
+            }
+            
+            // Look for a shutdown signal
+            {
+              boost::mutex::scoped_lock sl(usr2_lock);
+              if(shutdown_flag) {
+                changeState(mShutdownSignal);
+                returnCode = epSignal;
+                forceLooperToEnd_ = true;
+                machine->process_event(statemachine::Stop());
+                forceLooperToEnd_ = false;
+                break;
+              }
+            }
+            
+            if(itemType == InputSource::IsStop) {
+              machine->process_event(statemachine::Stop());
+            }
+            else if(itemType == InputSource::IsFile) {
+              machine->process_event(statemachine::File());
+            }
+            else if(itemType == InputSource::IsRun) {
+              machine->process_event(statemachine::Run(input_->reducedProcessHistoryID(), input_->run()));
+            }
+            else if(itemType == InputSource::IsLumi) {
+              machine->process_event(statemachine::Lumi(input_->luminosityBlock()));
+            }
+            else if(itemType == InputSource::IsEvent) {
+              machine->process_event(statemachine::Event());
+            }
+            // This should be impossible
+            else {
+              throw Exception(errors::LogicError)
+              << "Unknown next item type passed to EventProcessor\n"
+              << "Please report this error to the Framework group\n";
+            }
+            
+            if(machine->terminated()) {
+              changeState(mInputExhausted);
+              break;
+            }
+          }  // End of loop over state machine events
+        } // Try block
+        catch (cms::Exception& e) { throw; }
+        catch(std::bad_alloc& bda) { convertException::badAllocToEDM(); }
+        catch (std::exception& e) { convertException::stdToEDM(e); }
+        catch(std::string& s) { convertException::stringToEDM(s); }
+        catch(char const* c) { convertException::charPtrToEDM(c); }
+        catch (...) { convertException::unknownToEDM(); }
+      } // Try block
+      // Some comments on exception handling related to the boost state machine:
+      //
+      // Some states used in the machine are special because they
+      // perform actions while the machine is being terminated, actions
+      // such as close files, call endRun, call endLumi etc ...  Each of these
+      // states has two functions that perform these actions.  The functions
+      // are almost identical.  The major difference is that one version
+      // catches all exceptions and the other lets exceptions pass through.
+      // The destructor catches them and the other function named "exit" lets
+      // them pass through.  On a normal termination, boost will always call
+      // "exit" and then the state destructor.  In our state classes, the
+      // the destructors do nothing if the exit function already took
+      // care of things.  Here's the interesting part.  When boost is
+      // handling an exception the "exit" function is not called (a boost
+      // feature).
+      //
+      // If an exception occurs while the boost machine is in control
+      // (which usually means inside a process_event call), then
+      // the boost state machine destroys its states and "terminates" itself.
+      // This already done before we hit the catch blocks below. In this case
+      // the call to terminateMachine below only destroys an already
+      // terminated state machine.  Because exit is not called, the state destructors
+      // handle cleaning up lumis, runs, and files.  The destructors swallow
+      // all exceptions and only pass through the exceptions messages, which
+      // are tacked onto the original exception below.
+      //
+      // If an exception occurs when the boost state machine is not
+      // in control (outside the process_event functions), then boost
+      // cannot destroy its own states.  The terminateMachine function
+      // below takes care of that.  The flag "alreadyHandlingException"
+      // is set true so that the state exit functions do nothing (and
+      // cannot throw more exceptions while handling the first).  Then the
+      // state destructors take care of this because exit did nothing.
+      //
+      // In both cases above, the EventProcessor::endOfLoop function is
+      // not called because it can throw exceptions.
+      //
+      // One tricky aspect of the state machine is that things that can
+      // throw should not be invoked by the state machine while another
+      // exception is being handled.
+      // Another tricky aspect is that it appears to be important to
+      // terminate the state machine before invoking its destructor.
+      // We've seen crashes that are not understood when that is not
+      // done.  Maintainers of this code should be careful about this.
+      
+      catch (cms::Exception & e) {
+        alreadyHandlingException_ = true;
+        terminateMachine(machine);
+        alreadyHandlingException_ = false;
+        if (!exceptionMessageLumis_.empty()) {
+          e.addAdditionalInfo(exceptionMessageLumis_);
+          if (e.alreadyPrinted()) {
+            LogAbsolute("Additional Exceptions") << exceptionMessageLumis_;
+          }
+        }
+        if (!exceptionMessageRuns_.empty()) {
+          e.addAdditionalInfo(exceptionMessageRuns_);
+          if (e.alreadyPrinted()) {
+            LogAbsolute("Additional Exceptions") << exceptionMessageRuns_;
+          }
+        }
+        if (!exceptionMessageFiles_.empty()) {
+          e.addAdditionalInfo(exceptionMessageFiles_);
+          if (e.alreadyPrinted()) {
+            LogAbsolute("Additional Exceptions") << exceptionMessageFiles_;
+          }
+        }
+        throw;
+      }
+      
+      if(machine->terminated()) {
+        FDEBUG(1) << "The state machine reports it has been terminated\n";
+        machine.reset();
+      }
+      
+      if(!onlineStateTransitions) changeState(mFinished);
+      
+      if(stateMachineWasInErrorState_) {
+        throw cms::Exception("BadState")
+        << "The boost state machine in the EventProcessor exited after\n"
+        << "entering the Error state.\n";
+      }
+      
+    }
+    if(machine.get() != 0) {
+      terminateMachine(machine);
       throw Exception(errors::LogicError)
         << "State machine not destroyed on exit from EventProcessor::runToCompletion\n"
         << "Please report this error to the Framework group\n";
@@ -1648,259 +1849,28 @@ namespace edm {
     return returnCode;
   }
 
-  EventProcessor::StatusCode
-  EventProcessor::runEventCount(int numberOfEventsToProcess) {
-
-    StateSentry toerror(this);
-
-    bool onlineStateTransitions = false;
-    StatusCode returnCode = runCommon(onlineStateTransitions, numberOfEventsToProcess);
-
-    toerror.succeeded();
-
-    return returnCode;
-  }
-
-  EventProcessor::StatusCode
-  EventProcessor::runCommon(bool onlineStateTransitions, int numberOfEventsToProcess) {
-
-    // Reusable event principal
-    boost::shared_ptr<EventPrincipal> ep(new EventPrincipal(preg_, *processConfiguration_, historyAppender_.get()));
-    principalCache_.insert(ep);
-
-    beginJob(); //make sure this was called
-
-    if(!onlineStateTransitions) changeState(mRunCount);
-
-    StatusCode returnCode = epSuccess;
-    stateMachineWasInErrorState_ = false;
-
-    // make the services available
-    ServiceRegistry::Operate operate(serviceToken_);
-
-    if(machine_.get() == 0) {
-
-      statemachine::FileMode fileMode;
-      if(fileMode_.empty()) fileMode = statemachine::FULLMERGE;
-      else if(fileMode_ == std::string("NOMERGE")) fileMode = statemachine::NOMERGE;
-      else if(fileMode_ == std::string("FULLMERGE")) fileMode = statemachine::FULLMERGE;
-      else {
-         throw Exception(errors::Configuration, "Illegal fileMode parameter value: ")
-            << fileMode_ << ".\n"
-            << "Legal values are 'NOMERGE' and 'FULLMERGE'.\n";
-      }
-
-      statemachine::EmptyRunLumiMode emptyRunLumiMode;
-      if(emptyRunLumiMode_.empty()) emptyRunLumiMode = statemachine::handleEmptyRunsAndLumis;
-      else if(emptyRunLumiMode_ == std::string("handleEmptyRunsAndLumis")) emptyRunLumiMode = statemachine::handleEmptyRunsAndLumis;
-      else if(emptyRunLumiMode_ == std::string("handleEmptyRuns")) emptyRunLumiMode = statemachine::handleEmptyRuns;
-      else if(emptyRunLumiMode_ == std::string("doNotHandleEmptyRunsAndLumis")) emptyRunLumiMode = statemachine::doNotHandleEmptyRunsAndLumis;
-      else {
-         throw Exception(errors::Configuration, "Illegal emptyMode parameter value: ")
-            << emptyRunLumiMode_ << ".\n"
-            << "Legal values are 'handleEmptyRunsAndLumis', 'handleEmptyRuns', and 'doNotHandleEmptyRunsAndLumis'.\n";
-      }
-
-      machine_.reset(new statemachine::Machine(this,
-                                               fileMode,
-                                               emptyRunLumiMode));
-
-      machine_->initiate();
-    }
-
-    try {
-      try {
-
-        InputSource::ItemType itemType;
-
-        int iEvents = 0;
-
-        while(true) {
-
-          itemType = input_->nextItemType();
-
-          FDEBUG(1) << "itemType = " << itemType << "\n";
-
-          // These are used for asynchronous running only and
-          // and are checking to see if stopAsync or shutdownAsync
-          // were called from another thread.  In the future, we
-          // may need to do something better than polling the state.
-          // With the current code this is the simplest thing and
-          // it should always work.  If the interaction between
-          // threads becomes more complex this may cause problems.
-          if(state_ == sStopping) {
-            FDEBUG(1) << "In main processing loop, encountered sStopping state\n";
-            forceLooperToEnd_ = true;
-            machine_->process_event(statemachine::Stop());
-            forceLooperToEnd_ = false;
-            break;
-          }
-          else if(state_ == sShuttingDown) {
-            FDEBUG(1) << "In main processing loop, encountered sShuttingDown state\n";
-            forceLooperToEnd_ = true;
-            machine_->process_event(statemachine::Stop());
-            forceLooperToEnd_ = false;
-            break;
-          }
-
-          // Look for a shutdown signal
-          {
-            boost::mutex::scoped_lock sl(usr2_lock);
-            if(shutdown_flag) {
-              changeState(mShutdownSignal);
-              returnCode = epSignal;
-              forceLooperToEnd_ = true;
-              machine_->process_event(statemachine::Stop());
-              forceLooperToEnd_ = false;
-              break;
-            }
-          }
-
-          if(itemType == InputSource::IsStop) {
-            machine_->process_event(statemachine::Stop());
-          }
-          else if(itemType == InputSource::IsFile) {
-            machine_->process_event(statemachine::File());
-          }
-          else if(itemType == InputSource::IsRun) {
-            machine_->process_event(statemachine::Run(input_->reducedProcessHistoryID(), input_->run()));
-          }
-          else if(itemType == InputSource::IsLumi) {
-            machine_->process_event(statemachine::Lumi(input_->luminosityBlock()));
-          }
-          else if(itemType == InputSource::IsEvent) {
-            machine_->process_event(statemachine::Event());
-            ++iEvents;
-            if(numberOfEventsToProcess > 0 && iEvents >= numberOfEventsToProcess) {
-              returnCode = epCountComplete;
-              changeState(mInputExhausted);
-              FDEBUG(1) << "Event count complete, pausing event loop\n";
-              break;
-            }
-          }
-          // This should be impossible
-          else {
-            throw Exception(errors::LogicError)
-              << "Unknown next item type passed to EventProcessor\n"
-              << "Please report this error to the Framework group\n";
-          }
-
-          if(machine_->terminated()) {
-            changeState(mInputExhausted);
-            break;
-          }
-        }  // End of loop over state machine events
-      } // Try block
-      catch (cms::Exception& e) { throw; }
-      catch(std::bad_alloc& bda) { convertException::badAllocToEDM(); }
-      catch (std::exception& e) { convertException::stdToEDM(e); }
-      catch(std::string& s) { convertException::stringToEDM(s); }
-      catch(char const* c) { convertException::charPtrToEDM(c); }
-      catch (...) { convertException::unknownToEDM(); }
-    } // Try block
-    // Some comments on exception handling related to the boost state machine:
-    //
-    // Some states used in the machine are special because they
-    // perform actions while the machine is being terminated, actions
-    // such as close files, call endRun, call endLumi etc ...  Each of these
-    // states has two functions that perform these actions.  The functions
-    // are almost identical.  The major difference is that one version
-    // catches all exceptions and the other lets exceptions pass through.
-    // The destructor catches them and the other function named "exit" lets
-    // them pass through.  On a normal termination, boost will always call
-    // "exit" and then the state destructor.  In our state classes, the
-    // the destructors do nothing if the exit function already took
-    // care of things.  Here's the interesting part.  When boost is
-    // handling an exception the "exit" function is not called (a boost
-    // feature).
-    //
-    // If an exception occurs while the boost machine is in control
-    // (which usually means inside a process_event call), then
-    // the boost state machine destroys its states and "terminates" itself.
-    // This already done before we hit the catch blocks below. In this case
-    // the call to terminateMachine below only destroys an already
-    // terminated state machine.  Because exit is not called, the state destructors
-    // handle cleaning up lumis, runs, and files.  The destructors swallow
-    // all exceptions and only pass through the exceptions messages, which
-    // are tacked onto the original exception below.
-    //
-    // If an exception occurs when the boost state machine is not
-    // in control (outside the process_event functions), then boost
-    // cannot destroy its own states.  The terminateMachine function
-    // below takes care of that.  The flag "alreadyHandlingException"
-    // is set true so that the state exit functions do nothing (and
-    // cannot throw more exceptions while handling the first).  Then the
-    // state destructors take care of this because exit did nothing.
-    //
-    // In both cases above, the EventProcessor::endOfLoop function is
-    // not called because it can throw exceptions.
-    //
-    // One tricky aspect of the state machine is that things that can
-    // throw should not be invoked by the state machine while another
-    // exception is being handled.
-    // Another tricky aspect is that it appears to be important to
-    // terminate the state machine before invoking its destructor.
-    // We've seen crashes that are not understood when that is not
-    // done.  Maintainers of this code should be careful about this.
-
-    catch (cms::Exception & e) {
-      alreadyHandlingException_ = true;
-      terminateMachine();
-      alreadyHandlingException_ = false;
-      if (!exceptionMessageLumis_.empty()) {
-        e.addAdditionalInfo(exceptionMessageLumis_);
-        if (e.alreadyPrinted()) {
-          LogAbsolute("Additional Exceptions") << exceptionMessageLumis_;
-        }
-      }
-      if (!exceptionMessageRuns_.empty()) {
-        e.addAdditionalInfo(exceptionMessageRuns_);
-        if (e.alreadyPrinted()) {
-          LogAbsolute("Additional Exceptions") << exceptionMessageRuns_;
-        }
-      }
-      if (!exceptionMessageFiles_.empty()) {
-        e.addAdditionalInfo(exceptionMessageFiles_);
-        if (e.alreadyPrinted()) {
-          LogAbsolute("Additional Exceptions") << exceptionMessageFiles_;
-        }
-      }
-      throw;
-    }
-
-    if(machine_->terminated()) {
-      FDEBUG(1) << "The state machine reports it has been terminated\n";
-      machine_.reset();
-    }
-
-    if(!onlineStateTransitions) changeState(mFinished);
-
-    if(stateMachineWasInErrorState_) {
-      throw cms::Exception("BadState")
-        << "The boost state machine in the EventProcessor exited after\n"
-        << "entering the Error state.\n";
-    }
-
-    return returnCode;
-  }
-
   void EventProcessor::readFile() {
     FDEBUG(1) << " \treadFile\n";
+    size_t size = preg_->size();
     fb_ = input_->readFile();
+    if(size < preg_->size()) {
+      principalCache_.adjustIndexesAfterProductRegistryAddition();
+    }
+    principalCache_.adjustEventToNewProductRegistry(preg_);
     if(numberOfForkedChildren_ > 0) {
         fb_->setNotFastClonable(FileBlock::ParallelProcesses);
     }
   }
 
   void EventProcessor::closeInputFile(bool cleaningUpAfterException) {
-    if (fb_.get() != 0) {
-      input_->closeFile(fb_, cleaningUpAfterException);
+    if (fb_.get() != nullptr) {
+      input_->closeFile(fb_.get(), cleaningUpAfterException);
     }
     FDEBUG(1) << "\tcloseInputFile\n";
   }
 
   void EventProcessor::openOutputFiles() {
-    if (fb_.get() != 0) {
+    if (fb_.get() != nullptr) {
       schedule_->openOutputFiles(*fb_);
       if(hasSubProcess()) subProcess_->openOutputFiles(*fb_);
     }
@@ -1908,7 +1878,7 @@ namespace edm {
   }
 
   void EventProcessor::closeOutputFiles() {
-    if (fb_.get() != 0) {
+    if (fb_.get() != nullptr) {
       schedule_->closeOutputFiles();
       if(hasSubProcess()) subProcess_->closeOutputFiles();
     }
@@ -1916,7 +1886,7 @@ namespace edm {
   }
 
   void EventProcessor::respondToOpenInputFile() {
-    if (fb_.get() != 0) {
+    if (fb_.get() != nullptr) {
       schedule_->respondToOpenInputFile(*fb_);
       if(hasSubProcess()) subProcess_->respondToOpenInputFile(*fb_);
     }
@@ -1924,7 +1894,7 @@ namespace edm {
   }
 
   void EventProcessor::respondToCloseInputFile() {
-    if (fb_.get() != 0) {
+    if (fb_.get() != nullptr) {
       schedule_->respondToCloseInputFile(*fb_);
       if(hasSubProcess()) subProcess_->respondToCloseInputFile(*fb_);
     }
@@ -1932,7 +1902,7 @@ namespace edm {
   }
 
   void EventProcessor::respondToOpenOutputFiles() {
-    if (fb_.get() != 0) {
+    if (fb_.get() != nullptr) {
       schedule_->respondToOpenOutputFiles(*fb_);
       if(hasSubProcess()) subProcess_->respondToOpenOutputFiles(*fb_);
     }
@@ -1940,7 +1910,7 @@ namespace edm {
   }
 
   void EventProcessor::respondToCloseOutputFiles() {
-    if (fb_.get() != 0) {
+    if (fb_.get() != nullptr) {
       schedule_->respondToCloseOutputFiles(*fb_);
       if(hasSubProcess()) subProcess_->respondToCloseOutputFiles(*fb_);
     }
@@ -1962,7 +1932,7 @@ namespace edm {
       ModuleChanger changer(schedule_.get());
       looper_->setModuleChanger(&changer);
       EDLooperBase::Status status = looper_->doEndOfLoop(esp_->eventSetup());
-      looper_->setModuleChanger(0);
+      looper_->setModuleChanger(nullptr);
       if(status != EDLooperBase::kContinue || forceLooperToEnd_) return true;
       else return false;
     }
@@ -2048,7 +2018,7 @@ namespace edm {
     }
   }
 
-  void EventProcessor::beginLumi(ProcessHistoryID const& phid, int run, int lumi) {
+  void EventProcessor::beginLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi) {
     LuminosityBlockPrincipal& lumiPrincipal = principalCache_.lumiPrincipal(phid, run, lumi);
     input_->doBeginLumi(lumiPrincipal);
 
@@ -2077,7 +2047,7 @@ namespace edm {
     }
   }
 
-  void EventProcessor::endLumi(ProcessHistoryID const& phid, int run, int lumi, bool cleaningUpAfterException) {
+  void EventProcessor::endLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi, bool cleaningUpAfterException) {
     LuminosityBlockPrincipal& lumiPrincipal = principalCache_.lumiPrincipal(phid, run, lumi);
     input_->doEndLumi(lumiPrincipal, cleaningUpAfterException);
     //NOTE: Using the max event number for the end of a lumi block is a bad idea
@@ -2100,15 +2070,45 @@ namespace edm {
     }
   }
 
-  statemachine::Run EventProcessor::readAndCacheRun(bool merge) {
-    input_->readAndCacheRun(merge, *historyAppender_);
-    input_->markRun();
+  statemachine::Run EventProcessor::readAndCacheRun() {
+    if (principalCache_.hasRunPrincipal()) {
+      throw edm::Exception(edm::errors::LogicError)
+        << "EventProcessor::readAndCacheRun\n"
+        << "Illegal attempt to insert run into cache\n"
+        << "Contact a Framework Developer\n";
+    }
+    principalCache_.insert(input_->readAndCacheRun(*historyAppender_));
     return statemachine::Run(input_->reducedProcessHistoryID(), input_->run());
   }
 
-  int EventProcessor::readAndCacheLumi(bool merge) {
-    input_->readAndCacheLumi(merge, *historyAppender_);
-    input_->markLumi();
+  statemachine::Run EventProcessor::readAndMergeRun() {
+    principalCache_.merge(input_->runAuxiliary(), preg_);
+    input_->readAndMergeRun(principalCache_.runPrincipalPtr());
+    return statemachine::Run(input_->reducedProcessHistoryID(), input_->run());
+  }
+
+  int EventProcessor::readAndCacheLumi() {
+    if (principalCache_.hasLumiPrincipal()) {
+      throw edm::Exception(edm::errors::LogicError)
+        << "EventProcessor::readAndCacheRun\n"
+        << "Illegal attempt to insert lumi into cache\n"
+        << "Contact a Framework Developer\n";
+    }
+    if (!principalCache_.hasRunPrincipal()) {
+      throw edm::Exception(edm::errors::LogicError)
+        << "EventProcessor::readAndCacheRun\n"
+        << "Illegal attempt to insert lumi into cache\n"
+        << "Run is invalid\n"
+        << "Contact a Framework Developer\n";
+    }
+    principalCache_.insert(input_->readAndCacheLumi(*historyAppender_));
+    principalCache_.lumiPrincipalPtr()->setRunPrincipal(principalCache_.runPrincipalPtr());
+    return input_->luminosityBlock();
+  }
+
+  int EventProcessor::readAndMergeLumi() {
+    principalCache_.merge(input_->luminosityBlockAuxiliary(), preg_);
+    input_->readAndMergeLumi(principalCache_.lumiPrincipalPtr());
     return input_->luminosityBlock();
   }
 
@@ -2124,22 +2124,26 @@ namespace edm {
     FDEBUG(1) << "\tdeleteRunFromCache " << run.runNumber() << "\n";
   }
 
-  void EventProcessor::writeLumi(ProcessHistoryID const& phid, int run, int lumi) {
+  void EventProcessor::writeLumi(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi) {
     schedule_->writeLumi(principalCache_.lumiPrincipal(phid, run, lumi));
     if(hasSubProcess()) subProcess_->writeLumi(phid, run, lumi);
     FDEBUG(1) << "\twriteLumi " << run << "/" << lumi << "\n";
   }
 
-  void EventProcessor::deleteLumiFromCache(ProcessHistoryID const& phid, int run, int lumi) {
+  void EventProcessor::deleteLumiFromCache(ProcessHistoryID const& phid, RunNumber_t run, LuminosityBlockNumber_t lumi) {
     principalCache_.deleteLumi(phid, run, lumi);
     if(hasSubProcess()) subProcess_->deleteLumiFromCache(phid, run, lumi);
     FDEBUG(1) << "\tdeleteLumiFromCache " << run << "/" << lumi << "\n";
   }
 
   void EventProcessor::readAndProcessEvent() {
-    EventPrincipal *pep = input_->readEvent(principalCache_.lumiPrincipalPtr());
+    EventPrincipal *pep = input_->readEvent(principalCache_.eventPrincipal());
     FDEBUG(1) << "\treadEvent\n";
     assert(pep != 0);
+    pep->setLuminosityBlockPrincipal(principalCache_.lumiPrincipalPtr());
+    assert(pep->luminosityBlockPrincipalPtrValid());
+    assert(principalCache_.lumiPrincipalPtr()->run() == pep->run());
+    assert(principalCache_.lumiPrincipalPtr()->luminosityBlock() == pep->luminosityBlock());
 
     IOVSyncValue ts(pep->id(), pep->time());
     espController_->eventSetupForInstance(ts);
@@ -2204,20 +2208,20 @@ namespace edm {
     return alreadyHandlingException_;
   }
 
-  void EventProcessor::terminateMachine() {
-    if(machine_.get() != 0) {
-      if(!machine_->terminated()) {
+  void EventProcessor::terminateMachine(std::auto_ptr<statemachine::Machine>& iMachine) {
+    if(iMachine.get() != 0) {
+      if(!iMachine->terminated()) {
         forceLooperToEnd_ = true;
-        machine_->process_event(statemachine::Stop());
+        iMachine->process_event(statemachine::Stop());
         forceLooperToEnd_ = false;
       }
       else {
         FDEBUG(1) << "EventProcess::terminateMachine  The state machine was already terminated \n";
       }
-      if(machine_->terminated()) {
+      if(iMachine->terminated()) {
         FDEBUG(1) << "The state machine reports it has been terminated (3)\n";
       }
-      machine_.reset();
+      iMachine.reset();
     }
   }
 }

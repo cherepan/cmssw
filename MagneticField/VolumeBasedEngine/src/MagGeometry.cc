@@ -1,8 +1,8 @@
 /*
  *  See header file for a description of this class.
  *
- *  $Date: 2010/10/13 15:40:20 $
- *  $Revision: 1.19 $
+ *  $Date: 2013/05/03 20:00:12 $
+ *  $Revision: 1.23 $
  *  \author N. Amapane - INFN Torino
  */
 
@@ -15,6 +15,7 @@
 #include "Utilities/BinningTools/interface/PeriodicBinFinderInPhi.h"
 
 #include <FWCore/ParameterSet/interface/ParameterSet.h>
+#include "FWCore/Utilities/interface/isFinite.h"
 
 #include "MagneticField/Layers/interface/MagVerbosity.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
@@ -30,13 +31,7 @@ MagGeometry::MagGeometry(const edm::ParameterSet& config, std::vector<MagBLayer 
 {
   
   cacheLastVolume = config.getUntrackedParameter<bool>("cacheLastVolume", true);
-
-  // FIXME: wait geometryVersion to be propagated to all cfgs.
-  if (config.exists("geometryVersion")) {
-    geometryVersion = config.getParameter<int>("geometryVersion");
-  } else {
-    geometryVersion = 90322;
-  }  
+  geometryVersion = config.getParameter<int>("geometryVersion");
 
   vector<double> rBorders;
 
@@ -91,7 +86,7 @@ GlobalVector MagGeometry::fieldInTesla(const GlobalPoint & gp) const {
   
   // Fall-back case: no volume found
   
-  if (isnan(gp.mag())) {
+  if (edm::isNotFinite(gp.mag())) {
     LogWarning("InvalidInput") << "Input value invalid (not a number): " << gp << endl;
       
   } else {
@@ -191,11 +186,15 @@ bool MagGeometry::inBarrel(const GlobalPoint& gp) const {
   float R = gp.perp();
 
   // FIXME: Get these dimensions from the builder. 
-  if (geometryVersion>=90812) {
+  if (geometryVersion>=120812) {
+    return (Z<350. ||
+	    (R>172.4 && Z<633.29) || 
+	    (R>308.7345 && Z<662.01));    
+  } else if (geometryVersion>=90812) {
     return (Z<350. ||
 	    (R>172.4 && Z<633.89) || 
-	    (R>308.755 && Z<662.01));    
-  } else {
+	    (R>308.755 && Z<662.01));
+  } else { // version 71212
     return (Z<350. ||
 	    (R>172.4 && Z<633.29) || 
 	    (R>308.755 && Z<661.01));

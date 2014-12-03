@@ -414,8 +414,8 @@ AdaptiveVertexFitter::reWeightTracks(
     // cout << "[AdaptiveVertexFitter] estimate " << endl;
     pair < bool, double > chi2Res ( false, 0. );
     try {
-      chi2Res =  theComp->estimate ( vertex, *i );
-    } catch ( ... ) {};
+      chi2Res =  theComp->estimate ( vertex, *i, std::distance(lTracks.begin(),i) );
+    } catch ( exception const & e ) {};
     // cout << "[AdaptiveVertexFitter] /estimate " << endl;
     if (!chi2Res.first) {
       // cout << "[AdaptiveVertexFitter] aie... vertex candidate is at  " << vertex.position() << endl;
@@ -468,7 +468,7 @@ AdaptiveVertexFitter::weightTracks(
   {
 
     double weight = 0.;
-    pair<bool, double> chi2Res = theComp->estimate ( seedvtx, *i );
+    pair<bool, double> chi2Res = theComp->estimate ( seedvtx, *i, std::distance(lTracks.begin(),i) );
     if (!chi2Res.first) {
       // cout << "[AdaptiveVertexFitter] Aiee! " << endl;
       LogInfo ("AdaptiveVertexFitter" ) << "When weighting a track, chi2 calculation failed;"

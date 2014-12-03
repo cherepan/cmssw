@@ -14,6 +14,8 @@
 #include "SimG4CMS/Calo/interface/HFShowerPMT.h"
 #include "SimG4CMS/Calo/interface/HFShowerFibreBundle.h"
 #include "SimG4CMS/Calo/interface/HcalNumberingScheme.h"
+#include "DataFormats/HcalCalibObjects/interface/HEDarkening.h"
+#include "SimG4CMS/Calo/interface/HFDarkening.h"
 #include "DetectorDescription/Core/interface/DDsvalues.h"
 #include "Geometry/HcalCommonData/interface/HcalNumberingFromDDD.h"
 
@@ -59,9 +61,10 @@ private:
   bool                          isItStraightBundle(G4LogicalVolume*);
   bool                          isItConicalBundle(G4LogicalVolume*);
   bool                          isItScintillator(G4Material*);
-  void                          getFromLibrary(G4Step * step);
-  void                          hitForFibre(G4Step * step);
-  void                          getFromParam(G4Step * step);
+  bool                          isItinFidVolume (G4ThreeVector&);
+  void                          getFromLibrary(G4Step * step, double weight);
+  void                          hitForFibre(G4Step * step, double weight);
+  void                          getFromParam(G4Step * step, double weight);
   void                          getHitPMT(G4Step * step);
   void                          getHitFibreBundle(G4Step * step, bool type);
   int                           setTrackID(G4Step * step);
@@ -69,6 +72,7 @@ private:
   double                        layerWeight(int, G4ThreeVector, int, int);
   void                          plotProfile(G4Step* step, G4ThreeVector pos, 
                                             double edep, double time, int id);
+  void                          plotHF(G4ThreeVector& pos, bool emType);
 
   HcalNumberingFromDDD*         numberingFromDDD;
   HcalNumberingScheme*          numberingScheme;
@@ -77,22 +81,21 @@ private:
   HFShowerParam *               showerParam;
   HFShowerPMT *                 showerPMT;
   HFShowerFibreBundle *         showerBundle;
-  bool                          useBirk, useLayerWt, useFibreBundle, applyFidCut;
+  HEDarkening *                 m_HEDarkening;
+  HFDarkening *                 m_HFDarkening;
+  bool                          useBirk, useLayerWt, useFibreBundle, usePMTHit, testNumber;
   double                        birk1, birk2, birk3, betaThr;
-  bool                          useHF, useShowerLibrary, useParam, usePMTHit;
+  bool                          useHF, useShowerLibrary, useParam, applyFidCut;
   double                        eminHitHB, eminHitHE, eminHitHO, eminHitHF;
+  double                        deliveredLumi;
   G4int                         mumPDG, mupPDG; 
-  std::vector<double>           layer0wt;
-  std::vector<G4LogicalVolume*> hfLV;
-  std::vector<G4String>         hfNames;
+  std::vector<double>           layer0wt, gpar;
   std::vector<int>              hfLevels;
-  std::vector<G4LogicalVolume*> fibreLV;
-  std::vector<G4String>         fibreNames;
-  std::vector<G4String>         matNames;
+  std::vector<G4String>         hfNames, fibreNames, matNames;
   std::vector<G4Material*>      materials;
-  std::vector<G4LogicalVolume*> pmtLV, fibre1LV, fibre2LV;
+  std::vector<G4LogicalVolume*> hfLV, fibreLV, pmtLV, fibre1LV, fibre2LV;
   std::map<uint32_t,double>     layerWeights;
-  TH1F                          *hit_[9], *time_[9], *dist_[9];
+  TH1F                          *hit_[9], *time_[9], *dist_[9], *hzvem, *hzvhad;
 
 };
 

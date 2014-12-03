@@ -7,8 +7,8 @@
  *
  *  Basically list the levels in the detector's hierarchy.
  *
- *  $Date: 2008/04/18 07:21:46 $
- *  $Revision: 1.4 $
+ *  $Date: 2012/06/28 10:02:14 $
+ *  $Revision: 1.6 $
  *  \author Chung Khim Lae
  */
 
@@ -16,6 +16,7 @@ namespace align
 {
   enum StructureType 
   { 
+    notfound = -1,
     invalid = 0,
     AlignableDetUnit,
     AlignableDet,

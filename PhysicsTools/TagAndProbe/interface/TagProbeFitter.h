@@ -33,7 +33,7 @@ class TagProbeFitter {
   void addPdf(std::string pdfName, std::vector<std::string>& pdfCommands);
 
   ///set a list of variables to fix during first fit iteration. If the list is empty, do one iteration.
-  void addFixedVariavles(std::vector<string>);
+  void addFixedVariavles(std::vector<std::string>);
 
   ///calculate the efficiency for a particular binning of the data; it saves everything in the directory "dirName", uses the previously defined PDF with name "pdfName"
   std::string calculateEfficiency(std::string dirName, std::string efficiencyCategory, std::string efficiencyState, std::vector<std::string>& unbinnedVariables, std::map<std::string, std::vector<double> >& binnedReals, std::map<std::string, std::vector<std::string> >& binnedCategories, std::vector<std::string>& binToPDFmap) {

@@ -13,7 +13,7 @@
 //
 // Original Author:  Jim Pivarski
 //         Created:  Sat Apr 26 12:36:13 CDT 2008
-// $Id: AlignmentMonitorAsAnalyzer.cc,v 1.4 2010/01/04 15:36:54 mussgill Exp $
+// $Id: AlignmentMonitorAsAnalyzer.cc,v 1.10 2013/01/07 19:32:02 wmtan Exp $
 //
 //
 
@@ -73,6 +73,7 @@ class AlignmentMonitorAsAnalyzer : public edm::EDAnalyzer {
       // ----------member data ---------------------------
       edm::InputTag m_tjTag;
       edm::ParameterSet m_aliParamStoreCfg;
+  const edm::ParameterSet m_pSet;
 
       AlignableTracker *m_alignableTracker;
       AlignableMuon *m_alignableMuon;
@@ -97,7 +98,8 @@ class AlignmentMonitorAsAnalyzer : public edm::EDAnalyzer {
 //
 AlignmentMonitorAsAnalyzer::AlignmentMonitorAsAnalyzer(const edm::ParameterSet& iConfig)
    : m_tjTag(iConfig.getParameter<edm::InputTag>("tjTkAssociationMapTag"))
-   , m_aliParamStoreCfg(iConfig.getParameter<edm::ParameterSet>("ParameterStore"))
+     , m_aliParamStoreCfg(iConfig.getParameter<edm::ParameterSet>("ParameterStore")),
+     m_pSet(iConfig)
    , m_alignableTracker(NULL)
    , m_alignableMuon(NULL)
    , m_alignmentParameterStore(NULL)
@@ -130,6 +132,11 @@ AlignmentMonitorAsAnalyzer::~AlignmentMonitorAsAnalyzer()
 void
 AlignmentMonitorAsAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+   //Retrieve tracker topology from geometry
+   edm::ESHandle<TrackerTopology> tTopoHandle;
+   iSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+   const TrackerTopology* const tTopo = tTopoHandle.product();
+
    if (m_firstEvent) {
       GeometryAligner aligner;
     
@@ -139,7 +146,7 @@ AlignmentMonitorAsAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       edm::ESHandle<GeometricDet> theGeometricDet;
       iSetup.get<IdealGeometryRecord>().get( theGeometricDet );
       TrackerGeomBuilderFromGeometricDet trackerBuilder;
-      boost::shared_ptr<TrackerGeometry> theTracker(trackerBuilder.build(&(*theGeometricDet)));
+      boost::shared_ptr<TrackerGeometry> theTracker(trackerBuilder.build(&(*theGeometricDet), m_pSet ));
       
       edm::ESHandle<MuonDDDConstants> mdc;
       iSetup.get<MuonNumberingRecord>().get(mdc);
@@ -177,7 +184,7 @@ AlignmentMonitorAsAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       // within an analyzer, modules can't expect to see any selected alignables!
       std::vector<Alignable*> empty_alignables;
       
-      m_alignableTracker = new AlignableTracker( &(*theTracker) );
+      m_alignableTracker = new AlignableTracker( &(*theTracker), tTopo );
       m_alignableMuon = new AlignableMuon( &(*theMuonDT), &(*theMuonCSC) );
       m_alignmentParameterStore = new AlignmentParameterStore(empty_alignables, m_aliParamStoreCfg);
       

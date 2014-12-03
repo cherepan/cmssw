@@ -14,8 +14,8 @@
  *   
  * \author: Vasile Mihai Ghete - HEPHY Vienna
  * 
- * $Date$
- * $Revision$
+ * $Date: 2013/05/23 16:50:08 $
+ * $Revision: 1.4 $
  *
  */
 
@@ -46,7 +46,7 @@ public:
     virtual ~L1GtVmeWriterCore();
 
     void writeVME(const std::vector<ConditionMap> &conditionMap,
-            std::map<std::string,int> cond2intMap, L1GtVhdlTemplateFile header,  const int spacesPerLevel=2);
+            const std::map<std::string,int>& cond2intMap, const L1GtVhdlTemplateFile& header,  const int spacesPerLevel=2);
 
     /// opens a new xml tag 
     std::string openTag(const std::string &tag);

@@ -11,12 +11,8 @@
 #include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIBDetId.h" 
-#include "DataFormats/SiStripDetId/interface/TIDDetId.h"
-#include "DataFormats/SiStripDetId/interface/TOBDetId.h" 
-#include "DataFormats/SiStripDetId/interface/TECDetId.h" 
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 
 #include "SimDataFormats/Track/interface/SimTrackContainer.h"
 
@@ -47,8 +43,8 @@ public :
   explicit testGeneralTracks(const edm::ParameterSet&);
   ~testGeneralTracks();
 
-  virtual void produce(edm::Event&, const edm::EventSetup& );
-  virtual void beginRun(edm::Run&, edm::EventSetup const& );
+  virtual void produce(edm::Event&, const edm::EventSetup& ) override;
+  virtual void beginRun(edm::Run const&, edm::EventSetup const& ) override;
 private:
   
   // See RecoParticleFlow/PFProducer/interface/PFProducer.h
@@ -147,7 +143,7 @@ testGeneralTracks::~testGeneralTracks()
 
 }
 
-void testGeneralTracks::beginRun(edm::Run& run, edm::EventSetup const& es)
+void testGeneralTracks::beginRun(edm::Run const&, edm::EventSetup const& es)
 {
   // init Particle data table (from Pythia)
   edm::ESHandle < HepPDT::ParticleDataTable > pdt;

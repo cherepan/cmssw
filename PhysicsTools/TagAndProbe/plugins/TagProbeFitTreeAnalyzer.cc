@@ -8,6 +8,7 @@
 
 #include "PhysicsTools/TagAndProbe/interface/TagProbeFitter.h"
 
+using namespace std;
 using namespace edm;
 
 class TagProbeFitTreeAnalyzer : public edm::EDAnalyzer{

@@ -11,11 +11,12 @@ class SoftLeptonTagPlotter : public BaseTagInfoPlotter {
 public:
 
   SoftLeptonTagPlotter(const std::string & tagName, const EtaPtBin & etaPtBin,
-	const edm::ParameterSet& pSet, const bool& mc, const bool& update);
+	const edm::ParameterSet& pSet, const unsigned int& mc, const bool& update);
   
   ~SoftLeptonTagPlotter( void ) ;
 
   void analyzeTag (const reco::BaseTagInfo * baseTagInfo, const int & jetFlavour);
+  void analyzeTag (const reco::BaseTagInfo * baseTagInfo, const int & jetFlavour, const float & w);
 
   virtual void finalize( void ) {}
 
@@ -25,7 +26,7 @@ public:
 
 private:
 
-  bool mcPlots_;
+  unsigned int mcPlots_;
 
   // keep plots for up to 3 leptons per jet
   static const int s_leptons = 2;

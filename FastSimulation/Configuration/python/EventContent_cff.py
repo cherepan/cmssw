@@ -15,6 +15,7 @@ from Configuration.EventContent.EventContent_cff import *
 FastSimCoreFEVT = cms.PSet(
     outputCommands = cms.untracked.vstring('keep *_famosPileUp_*_*', 
         'keep *_famosSimHits_*_*',
+        'drop *_g4SimHits_*_*', # if an EDAlias creates this, it must be dropped to avoid a clash
         'keep *_MuonSimHits_*_*')
 )
 
@@ -70,13 +71,19 @@ FastSimCJPT = cms.PSet(
 #Full Event content 
 FastSimRecoLocalCaloFEVT = cms.PSet(
     outputCommands = cms.untracked.vstring('keep *_caloRecHits_*_*', 
-        'keep *_hcalRecHits_*_*')
+        'keep *_hcalRecHits_*_*',
+        'keep EBDigiCollection_ecalRecHit_*_*',
+        'keep EEDigiCollection_ecalRecHit_*_*')
+#        'keep *_particleFlowRecHit_*_*')
 )
 
 #RECO content
 FastSimRecoLocalCaloRECO = cms.PSet(
     outputCommands = cms.untracked.vstring('keep *_caloRecHits_*_*', 
-        'keep *_hcalRecHits_*_*')
+        'keep *_hcalRecHits_*_*',
+        'keep EBDigiCollection_ecalRecHit_*_*',
+        'keep EEDigiCollection_ecalRecHit_*_*')
+#        'keep *_particleFlowRecHit_*_*')
 )
 
 #AOD content
@@ -110,7 +117,13 @@ FastSimRecoTrackerAOD = cms.PSet(
 
 #Full Event content 
 FastSimParticleFlowFEVT = cms.PSet(
-    outputCommands = cms.untracked.vstring('keep recoPFCandidates_FSparticleFlow_*_*')
+    outputCommands = cms.untracked.vstring('keep recoPFCandidates_FSparticleFlow_*_*',
+                                           #stuff added for two-step processing (simWithSomeReco followed by reconstructionHighLevel):
+                                           'keep *_muon*_*_*',
+                                           'keep *_towerMaker*_*_*',
+                                           'keep *_particleFlow*_*_*',
+                                           'keep *_pf*_*_*',
+                                           'keep *_*DetId*_*_*')
 )
 
 #RECO content 

@@ -118,6 +118,8 @@ namespace edmtest {
     edm::Handle<edmtest::Thing> h_thing;
     edm::Handle<edmtest::ThingWithMerge> h_thingWithMerge;
     edm::Handle<edmtest::ThingWithIsEqual> h_thingWithIsEqual;
+
+    bool testAlias_;
   };
 
   // -----------------------------------------------------------------
@@ -164,7 +166,8 @@ namespace edmtest {
     index7_(0),
     parentIndex_(0),
     droppedIndex1_(0),
-    processHistoryIndex_(0) {
+    processHistoryIndex_(0),
+    testAlias_(ps.getUntrackedParameter<bool>("testAlias", false)) {
 
     std::auto_ptr<edmtest::Thing> ap_thing(new edmtest::Thing);
     edm::Wrapper<edmtest::Thing> w_thing(ap_thing);
@@ -194,33 +197,6 @@ namespace edmtest {
     assert(e.processHistory().id() == e.processHistoryID());
 
     if(verbose_) edm::LogInfo("TestMergeResults") << "analyze";
-
-    edm::Run const& run = e.getRun();
-    edm::LuminosityBlock const& lumi = e.getLuminosityBlock();
-
-    edm::InputTag tag0("thingWithMergeProducer", "beginRun", "PROD");
-    checkExpectedRunProducts(index0_, expectedBeginRunProd_, tag0, "analyze", run);
-
-    edm::InputTag tag1("thingWithMergeProducer", "beginRun");
-    checkExpectedRunProducts(index4_, expectedBeginRunNew_, tag1, "analyze", run);
-
-    edm::InputTag tag2("thingWithMergeProducer", "endRun", "PROD");
-    checkExpectedRunProducts(index1_, expectedEndRunProd_, tag2, "analyze", run);
-
-    edm::InputTag tag3("thingWithMergeProducer", "endRun");
-    checkExpectedRunProducts(index5_, expectedEndRunNew_, tag3, "analyze", run);
-
-    edm::InputTag tag4("thingWithMergeProducer", "beginLumi", "PROD");
-    checkExpectedLumiProducts(index2_, expectedBeginLumiProd_, tag4, "analyze", lumi);
-
-    edm::InputTag tag5("thingWithMergeProducer", "beginLumi");
-    checkExpectedLumiProducts(index6_, expectedBeginLumiNew_, tag5, "analyze", lumi);
-
-    edm::InputTag tag6("thingWithMergeProducer", "endLumi", "PROD");
-    checkExpectedLumiProducts(index3_, expectedEndLumiProd_, tag6, "analyze", lumi);
-
-    edm::InputTag tag7("thingWithMergeProducer", "endLumi");
-    checkExpectedLumiProducts(index7_, expectedEndLumiNew_, tag7, "analyze", lumi);
 
     if(expectedDroppedEvent_.size() > 0) {
       edm::InputTag tag("makeThingToBeDropped", "event", "PROD");
@@ -270,6 +246,14 @@ namespace edmtest {
       assert(h_thing->a == 11);
       ++parentIndex_;
     }
+
+    if (testAlias_) {
+      e.getByLabel("aliasForThingToBeDropped2", "instance2", h_thing);
+      assert(h_thing->a == 11);
+      edm::InputTag inputTag("aliasForThingToBeDropped2", "instance2","PROD");
+      e.getByLabel(inputTag, h_thing);
+      assert(h_thing->a == 11);
+    }
   }
 
   void TestMergeResults::beginRun(edm::Run const& run, edm::EventSetup const&) {
@@ -281,19 +265,10 @@ namespace edmtest {
 
     if(verbose_) edm::LogInfo("TestMergeResults") << "beginRun";
 
-    edm::InputTag tag("thingWithMergeProducer", "beginRun", "PROD");
-    checkExpectedRunProducts(index0_, expectedBeginRunProd_, tag, "beginRun", run);
-
-    edm::InputTag tagnew("thingWithMergeProducer", "beginRun");
-    checkExpectedRunProducts(index4_, expectedBeginRunNew_, tagnew, "beginRun", run);
-
     if(expectedDroppedEvent_.size() > 1) {
       edm::InputTag tagd("makeThingToBeDropped", "beginRun", "PROD");
       run.getByLabel(tagd, h_thingWithIsEqual);
       assert(h_thingWithIsEqual->a == expectedDroppedEvent_[1]);
-
-      run.getByLabel(tagd, h_thingWithMerge);
-      assert(!h_thingWithMerge.isValid());
     }
 
     index0_ += 3;
@@ -336,6 +311,14 @@ namespace edmtest {
       run.getByLabel(tagd, h_thingWithMerge);
       assert(!h_thingWithMerge.isValid());
     }
+
+    if (testAlias_) {
+      run.getByLabel("aliasForThingToBeDropped2", "endRun2", h_thing);
+      assert(h_thing->a == 100001);
+      edm::InputTag inputTag("aliasForThingToBeDropped2", "endRun2","PROD");
+      run.getByLabel(inputTag, h_thing);
+      assert(h_thing->a == 100001);
+    }
   }
 
   void TestMergeResults::beginLuminosityBlock(edm::LuminosityBlock const& lumi, edm::EventSetup const&) {
@@ -347,25 +330,10 @@ namespace edmtest {
 
     if(verbose_) edm::LogInfo("TestMergeResults") << "beginLuminosityBlock";
 
-    edm::InputTag tag0("thingWithMergeProducer", "beginRun", "PROD");
-    checkExpectedRunProducts(index0_, expectedBeginRunProd_, tag0, "beginLumi", lumi.getRun());
-
-    edm::InputTag tag1("thingWithMergeProducer", "beginRun");
-    checkExpectedRunProducts(index4_, expectedBeginRunNew_, tag1, "beginLumi", lumi.getRun());
-
-    edm::InputTag tag("thingWithMergeProducer", "beginLumi", "PROD");
-    checkExpectedLumiProducts(index2_, expectedBeginLumiProd_, tag, "beginLumi", lumi);
-
-    edm::InputTag tagnew("thingWithMergeProducer", "beginLumi");
-    checkExpectedLumiProducts(index6_, expectedBeginLumiNew_, tagnew, "beginLumi", lumi);
-
     if(expectedDroppedEvent_.size() > 3) {
       edm::InputTag tagd("makeThingToBeDropped", "beginLumi", "PROD");
       lumi.getByLabel(tagd, h_thingWithIsEqual);
       assert(h_thingWithIsEqual->a == expectedDroppedEvent_[3]);
-
-      lumi.getByLabel(tagd, h_thingWithMerge);
-      assert(!h_thingWithMerge.isValid());
     }
     index2_ += 3;
     index6_ += 3;
@@ -384,12 +352,6 @@ namespace edmtest {
 
     if(verbose_) edm::LogInfo("TestMergeResults") << "endLuminosityBlock";
 
-    edm::InputTag tag0("thingWithMergeProducer", "beginRun", "PROD");
-    checkExpectedRunProducts(index0_, expectedBeginRunProd_, tag0, "endLumi", lumi.getRun());
-
-    edm::InputTag tag1("thingWithMergeProducer", "beginRun");
-    checkExpectedRunProducts(index4_, expectedBeginRunNew_, tag1, "endLumi", lumi.getRun());
-
     edm::InputTag tag("thingWithMergeProducer", "endLumi", "PROD");
     checkExpectedLumiProducts(index3_, expectedEndLumiProd_, tag, "endLumi", lumi);
 
@@ -403,6 +365,14 @@ namespace edmtest {
 
       lumi.getByLabel(tagd, h_thingWithMerge);
       assert(!h_thingWithMerge.isValid());
+    }
+
+    if (testAlias_) {
+      lumi.getByLabel("aliasForThingToBeDropped2", "endLumi2", h_thing);
+      assert(h_thing->a == 1001);
+      edm::InputTag inputTag("aliasForThingToBeDropped2", "endLumi2","PROD");
+      lumi.getByLabel(inputTag, h_thing);
+      assert(h_thing->a == 1001);
     }
   }
 

@@ -8,12 +8,8 @@
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
-#include "DataFormats/SiStripDetId/interface/TECDetId.h" 
-#include "DataFormats/SiStripDetId/interface/TIBDetId.h" 
-#include "DataFormats/SiStripDetId/interface/TIDDetId.h"
-#include "DataFormats/SiStripDetId/interface/TOBDetId.h" 
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 #include "DataFormats/DTRecHit/interface/DTRecSegment4D.h"
 #include "DataFormats/CSCRecHit/interface/CSCSegment.h"
 #include "SimMuon/MCTruth/interface/TrackerMuonHitExtractor.h"
@@ -99,6 +95,11 @@ MuonAssociatorByHits::associateRecoToSimIndices(const TrackHitsCollection & tC,
 					  const edm::RefVector<TrackingParticleCollection>& TPCollectionH,
 					  const edm::Event * e, const edm::EventSetup * setup) const{
 
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHand;
+  setup->get<IdealGeometryRecord>().get(tTopoHand);
+  const TrackerTopology *tTopo=tTopoHand.product();
+
   int tracker_nshared = 0;
   int muon_nshared = 0;
   int global_nshared = 0;
@@ -148,8 +149,8 @@ MuonAssociatorByHits::associateRecoToSimIndices(const TrackHitsCollection & tC,
 	<<", pT = "<<ITER->pt()<<", eta = "<<ITER->eta()<<", phi = "<<ITER->phi();
       
       edm::LogVerbatim("MuonAssociatorByHits")
-	<<"\t pdg code = "<<ITER->pdgId()<<", made of "<<ITER->trackPSimHit().size()<<" PSimHit"
-	<<" (in "<<ITER->matchedHit()<<" layers)"
+	<<"\t pdg code = "<<ITER->pdgId()<<", made of "<<ITER->numberOfHits()<<" PSimHit"
+	<<" (in "<<ITER->numberOfTrackerLayers()<<" layers)"
 	<<" from "<<ITER->g4Tracks().size()<<" SimTrack:";
       for (TrackingParticle::g4t_iterator g4T=ITER->g4Track_begin(); g4T!=ITER->g4Track_end(); g4T++) {
 	edm::LogVerbatim("MuonAssociatorByHits")
@@ -273,7 +274,7 @@ MuonAssociatorByHits::associateRecoToSimIndices(const TrackHitsCollection & tC,
 		  n_tracker_matched_INVALID, n_dt_matched_INVALID, n_csc_matched_INVALID, n_rpc_matched_INVALID,
                   track->first, track->second,
 		  trackertruth, dttruth, csctruth, rpctruth,
-		  printRtS);
+		  printRtS,tTopo);
     
     n_matching_simhits = tracker_matchedIds_valid.size() + muon_matchedIds_valid.size() + 
                          tracker_matchedIds_INVALID.size() +muon_matchedIds_INVALID.size(); 
@@ -403,7 +404,7 @@ MuonAssociatorByHits::associateRecoToSimIndices(const TrackHitsCollection & tC,
 	    << "\n\t"<<"   N shared hits = "<<global_nshared<<" (tracker: "<<tracker_nshared<<" / muon: "<<muon_nshared<<")"
 	    <<"\n"<< "   to: TrackingParticle " <<tpindex<<", q = "<<(*trpart).charge()<<", p = "<<(*trpart).p()
 	    <<", pT = "<<(*trpart).pt()<<", eta = "<<(*trpart).eta()<<", phi = "<<(*trpart).phi()
-	    <<"\n\t"<< " pdg code = "<<(*trpart).pdgId()<<", made of "<<(*trpart).trackPSimHit().size()<<" PSimHits"
+	    <<"\n\t"<< " pdg code = "<<(*trpart).pdgId()<<", made of "<<(*trpart).numberOfHits()<<" PSimHits"
 	    <<" from "<<(*trpart).g4Tracks().size()<<" SimTrack:";
 	  for(TrackingParticle::g4t_iterator g4T=(*trpart).g4Track_begin(); 
 	      g4T!=(*trpart).g4Track_end(); 
@@ -474,6 +475,11 @@ MuonAssociatorByHits::associateSimToRecoIndices( const TrackHitsCollection & tC,
 					  const edm::RefVector<TrackingParticleCollection>& TPCollectionH,
 					  const edm::Event * e, const edm::EventSetup * setup) const{
 
+
+  //Retrieve tracker topology from geometry
+  edm::ESHandle<TrackerTopology> tTopoHand;
+  setup->get<IdealGeometryRecord>().get(tTopoHand);
+  const TrackerTopology *tTopo=tTopoHand.product();
 
   int tracker_nshared = 0;
   int muon_nshared = 0;
@@ -573,7 +579,7 @@ MuonAssociatorByHits::associateSimToRecoIndices( const TrackHitsCollection & tC,
 		  n_tracker_matched_INVALID, n_dt_matched_INVALID, n_csc_matched_INVALID, n_rpc_matched_INVALID,
                   track->first, track->second,
 		  trackertruth, dttruth, csctruth, rpctruth,
-		  printRtS);
+		  printRtS,tTopo);
     
     n_matching_simhits = tracker_matchedIds_valid.size() + muon_matchedIds_valid.size() + 
                          tracker_matchedIds_INVALID.size() +muon_matchedIds_INVALID.size(); 
@@ -646,11 +652,11 @@ MuonAssociatorByHits::associateSimToRecoIndices( const TrackHitsCollection & tC,
       int tpindex =0;
       for (TrackingParticleCollection::const_iterator trpart = tPC.begin(); trpart != tPC.end(); ++trpart, ++tpindex) {
 
-	int n_tracker_simhits = 0;
+	//	int n_tracker_simhits = 0;
 	int n_tracker_recounted_simhits = 0; 
 	int n_muon_simhits = 0; 
 	int n_global_simhits = 0; 
-	std::vector<PSimHit> tphits;
+	//	std::vector<PSimHit> tphits;
 
 	int n_tracker_selected_simhits = 0;
 	int n_muon_selected_simhits = 0; 
@@ -666,6 +672,8 @@ MuonAssociatorByHits::associateSimToRecoIndices( const TrackHitsCollection & tC,
         global_nshared = tracker_nshared + muon_nshared;	
         if (global_nshared == 0) continue; // if this TP shares no hits with the current reco::Track loop over 
 
+	// This does not work with the new TP interface 
+	/*
 	for(std::vector<PSimHit>::const_iterator TPhit = trpart->pSimHit_begin(); TPhit != trpart->pSimHit_end(); TPhit++) {
           DetId dId = DetId(TPhit->detUnitId());
 	  DetId::Detector detector = dId.det();
@@ -687,17 +695,17 @@ MuonAssociatorByHits::associateSimToRecoIndices( const TrackHitsCollection & tC,
 	      DetId dIdOK = DetId(TPhitOK->detUnitId());
 	      //no grouped, no splitting
 	      if (!UseGrouped && !UseSplitting)
-		if (LayerFromDetid(dId)==LayerFromDetid(dIdOK) &&
+		if (tTopo->layer(dId)==tTopo->layer(dIdOK) &&
 		    dId.subdetId()==dIdOK.subdetId()) newhit = false;
 	      //no grouped, splitting
 	      if (!UseGrouped && UseSplitting)
-		if (LayerFromDetid(dId)==LayerFromDetid(dIdOK) &&
+		if (tTopo->layer(dId)==tTopo->layer(dIdOK) &&
 		    dId.subdetId()==dIdOK.subdetId() &&
 		    (stripDetId==0 || stripDetId->partnerDetId()!=dIdOK.rawId()))
 		  newhit = false;
 	      //grouped, no splitting
 	      if (UseGrouped && !UseSplitting)
-		if (LayerFromDetid(dId)==LayerFromDetid(dIdOK) &&
+		if ( tTopo->layer(dId)== tTopo->layer(dIdOK) &&
 		    dId.subdetId()==dIdOK.subdetId() &&
 		    stripDetId!=0 && stripDetId->partnerDetId()==dIdOK.rawId())
 		  newhit = false;
@@ -723,10 +731,17 @@ MuonAssociatorByHits::associateSimToRecoIndices( const TrackHitsCollection & tC,
 	    
 	  }
 	}
+	*/
+	//	n_tracker_recounted_simhits = tphits.size();
 
-	n_tracker_recounted_simhits = tphits.size();
+        // adapt to new TP interface: this gives the total number of hits in tracker
+        //   should reproduce the behaviour of UseGrouped=UseSplitting=.true.
+	n_tracker_recounted_simhits = trpart->numberOfTrackerHits();
+        //   numberOfHits() gives the total number of hits (tracker + muons)
+        n_muon_simhits = trpart->numberOfHits() - trpart->numberOfTrackerHits();
+
         // Handle the case of TrackingParticles that don't have PSimHits inside, e.g. because they were made on RECOSIM only.
-        if (trpart->trackPSimHit().empty()) {
+        if (trpart->numberOfHits()==0) {
             // FIXME this can be made better, counting the digiSimLinks associated to this TP, but perhaps it's not worth it
             n_tracker_recounted_simhits = tracker_nshared;
             n_muon_simhits = muon_nshared;
@@ -810,7 +825,7 @@ MuonAssociatorByHits::associateSimToRecoIndices( const TrackHitsCollection & tC,
 	    <<"\n"<< "TrackingParticle " << tpindex <<", q = "<<(*trpart).charge()<<", p = "<<(*trpart).p()
 	    <<", pT = "<<(*trpart).pt()<<", eta = "<<(*trpart).eta()<<", phi = "<<(*trpart).phi()
 	    <<"\n"<<" pdg code = "<<(*trpart).pdgId()
-	    <<", made of "<<(*trpart).trackPSimHit().size()<<" PSimHits, recounted "<<n_global_simhits<<" PSimHits"
+	    <<", made of "<<(*trpart).numberOfHits()<<" PSimHits, recounted "<<n_global_simhits<<" PSimHits"
 	    <<" (tracker:"<<n_tracker_recounted_simhits<<"/muons:"<<n_muon_simhits<<")"
 	    <<", from "<<(*trpart).g4Tracks().size()<<" SimTrack:";
 	  for(TrackingParticle::g4t_iterator g4T=(*trpart).g4Track_begin(); 
@@ -836,7 +851,7 @@ MuonAssociatorByHits::associateSimToRecoIndices( const TrackHitsCollection & tC,
 	      <<"\n"<<"TrackingParticle " << tpindex <<", q = "<<(*trpart).charge()<<", p = "<<(*trpart).p()
 	      <<", pT = "<<(*trpart).pt()<<", eta = "<<(*trpart).eta()<<", phi = "<<(*trpart).phi()
 	      <<"\n"<<" pdg code = "<<(*trpart).pdgId()
-	      <<", made of "<<(*trpart).trackPSimHit().size()<<" PSimHits, recounted "<<n_global_simhits<<" PSimHits"
+	      <<", made of "<<(*trpart).numberOfHits()<<" PSimHits, recounted "<<n_global_simhits<<" PSimHits"
 	      <<" (tracker:"<<n_tracker_recounted_simhits<<"/muons:"<<n_muon_simhits<<")"
 	      <<", from "<<(*trpart).g4Tracks().size()<<" SimTrack:";
 	    for(TrackingParticle::g4t_iterator g4T=(*trpart).g4Track_begin(); 
@@ -876,47 +891,6 @@ MuonAssociatorByHits::associateSimToRecoIndices( const TrackHitsCollection & tC,
   return outputCollection;
 }
 
-int MuonAssociatorByHits::LayerFromDetid(const DetId& detId ) const
-{
-  int layerNumber=0;
-  if (detId.det() != DetId::Tracker) return layerNumber;
-
-  unsigned int subdetId = static_cast<unsigned int>(detId.subdetId()); 
-  if ( subdetId == StripSubdetector::TIB) 
-    { 
-      TIBDetId tibid(detId.rawId()); 
-      layerNumber = tibid.layer();
-    }
-  else if ( subdetId ==  StripSubdetector::TOB )
-    { 
-      TOBDetId tobid(detId.rawId()); 
-      layerNumber = tobid.layer();
-    }
-  else if ( subdetId ==  StripSubdetector::TID) 
-    { 
-      TIDDetId tidid(detId.rawId());
-      layerNumber = tidid.wheel();
-    }
-  else if ( subdetId ==  StripSubdetector::TEC )
-    { 
-      TECDetId tecid(detId.rawId()); 
-      layerNumber = tecid.wheel(); 
-    }
-  else if ( subdetId ==  PixelSubdetector::PixelBarrel ) 
-    { 
-      PXBDetId pxbid(detId.rawId()); 
-      layerNumber = pxbid.layer();  
-    }
-  else if ( subdetId ==  PixelSubdetector::PixelEndcap ) 
-    { 
-      PXFDetId pxfid(detId.rawId()); 
-      layerNumber = pxfid.disk();  
-    }
-  else edm::LogWarning("MuonAssociatorByHits") 
-    << "*** WARNING in MuonAssociatorByHits::LayerFromDetid: Unknown Tracker subdetector: subdetId = " <<  subdetId;
-  
-  return layerNumber;
-} 
 
 void MuonAssociatorByHits::getMatchedIds
 (MapOfMatchedIds & tracker_matchedIds_valid, MapOfMatchedIds & muon_matchedIds_valid,
@@ -927,7 +901,8 @@ void MuonAssociatorByHits::getMatchedIds
  int& n_tracker_matched_INVALID, int& n_dt_matched_INVALID, int& n_csc_matched_INVALID, int& n_rpc_matched_INVALID,
  trackingRecHit_iterator begin, trackingRecHit_iterator end,
  TrackerHitAssociator* trackertruth, 
- DTHitAssociator& dttruth, MuonTruth& csctruth, RPCHitAssociator& rpctruth, bool printRtS) const
+ DTHitAssociator& dttruth, MuonTruth& csctruth, RPCHitAssociator& rpctruth, bool printRtS,
+ const TrackerTopology *tTopo) const
 
 {
   tracker_matchedIds_valid.clear();
@@ -984,31 +959,7 @@ void MuonAssociatorByHits::getMatchedIds
     // Si-Tracker Hits
     if (det == DetId::Tracker && UseTracker) {
       stringstream detector_id;
-      
-      if (subdet == PixelSubdetector::PixelBarrel) {
-	PXBDetId pxbdetid(detid);
-	detector_id << pxbdetid;
-      }
-      else if (subdet == PixelSubdetector::PixelEndcap) {
-	PXFDetId pxfdetid(detid);
-	detector_id << pxfdetid;
-      }
-      else if (subdet == StripSubdetector::TIB) {
-	TIBDetId tibdetid(detid);
-	detector_id << tibdetid;
-      }
-      else if (subdet == StripSubdetector::TOB) {
-	TOBDetId tobdetid(detid);
-	detector_id << tobdetid;
-      }
-      else if (subdet == StripSubdetector::TID) {
-	TIDDetId tiddetid(detid);
-	detector_id << tiddetid;
-      }
-      else if (subdet == StripSubdetector::TEC) {
-	TECDetId tecdetid(detid);
-	detector_id << tecdetid;
-      }
+      detector_id<< tTopo->print(detid);
       
       if (valid_Hit) hitlog = hitlog+" -Tracker - detID = "+detector_id.str();
       else hitlog = hitlog+" *** INVALID ***"+" -Tracker - detID = "+detector_id.str();
@@ -1350,26 +1301,17 @@ int MuonAssociatorByHits::getShared(MapOfMatchedIds & matchedIds, TrackingPartic
 }
 
 std::string MuonAssociatorByHits::write_matched_simtracks(const std::vector<SimHitIdpr>& SimTrackIds) const {
+  if (SimTrackIds.empty())
+    return "  *** UNMATCHED ***";
 
-  string hitlog;
-
-  if (!SimTrackIds.empty()) {
-    hitlog = " matched to SimTrack";
+  string hitlog(" matched to SimTrack");
   
-    for(size_t j=0; j<SimTrackIds.size(); j++){
-      stringstream trackid;  
-      trackid<<SimTrackIds[j].first;
-      
-      stringstream evtid;    
-      evtid<<SimTrackIds[j].second.event();
-      
-      stringstream bunchxid; 
-      bunchxid<<SimTrackIds[j].second.bunchCrossing();
-      
-      hitlog = hitlog+" Id:"+trackid.str()+"/Evt:("+evtid.str()+","+bunchxid.str()+") ";
-    }
-  } else hitlog = "  *** UNMATCHED ***";
-
+  for(size_t j=0; j<SimTrackIds.size(); j++)
+  {
+    char buf[64];
+    snprintf(buf, 64, " Id:%i/Evt:(%i,%i) ", SimTrackIds[j].first, SimTrackIds[j].second.event(), SimTrackIds[j].second.bunchCrossing());
+    hitlog += buf;
+  }
   return hitlog;
 }
 

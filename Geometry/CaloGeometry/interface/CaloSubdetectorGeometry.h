@@ -8,23 +8,27 @@
 #include "Geometry/CaloGeometry/interface/CaloCellGeometry.h"
 #include "DataFormats/Math/interface/deltaR.h"
 
+#include "FWCore/Utilities/interface/GCC11Compatibility.h"
+
+
 /** \class CaloSubdetectorGeometry
       
 Base class for a geometry container for a specific calorimetry
 subdetector.
 
 
-$Date: 2011/05/30 16:40:35 $
-$Revision: 1.26 $
+$Date: 2013/04/30 13:51:12 $
+$Revision: 1.33 $
 \author J. Mans - Minnesota
 */
 class CaloSubdetectorGeometry {
 
    public:
-
+      typedef std::vector<CaloCellGeometry const *> CellSet;
       typedef CaloCellGeometry::CCGFloat CCGFloat ;
 
       typedef std::set<DetId>       DetIdSet;
+
 
       typedef CaloCellGeometry::ParMgr    ParMgr ;
       typedef CaloCellGeometry::ParVec    ParVec ;
@@ -68,6 +72,7 @@ class CaloSubdetectorGeometry {
       eta/phi and ieta/iphi and test on the boundaries.
       */
       virtual DetIdSet getCells( const GlobalPoint& r, double dR ) const ;
+      virtual CellSet getCellSet( const GlobalPoint& r, double dR ) const ;
 
       CCGFloat deltaPhi( const DetId& detId ) const ;
 
@@ -91,13 +96,17 @@ class CaloSubdetectorGeometry {
 
       virtual void fillDefaultNamedParameters() const { return ; }
       
-      void getSummary( TrVec&  trVector,
-		       IVec&   iVector,
-		       DimVec& dimVector   ) const ;
+      virtual void getSummary( TrVec&  trVector,
+			       IVec&   iVector,
+			       DimVec& dimVector,
+			       IVec&   dinsVector ) const ;
 
       virtual void initializeParms() { return ; } 
 
    protected:
+
+      virtual unsigned int indexFor(const DetId& id) const;
+      virtual unsigned int sizeForDenseIndex(const DetId& id) const;
 
       virtual const CaloCellGeometry* cellGeomPtr( uint32_t index ) const = 0 ;
 

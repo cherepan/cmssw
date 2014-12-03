@@ -1,7 +1,7 @@
 /** \file
  *
- *  $Date: 2007/03/07 13:20:54 $
- *  $Revision: 1.18 $
+ *  $Date: 2012/12/25 17:54:29 $
+ *  $Revision: 1.21 $
  *  \author N. Amapane - CERN
  */
 
@@ -10,7 +10,7 @@
 #include <Geometry/CommonDetUnit/interface/GeomDet.h>
 #include <DataFormats/GeometrySurface/interface/SimpleDiskBounds.h>
 #include <TrackingTools/GeomPropagators/interface/Propagator.h>
-#include <TrackingTools/PatternTools/interface/MeasurementEstimator.h>
+#include <TrackingTools/DetLayers/interface/MeasurementEstimator.h>
 
 #include <FWCore/MessageLogger/interface/MessageLogger.h>
 
@@ -64,8 +64,8 @@ MuRingForwardLayer::MuRingForwardLayer(const vector<const ForwardDetRing*>& ring
   RotationType rot;
 
   setSurface(new BoundDisk( pos, rot, 
-			    SimpleDiskBounds( theRmin, theRmax, 
-					      theZmin-zPos, theZmax-zPos)));
+			    new SimpleDiskBounds( theRmin, theRmax, 
+					          theZmin-zPos, theZmax-zPos)));
 
 
    

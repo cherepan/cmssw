@@ -4,6 +4,7 @@ from PhysicsTools.PatAlgos.patTemplate_cfg import *
 # load the PAT config
 process.load("PhysicsTools.PatAlgos.patSequences_cff")
 
+
 # Configure PAT to use PF2PAT instead of AOD sources
 # this function will modify the PAT sequences.
 from PhysicsTools.PatAlgos.tools.pfTools import *
@@ -41,7 +42,7 @@ process.out.outputCommands = cms.untracked.vstring('drop *',
 from PhysicsTools.PatAlgos.patInputFiles_cff import filesRelValProdTTbarAODSIM
 process.source.fileNames = filesRelValProdTTbarAODSIM
 #                                         ##
-process.maxEvents.input = 100
+process.maxEvents.input = 10
 #                                         ##
 #   process.out.outputCommands = [ ... ]  ##  (e.g. taken from PhysicsTools/PatAlgos/python/patEventContent_cff.py)
 #                                         ##

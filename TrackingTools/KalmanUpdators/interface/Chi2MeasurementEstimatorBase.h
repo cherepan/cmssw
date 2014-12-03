@@ -5,12 +5,13 @@
  *  A base class for  Chi2 -- type of Measurement Estimators. 
  *  Implements common functionality. Ported from ORCA.
  *
- *  $Date: 2007/05/09 14:05:13 $
- *  $Revision: 1.2 $
+ *  $Date: 2013/01/10 12:12:18 $
+ *  $Revision: 1.6 $
  *  \author todorov, cerati
  */
 
-#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/DetLayers/interface/MeasurementEstimator.h"
+#include "FWCore/Utilities/interface/GCC11Compatibility.h"
 
 class Chi2MeasurementEstimatorBase : public MeasurementEstimator {
 public:
@@ -18,7 +19,7 @@ public:
   /** Construct with cuts on chi2 and nSigma.
    *  The cut on Chi2 is used to define the acceptance of RecHits.
    *  The errors of the trajectory state are multiplied by nSigma 
-   *  to define acceptance of BoundPlane and maximalLocalDisplacement.
+   *  to define acceptance of Plane and maximalLocalDisplacement.
    */
   explicit Chi2MeasurementEstimatorBase(double maxChi2, double nSigma = 3.) : 
     theMaxChi2(maxChi2), theNSigma(nSigma) {}
@@ -27,11 +28,11 @@ public:
 					   const TransientTrackingRecHit &) const = 0;
 
   virtual bool estimate( const TrajectoryStateOnSurface& ts, 
-			 const BoundPlane& plane) const;
+			 const Plane& plane) const;
 
   virtual Local2DVector 
   maximalLocalDisplacement( const TrajectoryStateOnSurface& ts,
-			    const BoundPlane& plane) const;
+			    const Plane& plane) const;
 
   double chiSquaredCut() const {return theMaxChi2;}
   double nSigmaCut() const {return theNSigma;}

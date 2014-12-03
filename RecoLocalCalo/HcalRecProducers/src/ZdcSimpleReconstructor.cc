@@ -3,7 +3,6 @@
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/Common/interface/EDCollection.h"
 #include "DataFormats/Common/interface/Handle.h"
-#include "FWCore/Framework/interface/Selector.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "CalibFormats/HcalObjects/interface/HcalCoderDb.h"
@@ -41,22 +40,21 @@ ZdcSimpleReconstructor::ZdcSimpleReconstructor(edm::ParameterSet const& conf):
 
 ZdcSimpleReconstructor::~ZdcSimpleReconstructor() {
 }
-void ZdcSimpleReconstructor::beginRun(edm::Run&r, edm::EventSetup const & es){
+void ZdcSimpleReconstructor::beginRun(edm::Run const&r, edm::EventSetup const & es){
 
    edm::ESHandle<HcalLongRecoParams> p;
    es.get<HcalLongRecoParamsRcd>().get(p);
    myobject = new HcalLongRecoParams(*p.product());
 }
 
-void ZdcSimpleReconstructor::endRun(edm::Run&r, edm::EventSetup const & es){
-  if (myobject) delete myobject;
+void ZdcSimpleReconstructor::endRun(edm::Run const&r, edm::EventSetup const & es){
+  delete myobject; myobject = 0;
 }
 void ZdcSimpleReconstructor::produce(edm::Event& e, const edm::EventSetup& eventSetup)
 {
   // get conditions
   edm::ESHandle<HcalDbService> conditions;
   eventSetup.get<HcalDbRecord>().get(conditions);
-  const HcalQIEShape* shape = conditions->getHcalShape (); // this one is generic
   // define vectors to pass noiseTS and signalTS
   std::vector<unsigned int> mySignalTS;
   std::vector<unsigned int> myNoiseTS;
@@ -94,6 +92,7 @@ void ZdcSimpleReconstructor::produce(edm::Event& e, const edm::EventSetup& event
 	}   
       const HcalCalibrations& calibrations=conditions->getHcalCalibrations(cell);
       const HcalQIECoder* channelCoder = conditions->getHcalCoder (cell);
+      const HcalQIEShape* shape = conditions->getHcalShape (channelCoder); 
       HcalCoderDb coder (*channelCoder, *shape);
       rec->push_back(reco_.reconstruct(*i,myNoiseTS,mySignalTS,coder,calibrations));
     }

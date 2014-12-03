@@ -5,6 +5,7 @@
 ----------------------------------------------------------------------*/
 
 #include <memory>
+#include <utility>
 
 #include "boost/shared_ptr.hpp"
 
@@ -19,24 +20,24 @@ namespace edm {
   public:
     explicit RawInputSource(ParameterSet const& pset, InputSourceDescription const& desc);
     virtual ~RawInputSource();
+    static void fillDescription(ParameterSetDescription& description);
 
   protected:
-    std::auto_ptr<Event> makeEvent(RunNumber_t run, LuminosityBlockNumber_t lumi, EventNumber_t event, Timestamp const& tstamp);
-    virtual std::auto_ptr<Event> readOneEvent() = 0;
+    EventPrincipal* makeEvent(EventPrincipal& eventPrincipal, EventAuxiliary const& eventAuxiliary);
+    virtual bool checkNextEvent() = 0;
+    virtual EventPrincipal* read(EventPrincipal& eventPrincipal) = 0;
+    void setInputFileTransitionsEachEvent() {inputFileTransitionsEachEvent_ = true;}
 
   private:
-    virtual EventPrincipal* readEvent_();
-    virtual boost::shared_ptr<LuminosityBlockAuxiliary> readLuminosityBlockAuxiliary_();
-    virtual boost::shared_ptr<RunAuxiliary> readRunAuxiliary_();
-    virtual EventPrincipal* readIt(EventID const& eventID);
-    virtual void skip(int offset);
-    virtual ItemType getNextItemType();
-    
-    RunNumber_t runNumber_;
-    LuminosityBlockNumber_t luminosityBlockNumber_;
-    bool newRun_;
-    bool newLumi_;
-    bool eventCached_;
+    virtual EventPrincipal* readEvent_(EventPrincipal& eventPrincipal) override;
+    virtual boost::shared_ptr<LuminosityBlockAuxiliary> readLuminosityBlockAuxiliary_() override;
+    virtual boost::shared_ptr<RunAuxiliary> readRunAuxiliary_() override;
+    virtual void reset_();
+    virtual void rewind_() override;
+    virtual ItemType getNextItemType() override;
+    virtual void preForkReleaseResources() override;
+
+    bool inputFileTransitionsEachEvent_;
   };
 }
 #endif

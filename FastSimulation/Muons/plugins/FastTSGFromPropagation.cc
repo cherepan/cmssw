@@ -39,18 +39,20 @@
 #include "FastSimulation/Tracking/plugins/TrajectorySeedProducer.h"
 #include "TrackingTools/TransientTrackingRecHit/interface/GenericTransientTrackingRecHit.h"
 #include "TrackingTools/Records/interface/TransientRecHitRecord.h"
-
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
 
 using namespace std;
 
 
-FastTSGFromPropagation::FastTSGFromPropagation(const edm::ParameterSet & iConfig) :theTkLayerMeasurements (0), theTracker(0), theNavigation(0), theService(0), theEstimator(0),  theSigmaZ(0), theConfig (iConfig)
+FastTSGFromPropagation::FastTSGFromPropagation(const edm::ParameterSet & iConfig) :theTkLayerMeasurements (0), theTracker(0), theNavigation(0), theService(0), theEstimator(0),  theSigmaZ(0), theConfig (iConfig),
+  beamSpot_(iConfig.getParameter<edm::InputTag>("beamSpot"))
 {
   theCategory = "FastSimulation|Muons||FastTSGFromPropagation";
 
 }
 
-FastTSGFromPropagation::FastTSGFromPropagation(const edm::ParameterSet & iConfig, const MuonServiceProxy* service) : theTkLayerMeasurements (0), theTracker(0), theNavigation(0), theService(service),theUpdator(0), theEstimator(0), theSigmaZ(0), theConfig (iConfig)
+FastTSGFromPropagation::FastTSGFromPropagation(const edm::ParameterSet & iConfig, const MuonServiceProxy* service) : theTkLayerMeasurements (0), theTracker(0), theNavigation(0), theService(service),theUpdator(0), theEstimator(0), theSigmaZ(0), theConfig (iConfig),
+  beamSpot_(iConfig.getParameter<edm::InputTag>("beamSpot"))
 {
   theCategory = "FastSimulation|Muons|FastTSGFromPropagation";
 }
@@ -67,7 +69,8 @@ FastTSGFromPropagation::~FastTSGFromPropagation()
 
 }
 
-void FastTSGFromPropagation::trackerSeeds(const TrackCand& staMuon, const TrackingRegion& region, std::vector<TrajectorySeed> & result) {
+void FastTSGFromPropagation::trackerSeeds(const TrackCand& staMuon, const TrackingRegion& region, 
+					  const TrackerTopology *tTopo, std::vector<TrajectorySeed> & result) {
 
   if ( theResetMethod == "discrete" ) getRescalingFactor(staMuon);
 
@@ -149,7 +152,7 @@ void FastTSGFromPropagation::trackerSeeds(const TrackCand& staMuon, const Tracki
 
 	       unsigned int outerId = 0;
 	       for( iterRecHit = theRecHitRangeIteratorBegin; iterRecHit != theRecHitRangeIteratorEnd; ++iterRecHit) {
-		   theSeedHits = TrackerRecHit(&(*iterRecHit), theGeometry);
+		 theSeedHits = TrackerRecHit(&(*iterRecHit), theGeometry, tTopo);
 		   unsigned int id = theSeedHits.hit()->geographicalId().rawId();
 		   if( preY < 0 ) {
 		       if( id > outerId ) outerId = id;
@@ -159,7 +162,7 @@ void FastTSGFromPropagation::trackerSeeds(const TrackCand& staMuon, const Tracki
 		   }
 	       }
 	       for( iterRecHit = theRecHitRangeIteratorBegin; iterRecHit != theRecHitRangeIteratorEnd; ++iterRecHit) {
-		   theSeedHits = TrackerRecHit(&(*iterRecHit), theGeometry);
+		 theSeedHits = TrackerRecHit(&(*iterRecHit), theGeometry, tTopo);
 		   if( itm->recHit()->hit()->geographicalId().rawId() == theSeedHits.hit()->geographicalId().rawId() ) {
 		       aTrackingRecHit = theSeedHits.hit()->clone();
 	               TransientTrackingRecHit::ConstRecHitPointer recHit = theTTRHBuilder->build(aTrackingRecHit);
@@ -211,7 +214,7 @@ void FastTSGFromPropagation::trackerSeeds(const TrackCand& staMuon, const Tracki
 
 	       unsigned int outerId = 0;
 	       for( iterRecHit = theRecHitRangeIteratorBegin; iterRecHit != theRecHitRangeIteratorEnd; ++iterRecHit) {
-		   theSeedHits = TrackerRecHit(&(*iterRecHit), theGeometry);
+		 theSeedHits = TrackerRecHit(&(*iterRecHit), theGeometry, tTopo);
 		   unsigned int id = theSeedHits.hit()->geographicalId().rawId();
 		   if( preY < 0 ) {
 		       if( id > outerId ) outerId = id;
@@ -221,7 +224,7 @@ void FastTSGFromPropagation::trackerSeeds(const TrackCand& staMuon, const Tracki
 		   }
 	       }
 	       for( iterRecHit = theRecHitRangeIteratorBegin; iterRecHit != theRecHitRangeIteratorEnd; ++iterRecHit) {
-		   theSeedHits = TrackerRecHit(&(*iterRecHit), theGeometry);
+		 theSeedHits = TrackerRecHit(&(*iterRecHit), theGeometry, tTopo);
 		   if( outerId == theSeedHits.hit()->geographicalId().rawId() ) {
 		       aTrackingRecHit = theSeedHits.hit()->clone();
 	               TransientTrackingRecHit::ConstRecHitPointer recHit = theTTRHBuilder->build(aTrackingRecHit);
@@ -352,7 +355,7 @@ void FastTSGFromPropagation::setEvent(const edm::Event& iEvent) {
 
   bool measTrackerChanged = false;
 
-  iEvent.getByType(theBeamSpot);
+  iEvent.getByLabel(beamSpot_, theBeamSpot);
   
   // retrieve the MC truth (SimTracks)
   iEvent.getByLabel(theSimTrackCollectionLabel, theSimTracks);

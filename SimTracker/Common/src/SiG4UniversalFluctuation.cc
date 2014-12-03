@@ -20,8 +20,8 @@
 // * statement, and all its terms.                                    *
 // ********************************************************************
 //
-// $Id: SiG4UniversalFluctuation.cc,v 1.6 2007/05/10 08:55:16 fambrogl Exp $
-// GEANT4 tag $Name: V02-00-00 $
+// $Id: SiG4UniversalFluctuation.cc,v 1.9 2013/04/25 18:17:07 civanch Exp $
+// GEANT4 tag $Name: CMSSW_6_2_0 $
 //
 // -------------------------------------------------------------------
 //
@@ -48,6 +48,7 @@
 //          + smearing for very small loss (L.Urban)
 //  
 // Modified for standalone use in CMSSW. danek k. 2/06        
+// 25-04-13 Used vdt::log, added check a3>0 (V.Ivanchenko & D. Nikolopoulos)         
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -56,9 +57,10 @@
 #include "CLHEP/Units/GlobalSystemOfUnits.h"
 #include "CLHEP/Units/GlobalPhysicalConstants.h"
 #include "CLHEP/Random/RandGaussQ.h"
-#include "CLHEP/Random/RandPoisson.h"
+#include "CLHEP/Random/RandPoissonQ.h"
 #include "CLHEP/Random/RandFlat.h"
 #include <math.h>
+#include "vdt/log.h"
 //#include "G4UniversalFluctuation.hh"
 //#include "Randomize.hh"
 //#include "G4Poisson.hh"
@@ -74,7 +76,7 @@ using namespace std;
 SiG4UniversalFluctuation::SiG4UniversalFluctuation(CLHEP::HepRandomEngine& eng)
   :rndEngine(eng),
    gaussQDistribution(0),
-   poissonDistribution(0),
+   poissonQDistribution(0),
    flatDistribution(0),
    minNumberInteractionsBohr(10.0),
    theBohrBeta2(50.0*keV/proton_mass_c2),
@@ -103,7 +105,7 @@ SiG4UniversalFluctuation::SiG4UniversalFluctuation(CLHEP::HepRandomEngine& eng)
   e0 = 1.E-5;             //material->GetIonisation()->GetEnergy0fluct();
   
   gaussQDistribution = new CLHEP::RandGaussQ(rndEngine);
-  poissonDistribution = new CLHEP::RandPoisson(rndEngine);
+  poissonQDistribution = new CLHEP::RandPoissonQ(rndEngine);
   flatDistribution = new CLHEP::RandFlat(rndEngine);
 
   //cout << " init new fluct +++++++++++++++++++++++++++++++++++++++++"<<endl;
@@ -117,7 +119,7 @@ SiG4UniversalFluctuation::SiG4UniversalFluctuation(CLHEP::HepRandomEngine& eng)
 SiG4UniversalFluctuation::~SiG4UniversalFluctuation()
 {
   delete gaussQDistribution;
-  delete poissonDistribution;
+  delete poissonQDistribution;
   delete flatDistribution;
 
 }
@@ -203,7 +205,7 @@ double SiG4UniversalFluctuation::SampleFluctuations(const double momentum,
   double rate = rateFluct ;
 
   double w1 = tmax/ipotFluct;
-  double w2 = log(2.*electron_mass_c2*beta2*gam2)-beta2;
+  double w2 = vdt::fast_log(2.*electron_mass_c2*beta2*gam2)-beta2;
 
   if(w2 > ipotLogFluct)
   {
@@ -222,8 +224,10 @@ double SiG4UniversalFluctuation::SampleFluctuations(const double momentum,
     rate = 1. ;
   }
 
-  a3 = rate*meanLoss*(tmax-ipotFluct)/(ipotFluct*tmax*log(w1));
-
+  // added
+  if(tmax > ipotFluct) {
+    a3 = rate*meanLoss*(tmax-ipotFluct)/(ipotFluct*tmax*vdt::fast_log(w1));
+  }
   double suma = a1+a2+a3;
   
   // Glandz regime
@@ -238,7 +242,7 @@ double SiG4UniversalFluctuation::SampleFluctuations(const double momentum,
         siga=sqrt(a1) ;
         p1 = max(0.,gaussQDistribution->fire(a1,siga)+0.5);
       } else {
-        p1 = double(poissonDistribution->fire(a1));
+        p1 = double(poissonQDistribution->fire(a1));
       }
     
       // excitation type 2
@@ -246,7 +250,7 @@ double SiG4UniversalFluctuation::SampleFluctuations(const double momentum,
         siga=sqrt(a2) ;
         p2 = max(0.,gaussQDistribution->fire(a2,siga)+0.5);
       } else {
-        p2 = double(poissonDistribution->fire(a2));
+        p2 = double(poissonQDistribution->fire(a2));
       }
     
       loss = p1*e1Fluct+p2*e2Fluct;
@@ -265,7 +269,7 @@ double SiG4UniversalFluctuation::SampleFluctuations(const double momentum,
         siga=sqrt(a3) ;
         p3 = max(0.,gaussQDistribution->fire(a3,siga)+0.5);
       } else {
-        p3 = double(poissonDistribution->fire(a3));
+        p3 = double(poissonQDistribution->fire(a3));
       }
       double lossc = 0.;
       if (p3 > 0) {
@@ -278,7 +282,7 @@ double SiG4UniversalFluctuation::SampleFluctuations(const double momentum,
           na              = gaussQDistribution->fire(namean,sa);
           if (na > 0.) {
             alfa   = w1*(nmaxCont2+p3)/(w1*nmaxCont2+p3);
-            double alfa1  = alfa*log(alfa)/(alfa-1.);
+            double alfa1  = alfa*vdt::fast_log(alfa)/(alfa-1.);
             double ea     = na*ipotFluct*alfa1;
             double sea    = ipotFluct*sqrt(na*(alfa-alfa1*alfa1));
             lossc += gaussQDistribution->fire(ea,sea);
@@ -301,13 +305,13 @@ double SiG4UniversalFluctuation::SampleFluctuations(const double momentum,
   //
   //double e0 = material->GetIonisation()->GetEnergy0fluct();
 
-  a3 = meanLoss*(tmax-e0)/(tmax*e0*log(tmax/e0));
+  a3 = meanLoss*(tmax-e0)/(tmax*e0*vdt::fast_log(tmax/e0));
   if (a3 > alim)
   {
     siga=sqrt(a3);
     p3 = max(0.,gaussQDistribution->fire(a3,siga)+0.5);
   } else {
-    p3 = double(poissonDistribution->fire(a3));
+    p3 = double(poissonQDistribution->fire(a3));
   }
   if (p3 > 0.) {
     double w = (tmax-e0)/tmax;
