@@ -3,6 +3,7 @@ import FWCore.ParameterSet.Config as cms
 
 from Configuration.Generator.Pythia8CommonSettings_cfi import *
 from Configuration.Generator.Pythia8CUEP8M1Settings_cfi import *
+from GeneratorInterface.EvtGenInterface.EvtGenSetting_cff import *
 
 generator = cms.EDFilter("Pythia8HadronizerFilter",
                          ExternalDecays = cms.PSet(
@@ -54,5 +55,6 @@ generator = cms.EDFilter("Pythia8HadronizerFilter",
                                     )
         )
                          )
+generator.PythiaParameters.processParameters.extend(EvtGenExtraParticles)
 
 ProductionFilterSequence = cms.Sequence(generator)
