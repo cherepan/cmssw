@@ -7,20 +7,9 @@ from GeneratorInterface.EvtGenInterface.EvtGenSetting_cff import *
 
 generator = cms.EDFilter("Pythia8HadronizerFilter",
                          ExternalDecays = cms.PSet(
-    #EvtGen = cms.untracked.PSet(
-    #use_default_decay = cms.untracked.bool(True),
-    #decay_table = cms.FileInPath('GeneratorInterface/ExternalDecays/data/DECAY_NOLONGLIFE.DEC'),
-    #particle_property_file = cms.FileInPath('GeneratorInterface/ExternalDecays/data/evt.pdl'),
-    #user_decay_file = cms.FileInPath('GeneratorInterface/ExternalDecays/data/Validation.dec'),
-    #list_forced_decays = cms.vstring(),
-    #operates_on_particles = cms.vint32(0)
-    #),
-    #parameterSets = cms.vstring('EvtGen')
-        #),
         EvtGen130 = cms.untracked.PSet(
             decay_table = cms.string('GeneratorInterface/EvtGenInterface/data/DECAY_2010.DEC'),
             particle_property_file = cms.FileInPath('GeneratorInterface/EvtGenInterface/data/evt.pdl'),
-        #    user_decay_file = cms.untracked.bool(False),
             user_decay_file = cms.vstring(),
             list_forced_decays = cms.vstring(),
             operates_on_particles = cms.vint32()
@@ -49,10 +38,13 @@ generator = cms.EDFilter("Pythia8HadronizerFilter",
             'JetMatching:nJetMax = 4', #number of partons in born matrix element for highest multiplicity
             'JetMatching:doShowerKt = off', #off for MLM matching, turn on for shower-kT matching
             ),
-        parameterSets = cms.vstring('pythia8CommonSettings',
-                                    'pythia8CUEP8M1Settings',
-                                    'JetMatchingParameters'
-                                    )
+        processParameters = cms.vstring(),
+        parameterSets = cms.vstring(
+            'processParameters',
+            'pythia8CommonSettings',
+            'pythia8CUEP8M1Settings',
+            'JetMatchingParameters'
+            )
         )
                          )
 generator.PythiaParameters.processParameters.extend(EvtGenExtraParticles)
