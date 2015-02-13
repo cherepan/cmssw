@@ -23,7 +23,7 @@
 #include "SimGeneral/HepPDTRecord/interface/ParticleDataTable.h"
 #include "TLorentzVector.h"
 
-#include "Validation/EventGenerator/interface/WeightManager.h"
+//#include "Validation/EventGenerator/interface/WeightManager.h"
 
 class TauValidation : public DQMEDAnalyzer
 {
@@ -61,7 +61,7 @@ class TauValidation : public DQMEDAnalyzer
 	virtual void dqmBeginRun(const edm::Run& r, const edm::EventSetup& c) override;
 	virtual void analyze(edm::Event const&, edm::EventSetup const&) override;
     private:
-	  WeightManager wmanager_;
+	//	  WeightManager wmanager_;
 
 	int tauMother(const reco::GenParticle*, double weight);
 	int tauProngs(const reco::GenParticle*, double weight);
@@ -84,9 +84,9 @@ class TauValidation : public DQMEDAnalyzer
 	double Zstoa(double zs);
 	void countParticles(const reco::GenParticle* p,int &allCount, int &eCount, int &muCount,
 			    int &pi0Count,int &piCount,int &rhoCount,int &a1Count,int &KCount,int &KstarCount);
+	void CountDaughters(const reco::GenParticle* p, double weight);
 
     	edm::InputTag genparticleCollection_;
-	edm::InputTag hepmcCollection_;
 
   	/// PDT table
   	edm::ESHandle<HepPDT::ParticleDataTable> fPDGTable ;
@@ -102,7 +102,7 @@ class TauValidation : public DQMEDAnalyzer
 	  *TauSpinEffectsH_eX, *TauSpinEffectsH_muX, *TauSpinEffectsH_rhorhoAcoplanarityplus,  *TauSpinEffectsH_rhorhoAcoplanarityminus,
 	  *TauBremPhotonsN,*TauBremPhotonsPt,*TauBremPhotonsPtSum,*TauFSRPhotonsN,*TauFSRPhotonsPt,*TauFSRPhotonsPtSum,
 	  *TauSpinEffectsH_pipiAcoplanarity,*TauSpinEffectsH_pipiAcollinearity,*TauSpinEffectsH_pipiAcollinearityzoom, *DecayLength,
-	  *LifeTime;
+	  *LifeTime,*pi0NDau,*etaNDau,*K0NDau;
 
 	unsigned int NMODEID;
 	MonitorElement *MODEID;
@@ -111,8 +111,9 @@ class TauValidation : public DQMEDAnalyzer
 	int zsbins;
 	double zsmin,zsmax;
 
+	bool myflag;
+
 	edm::EDGetTokenT<reco::GenParticleCollection> genparticleCollectionToken_;
-	edm::EDGetTokenT<edm::HepMCProduct> hepmcCollectionToken_;
 };
 
 #endif
