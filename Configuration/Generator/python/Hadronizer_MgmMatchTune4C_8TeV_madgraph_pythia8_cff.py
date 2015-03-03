@@ -12,7 +12,7 @@ generator = cms.EDFilter("Pythia8HadronizerFilter",
             InputCards = cms.PSet(
                 pjak1 = cms.int32(0),
                 pjak2 = cms.int32(0),
-                mdtau = cms.int32(0)
+                mdtau = cms.int32(116)
                 ),
             parameterSets = cms.vstring("setTauBr"),
             setTauBr = cms.PSet(
@@ -77,16 +77,24 @@ generator = cms.EDFilter("Pythia8HadronizerFilter",
 
 
 tautaufilter = cms.EDFilter("MCParticlePairFilter",
-    Status = cms.untracked.vint32(2, 2),
-    MinPt = cms.untracked.vdouble(2.0, 2.0),
-    MaxEta = cms.untracked.vdouble(2.5, 2.5),
-    MinEta = cms.untracked.vdouble(-2.5, -2.5),
-    ParticleCharge = cms.untracked.int32(-1),
-    MaxInvMass = cms.untracked.double(4.0),
-    MinInvMass = cms.untracked.double(2.0),
-    ParticleID1 = cms.untracked.vint32(13),
-    ParticleID2 = cms.untracked.vint32(13)
-)
+                            Status = cms.untracked.vint32(2, 2),
+                            MinPt = cms.untracked.vdouble(2.0, 2.0),
+                            MaxEta = cms.untracked.vdouble(2.5, 2.5),
+                            MinEta = cms.untracked.vdouble(-2.5, -2.5),
+                            ParticleCharge = cms.untracked.int32(-1,1),
+                            MaxInvMass = cms.untracked.double(4.0),
+                            MinInvMass = cms.untracked.double(2.0),
+                            ParticleID1 = cms.untracked.vint32(15),
+                            ParticleID2 = cms.untracked.vint32(15)
+                            )
 
+mufilter = cms.EDFilter("PythiaFilter",
+                        Status = cms.untracked.int32(1),
+                        MaxEta = cms.untracked.double(2.3),
+                        MinEta = cms.untracked.double(-2.3),
+                        MinPt = cms.untracked.double(18.0),
+                        ParticleID = cms.untracked.int32(13)
+                        )
 
-ProductionFilterSequence = cms.Sequence(generator*tautauFilter) 
+#ProductionFilterSequence = cms.Sequence(generator*tautaufilter*mufilter) 
+ProductionFilterSequence = cms.Sequence(generator*mufilter)
