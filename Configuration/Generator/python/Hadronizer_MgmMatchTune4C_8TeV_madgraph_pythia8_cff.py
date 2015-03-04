@@ -7,12 +7,12 @@ generator = cms.EDFilter("Pythia8HadronizerFilter",
                          pythiaHepMCVerbosity = cms.untracked.bool(False),
                          comEnergy = cms.double(8000.),
                          ExternalDecays = cms.PSet(
-        Tauola = cms.untracked.PSet(
+        Tauolapp114 = cms.untracked.PSet(
             UseTauolaPolarization = cms.bool(True),
             InputCards = cms.PSet(
                 pjak1 = cms.int32(0),
                 pjak2 = cms.int32(0),
-                mdtau = cms.int32(116)
+                mdtau = cms.int32(216)
                 ),
             parameterSets = cms.vstring("setTauBr"),
             setTauBr = cms.PSet(
@@ -22,7 +22,7 @@ generator = cms.EDFilter("Pythia8HadronizerFilter",
                 # Note: Total BR is 0.995575 not 1.0 due to missing modes - Tauola automatically
                 #       rescales to 1.0.
                 JAK = cms.vint32(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22),
-                BR  = cms.vdouble(0.1783,         # G3      JAKID 1 tau->enunu
+                BR  = cms.vdouble(0.0,#0.1783,         # G3      JAKID 1 tau->enunu
                                   0.1741,         # G5      JAKID 2 tau->mununu
                                   0.0,
                                   0.0,
@@ -47,7 +47,7 @@ generator = cms.EDFilter("Pythia8HadronizerFilter",
                                   )
                 )
             ),
-        parameterSets = cms.vstring('Tauola')
+        parameterSets = cms.vstring('Tauolapp114')
         ),
                          jetMatching = cms.untracked.PSet(
         scheme = cms.string("Madgraph"),
@@ -73,28 +73,32 @@ generator = cms.EDFilter("Pythia8HadronizerFilter",
         parameterSets = cms.vstring('processParameters')
         )
                          )
- 
+
 
 
 tautaufilter = cms.EDFilter("MCParticlePairFilter",
                             Status = cms.untracked.vint32(2, 2),
-                            MinPt = cms.untracked.vdouble(2.0, 2.0),
+                            MinPt = cms.untracked.vdouble(17.0, 15.0),
                             MaxEta = cms.untracked.vdouble(2.5, 2.5),
                             MinEta = cms.untracked.vdouble(-2.5, -2.5),
-                            ParticleCharge = cms.untracked.int32(-1,1),
-                            MaxInvMass = cms.untracked.double(4.0),
-                            MinInvMass = cms.untracked.double(2.0),
+                            ParticleCharge = cms.untracked.int32(-1),
+                            # MaxInvMass = cms.untracked.double(4.0),
+                            # MinInvMass = cms.untracked.double(2.0),
                             ParticleID1 = cms.untracked.vint32(15),
                             ParticleID2 = cms.untracked.vint32(15)
                             )
 
-mufilter = cms.EDFilter("PythiaFilter",
-                        Status = cms.untracked.int32(1),
-                        MaxEta = cms.untracked.double(2.3),
-                        MinEta = cms.untracked.double(-2.3),
-                        MinPt = cms.untracked.double(18.0),
-                        ParticleID = cms.untracked.int32(13)
-                        )
 
-#ProductionFilterSequence = cms.Sequence(generator*tautaufilter*mufilter) 
-ProductionFilterSequence = cms.Sequence(generator*mufilter)
+
+MuFilter = cms.EDFilter("PythiaFilter",
+    Status = cms.untracked.int32(1),
+    MotherID = cms.untracked.int32(15),
+    MinPt = cms.untracked.double(18.0),
+    ParticleID = cms.untracked.int32(13),
+    MaxEta = cms.untracked.double(2.3),
+    MinEta = cms.untracked.double(-2.3)
+)
+
+
+ProductionFilterSequence = cms.Sequence(generator*MuFilter*tautaufilter)
+#ProductionFilterSequence = cms.Sequence(generator*mufilter)

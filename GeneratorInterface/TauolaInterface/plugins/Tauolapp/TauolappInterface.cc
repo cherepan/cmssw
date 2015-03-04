@@ -192,7 +192,7 @@ void TauolappInterface::init( const edm::EventSetup& es ){
 	std::vector<int> vJAK = cfg.getParameter<std::vector<int> >("JAK");
 	std::vector<double> vBR = cfg.getParameter<std::vector<double> >("BR");
 	if(vJAK.size() == vBR.size()){
-	  for(unsigned int i=0;i<vJAK.size();i++) Tauolapp::Tauola::setTauBr(vJAK[i],vBR[i]);
+	  for(unsigned int i=0;i<vJAK.size();i++){ Tauolapp::Tauola::setTauBr(vJAK[i],vBR[i]); std::cout << "BR " << vJAK[i] << " " << vBR[i] << std::endl;}
 	}
 	else {std::cout << "WARNING invalid size for setTauBr - JAK: " << vJAK.size() << " BR: " << vBR.size() << std::endl;}
       }
