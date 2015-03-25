@@ -577,7 +577,7 @@ void EvtGenInterface::update_particles(HepMC::GenParticle* partHep,HepMC::GenEve
 	    }
 	  }
 	}
-	if(isforced && noforced){std::cout << "return" << std::endl; return;}
+	if(isforced && noforced){ return;}
 	
         // Create daughter and add to event
 	int status =(*d)->status();
