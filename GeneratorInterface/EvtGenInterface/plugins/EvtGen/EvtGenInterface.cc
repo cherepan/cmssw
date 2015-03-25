@@ -415,7 +415,31 @@ HepMC::GenEvent* EvtGenInterface::decay( HepMC::GenEvent* evt ){
       << "the event and beginLuminosityBlock methods, which is not allowed.\n";
   }
   CLHEP::RandFlat m_flat(*the_engine->engine(), 0., 1.);
-  
+
+  // find all forced particles  
+  std::vector<std::vector<HepMC::GenParticle*> > forcedparticles;
+  for(unsigned int i=0;i<forced_pdgids.size();i++) forcedparticles.push_back(std::vector<HepMC::GenParticle*>());
+  for (HepMC::GenEvent::particle_const_iterator p= evt->particles_begin(); p != evt->particles_end(); ++p){
+    int idHep = (*p)->pdg_id();
+    for(unsigned int i=0;i<forced_pdgids.size();i++){
+      if(idHep==forced_pdgids[i]){
+	forcedparticles.at(i).push_back(*p);
+      }
+    }
+  }
+  // decay all forced particles...
+  for(unsigned int i=0; i<forcedparticles.size();i++){
+    unsigned int nlist=forcedparticles.at(i).size();
+    unsigned int which = (unsigned int)(nlist*flat());
+    if(which==nlist && nlist>0) which=nlist-1;
+    for(unsigned int j=0; j<forcedparticles.at(i).size();j++){
+      EvtId idEvt = EvtPDL::evtIdFromStdHep(forcedparticles.at(i).at(j)->pdg_id());
+      if(j==which){idEvt = forced_id[i]; }
+      addToHepMC(forcedparticles.at(i).at(j),idEvt,evt);
+    }
+  }
+
+  // decay all request unforced particles
   for (HepMC::GenEvent::particle_const_iterator p= evt->particles_begin(); p != evt->particles_end(); ++p){
     if((*p)->status()==1){                                // all particles to be decays are set to status 1 by generator.hadronizer
       int idHep = (*p)->pdg_id();
@@ -429,7 +453,6 @@ HepMC::GenEvent* EvtGenInterface::decay( HepMC::GenEvent* evt ){
 	EvtId idEvt = EvtPDL::evtIdFromStdHep(idHep);
 	for(unsigned int i=0;i<forced_pdgids.size();i++){
           if(idHep==forced_pdgids[i]){
-	    idEvt = forced_id[i];
             isforced=true;
             break;
           }
@@ -442,13 +465,13 @@ HepMC::GenEvent* EvtGenInterface::decay( HepMC::GenEvent* evt ){
 	}
 	int ipart = idEvt.getId();
 	EvtDecayTable *evtDecayTable=EvtDecayTable::getInstance();
-	if((isforced || isDefaultEvtGen) && ipart!=-1 && evtDecayTable->getNMode(ipart)!=0){
+	if((!isforced || isDefaultEvtGen) && ipart!=-1 && evtDecayTable->getNMode(ipart)!=0){
 	  addToHepMC(*p,idEvt,evt);                                  // generate decay
 	}
       }
     }
   }
-  
+
   // add code to ensure all particles have an end vertex and if they are undecayed with no end vertes set to status 1
   for (HepMC::GenEvent::particle_const_iterator p= evt->particles_begin(); p != evt->particles_end(); ++p){
     if((*p)->end_vertex() && (*p)->status() == 1)(*p)->set_status(2);
@@ -518,7 +541,7 @@ void EvtGenInterface::update_particles(HepMC::GenParticle* partHep,HepMC::GenEve
 
         // Ensure forced decays are done with the alias
         bool ignore=false;
-        bool isforced=false;
+        //bool isforced=false;
 	bool isDefaultEvtGen=false;
 	bool hasmixing=false;
 	// check for mixing... skip if there is mixing it is not allowed
@@ -538,6 +561,7 @@ void EvtGenInterface::update_particles(HepMC::GenParticle* partHep,HepMC::GenEve
 	int idHep = daughter->pdg_id();
 	EvtId idEvt = EvtPDL::evtIdFromStdHep(idHep);
 	if(!(hasmixing || ignore)){
+	  /*
 	  // re-run is daughter is a forced decays
 	  for(unsigned int i=0;i<forced_pdgids.size();i++){
 	    if(idHep==forced_pdgids[i]){
@@ -545,7 +569,7 @@ void EvtGenInterface::update_particles(HepMC::GenParticle* partHep,HepMC::GenEve
 	      idEvt = forced_id[i];
 	      break;
 	    }
-	  }
+	    }*/
 	  // re-run is daughter is on EvtGen decay list (pythia8 does not return the event to EvtGen)
 	  for(unsigned int i=0;i<m_PDGs.size();i++){
 	    if(abs(idHep)==m_PDGs[i]){
@@ -556,7 +580,7 @@ void EvtGenInterface::update_particles(HepMC::GenParticle* partHep,HepMC::GenEve
 	}
 	int ipart = idEvt.getId();
 	EvtDecayTable *evtDecayTable=EvtDecayTable::getInstance();
-	if((isforced || isDefaultEvtGen) && ipart!=-1 && evtDecayTable->getNMode(ipart)!=0){
+	if(/*(isforced ||*/ isDefaultEvtGen && ipart!=-1 && evtDecayTable->getNMode(ipart)!=0){
 	addToHepMC(daughter,idEvt,theEvent);  // re-run if required       
 	}
 	else{
