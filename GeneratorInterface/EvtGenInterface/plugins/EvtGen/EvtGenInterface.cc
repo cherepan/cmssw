@@ -393,11 +393,18 @@ void EvtGenInterface::init(){
       EvtId found = EvtPDL::getId(forced_names[i]);
       if(found.getId() == -1) throw cms::Exception("Configuration") << "name in part list for ignored decays not found: " << forced_names[i];
       if(found.getId() == found.getAlias()) throw cms::Exception("Configuration") << "name of ignored decays is not an alias: " << forced_names[i];
-      forced_id.push_back(found);
-      forced_pdgids.push_back(EvtPDL::getStdHep(found));   // force_pdgids is the list of stdhep codes
+      bool duplicate=false;
+      for(unsigned int j=0;j<forced_pdgids.size();j++){if(abs(EvtPDL::getStdHep(found))==abs(forced_pdgids.at(j))) duplicate=true;break;} 
+      if(!duplicate){
+	forced_id.push_back(found);
+	forced_pdgids.push_back(EvtPDL::getStdHep(found));   // force_pdgids is the list of stdhep codes
+      }
     }
   }
-
+  edm::LogInfo("EvtGenInterface::~EvtGenInterface") << "Number of Forced Paricles is: " << forced_pdgids.size() << std::endl;
+  for(unsigned int j=0;j<forced_id.size();j++){
+    edm::LogInfo("EvtGenInterface::~EvtGenInterface") << "Forced Paricles are: " << forced_pdgids.at(j) << " " << forced_id.at(j) << std::endl;
+  }
   // Ignore decays are particles that are not to be decayed by EvtGen
   if (fPSet->exists("list_ignored_pdgids")){
     ignore_pdgids = fPSet->getUntrackedParameter< std::vector<int> >("list_ignored_pdgids");
@@ -502,7 +509,6 @@ HepMC::GenEvent* EvtGenInterface::decay( HepMC::GenEvent* evt ){
     if((*p)->end_vertex() && (*p)->status() == 1)(*p)->set_status(2);
     if((*p)->end_vertex() && (*p)->end_vertex()->particles_out_size()==0) edm::LogWarning("EvtGenInterface::decay error: empty end vertex!");
   } 
-  evt->print();
   return evt;
 }
 
