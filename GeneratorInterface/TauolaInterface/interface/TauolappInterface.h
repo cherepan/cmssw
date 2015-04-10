@@ -59,6 +59,8 @@ namespace gen {
       void selectDecayByMDTAU();
       int selectLeptonic();
       int selectHadronic();
+      bool Filter(HepMC::GenEvent* evt);
+      bool isLastTauinChain(const HepMC::GenParticle* tau);
 
       HepMC::GenEvent*    make_simple_tau_event(const TLorentzVector &l,int pdgid,int status);
       void                update_particles(HepMC::GenParticle* partHep,HepMC::GenEvent* theEvent,HepMC::GenParticle* p,TVector3 &boost);
@@ -89,6 +91,18 @@ namespace gen {
       bool   dolheBosonCorr;
       int    ntries;
       double lifetime;
+
+      bool doFilter;
+      bool doHelicityHadFilter;
+      bool doHelicityLepFilter;
+      int hadHelicity;
+      int lepHelicity;
+      bool doHadPtFilter;
+      bool doLepPtFilter;
+      double hadPt;
+      double lepPt;
+      int NFilterTests;
+      double nfailed,npassed;
    };
 
 }

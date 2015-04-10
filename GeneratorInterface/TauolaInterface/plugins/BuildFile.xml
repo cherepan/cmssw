@@ -27,6 +27,7 @@
   <use name="root"/>
   <use name="rootmath"/>
   <use name="tauolapp"/>
+  <use name="Validation/EventGenerator"/>
   <flags EDM_PLUGIN="1"/>
 </library>
 

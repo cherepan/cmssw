@@ -30,6 +30,8 @@
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "GeneratorInterface/LHEInterface/interface/LHEEvent.h"
 
+#include "Validation/EventGenerator/interface/TauDecay_CMSSW.h"
+
 using namespace gen;
 using namespace edm;
 using namespace std;
@@ -62,13 +64,18 @@ TauolappInterface::TauolappInterface( const edm::ParameterSet& pset):
   dmMatch(0.5),
   dolhe(false),
   dolheBosonCorr(false),
-  ntries(10)
+  ntries(10),
+  nfailed(0),
+  npassed(0)
 {
   if ( fPSet != 0 ) throw cms::Exception("TauolappInterfaceError") << "Attempt to override Tauola an existing ParameterSet\n" << std::endl;
   fPSet = new ParameterSet(pset);
 }
 
-TauolappInterface::~TauolappInterface(){if ( fPSet != 0 ) delete fPSet;}
+TauolappInterface::~TauolappInterface(){
+  if(fPSet != 0) delete fPSet;
+  if(doFilter) edm::LogWarning("TauolappInterface::~TauolappInterface()") <<  " Efficiency: " << npassed/(npassed+nfailed) << " Npassed: " << nfailed << "Ntotal: " << npassed+npassed << std::endl;
+}
 
 void TauolappInterface::init( const edm::EventSetup& es ){
   if ( fIsInitialized ) return; // do init only once
@@ -85,6 +92,19 @@ void TauolappInterface::init( const edm::EventSetup& es ){
    dolhe=fPSet->getUntrackedParameter<bool>("dolhe",false);
    dolheBosonCorr=fPSet->getUntrackedParameter<bool>("dolheBosonCorr",true);
    ntries=fPSet->getUntrackedParameter<int>("ntries",10);
+
+
+   //Filter information
+   doFilter=fPSet->getUntrackedParameter<bool>("doFilter",false);
+   doHelicityHadFilter=fPSet->getUntrackedParameter<bool>("doHelicityHadFilter",false);
+   doHelicityLepFilter=fPSet->getUntrackedParameter<bool>("doHelicityLepFilter",false);
+   hadHelicity=fPSet->getUntrackedParameter<int>("hadHelicity",-1);
+   lepHelicity=fPSet->getUntrackedParameter<int>("lepHelicity",-1);
+   doHadPtFilter=fPSet->getUntrackedParameter<bool>("doHadPtFilter",false);
+   doLepPtFilter=fPSet->getUntrackedParameter<bool>("doLepPtFilter",false);
+   hadPt=fPSet->getUntrackedParameter<double>("hadPt",18);
+   lepPt=fPSet->getUntrackedParameter<double>("lepPt",15);
+   NFilterTests=fPSet->getUntrackedParameter<int>("NFilterTests",1000);
 
    // polarization switch 
    // fPolarization = fPSet->getParameter<bool>("UseTauolaPolarization") ? 1 : 0 ;
@@ -309,6 +329,24 @@ HepMC::GenEvent* TauolappInterface::decay( HepMC::GenEvent* evt ){
 	 }
        }
      }
+   }
+   else if(doFilter){
+     //construct tmp TAUOLA event
+     auto * t_event = new Tauolapp::TauolaHepMCEvent(evt);
+     // loop until the efficiency is satisfied
+     for(int i=0;i<NFilterTests;i++){
+       t_event->decayTaus();
+       if(Filter(evt)) npassed++;
+       else nfailed++;
+       t_event->undecayTaus();
+     }
+     t_event->decayTaus();
+     while(Filter(evt)){
+       t_event->undecayTaus();
+       t_event->decayTaus();
+     }
+     delete t_event;
+
    }
    else{
      //construct tmp TAUOLA event
@@ -800,3 +838,109 @@ void TauolappInterface::BoostProdToLabLifeTimeInDecays(HepMC::GenParticle* p,TLo
     } 
   } 
 }  
+
+bool TauolappInterface::Filter(HepMC::GenEvent* evt){
+  if(!doFilter) return true;
+  unsigned int jakid_plus(0), jakid_minus(0);
+  std::vector<HepMC::GenParticle*> prod_plus, prod_minus;
+  for(HepMC::GenEvent::particle_const_iterator iter = evt->particles_begin(); iter != evt->particles_end(); iter++) {
+    if(abs((*iter)->pdg_id())==15){
+      if(isLastTauinChain(*iter)){
+        TauDecay_CMSSW TD;
+	unsigned int jak_id, TauBitMask;
+        if(TD.AnalyzeTau((*iter),jak_id,TauBitMask,false,false)){
+	  int tcharge=-(*iter)->pdg_id()/abs((*iter)->pdg_id());
+	  if(tcharge==1){ // plus
+	    jakid_plus=jak_id;
+	    prod_plus=TD.Get_TauDecayProducts();
+	  }
+	  else if(tcharge==-1){
+	    jakid_minus=jak_id;
+            prod_minus=TD.Get_TauDecayProducts();
+	  }
+	}
+      }
+    }
+  }
+  unsigned int nlep(0), nhad(0);
+  // hadronic side helicty cut
+  if(doHelicityHadFilter){
+    if(jakid_minus!=0 && jakid_minus!=1 && jakid_minus!=2){
+      if(Tauolapp::Tauola::getHelMinus()*hadHelicity<0) return false;
+      nhad++;
+    }
+    else if(jakid_plus!=0 && jakid_plus!=1 && jakid_plus!=2){
+      if(Tauolapp::Tauola::getHelPlus()*hadHelicity<0)  return false;
+      nhad++;
+    }
+  }
+  // leptonic side helicty cut
+  if(doHelicityLepFilter){
+    if(jakid_minus==1 && jakid_minus==2){
+      if(Tauolapp::Tauola::getHelMinus()*hadHelicity<0) return false;
+      nlep++;
+    }
+    else if(jakid_plus==1 && jakid_plus==2){
+      if(Tauolapp::Tauola::getHelPlus()*hadHelicity<0)  return false;
+      nlep++;
+    }
+  }
+
+  if(nhad==0 || nlep==0) return false;
+
+  // hadronic side Pt cut
+  if(doHadPtFilter){
+    if(jakid_minus!=0 && jakid_minus!=1 && jakid_minus!=2){
+      double px(0), py(0);
+      for(unsigned int i=0;i<prod_minus.size();i++){
+	if(abs(prod_minus.at(i)->pdg_id())>16){px+=prod_minus.at(i)->momentum().px(); py+=prod_minus.at(i)->momentum().py();}
+      }
+      if(sqrt(px*px+py*py)<hadPt) return false; 
+    }
+    else if(jakid_plus!=0 && jakid_plus!=1 && jakid_plus!=2){
+      double px(0), py(0);
+      for(unsigned int i=0;i<prod_plus.size();i++){
+        if(abs(prod_plus.at(i)->pdg_id())>16){px+=prod_plus.at(i)->momentum().px(); py+=prod_plus.at(i)->momentum().py();}
+      }
+      if(sqrt(px*px+py*py)<hadPt) return false;
+    }
+  }
+  // leptonic side helicty cut
+  if(doHelicityLepFilter){
+    if(jakid_minus==1 && jakid_minus==2){
+      if(Tauolapp::Tauola::getHelMinus()*hadHelicity<0) return false;
+    }
+    else if(jakid_plus==1 && jakid_plus==2){
+      if(Tauolapp::Tauola::getHelPlus()*hadHelicity<0)  return false;
+    }
+  }
+  // leptonic side Pt cut
+  if(doLepPtFilter){
+    if(jakid_minus==1 && jakid_minus==2){
+      double px(0), py(0);
+      for(unsigned int i=0;i<prod_minus.size();i++){
+        if(abs(prod_minus.at(i)->pdg_id())==11 || abs(prod_minus.at(i)->pdg_id())==13){px+=prod_minus.at(i)->momentum().px(); py+=prod_minus.at(i)->momentum().py();}
+      }
+      if(sqrt(px*px+py*py)<lepPt) return false;
+    }
+    else if(jakid_plus==1 && jakid_plus==2){
+      double px(0), py(0);
+      for(unsigned int i=0;i<prod_plus.size();i++){
+        if(abs(prod_plus.at(i)->pdg_id())==11 || abs(prod_plus.at(i)->pdg_id())==13){px+=prod_plus.at(i)->momentum().px(); py+=prod_plus.at(i)->momentum().py();}
+      }
+      if(sqrt(px*px+py*py)<lepPt) return false;
+    }
+  }
+  return true;
+}
+
+bool TauolappInterface::isLastTauinChain(const HepMC::GenParticle* tau){
+  if ( tau->end_vertex() ) {
+    HepMC::GenVertex::particle_iterator dau;
+    for (dau = tau->end_vertex()->particles_begin(HepMC::children); dau!= tau->end_vertex()->particles_end(HepMC::children); dau++ ) {
+      int dau_pid = (*dau)->pdg_id();
+      if(dau_pid == tau->pdg_id()) return false;
+    }
+  }
+  return true;
+}
