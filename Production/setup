@@ -1,0 +1,15 @@
+source /cvmfs/cms.cern.ch/crab3/crab.sh
+which crab
+voms-proxy-init --voms cms:/cms/dcms --valid 168:00
+grid-proxy-init
+voms-proxy-info --all
+crab checkwrite --site=T2_DE_RWTH --lfn=/store/user/inugent/
+export CRAB3_CACHE_FILE=$PWD/Production/tutorial_MC_generation
+echo $CRAB3_CACHE_FILE
+
+crab submit -c Production/crabConfig_tutorial_MC_generation.py
+crab status
+crab status crab_projects/crab_tutorial_MC_generation_test2/
+#when jobs are finished
+crab report crab_projects/crab_tutorial_MC_generation_test2/
+crab getlog crab_projects/crab_tutorial_MC_generation_test2/ 
