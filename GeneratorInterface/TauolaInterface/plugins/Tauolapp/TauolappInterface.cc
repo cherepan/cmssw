@@ -134,7 +134,8 @@ void TauolappInterface::init( const edm::EventSetup& es ){
 
    fPDGs.push_back( Tauolapp::Tauola::getDecayingParticle() );
 
-   Tauolapp::Tauola::setRandomGenerator(gen::TauolappInterface::flat);         
+   // Tauolapp::Tauola::setRandomGenerator(gen::TauolappInterface::flat);         
+   Tauolapp::Tauola::setRandomGenerator(gen::TauolappInterface_RandGetter);
 
    if (fPSet->exists("parameterSets")){
      std::vector<std::string> par = fPSet->getParameter< std::vector<std::string> >("parameterSets");
