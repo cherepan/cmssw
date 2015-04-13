@@ -17,14 +17,15 @@ config.JobType.psetName = 'Production/DYtoTauTautomuhad_cfi_GEN_SIM_VALIDATION.p
 
 ## Specific data options
 config.section_("Data")
+config.Data.primaryDataset = 'Minbias'
 config.Data.inputDataset = ''
 config.Data.splitting = 'EventBased'
-config.Data.unitsPerJob = 10
-config.Data.totalUnits = 200
+config.Data.unitsPerJob = 1000
+config.Data.totalUnits = 2
 
 ## User options
-config.section_("User")
-config.User.email = 'nugent@physik.rwth-aachen.de'
+#config.section_("User")
+#config.User.email = 'nugent@physik.rwth-aachen.de'
 
 config.section_("Site")
 config.Site.storageSite = 'T2_DE_RWTH'
