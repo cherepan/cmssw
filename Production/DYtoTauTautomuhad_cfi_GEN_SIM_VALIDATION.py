@@ -29,7 +29,13 @@ process.maxEvents = cms.untracked.PSet(
 )
 
 # Input source
-process.source = cms.Source("PoolSource", fileNames = cms.untracked.vstring('file:../../../LHE/00FE4EC4-8463-E111-A496-003048F11C58.root'))
+process.source = cms.Source("LHESource",
+			    fileNames=cms.untracked.vstring(['/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12497.lhe',
+							     '/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12498.lhe',
+							     '/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12499.lhe',
+							     '/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12500.lhe']))
+
+#process.source = cms.Source("PoolSource", fileNames = cms.untracked.vstring('file:../../../LHE/00FE4EC4-8463-E111-A496-003048F11C58.root'))
 
 process.options = cms.untracked.PSet(
 
