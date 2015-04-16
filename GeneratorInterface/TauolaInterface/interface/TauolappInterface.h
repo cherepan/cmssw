@@ -19,22 +19,20 @@
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "GeneratorInterface/LHEInterface/interface/LHEEvent.h"
 
-
-namespace HepMC 
+namespace HepMC
 {
-class GenEvent;
+  class GenEvent;
 }
-
 namespace CLHEP
 {
-class HepRandomEngine;
+  class HepRandomEngine;
 }
-
 namespace gen {
   extern "C" {
     void ranmar_( float *rvec, int *lenv );
     void rmarin_( int*, int*, int* );
   }
+  double TauolappInterface_RandGetter();
 
    class TauolappInterface : public TauolaInterfaceBase {
       public:
@@ -43,6 +41,8 @@ namespace gen {
      TauolappInterface( const edm::ParameterSet& );
      ~TauolappInterface();
      
+     static TauolappInterface* getInstance() ;
+
       void enablePolarization()  { fPolarization = true; return; }
       void disablePolarization() { fPolarization = false; return; }
       void init( const edm::EventSetup& );
@@ -54,13 +54,15 @@ namespace gen {
       static double flat();
 
       private: 
+
       // member function(s)
       void decodeMDTAU( int );
       void selectDecayByMDTAU();
       int selectLeptonic();
       int selectHadronic();
-      bool Filter(HepMC::GenEvent* evt);
+      bool Filter(HepMC::GenEvent* evt,bool &hastaus);
       bool isLastTauinChain(const HepMC::GenParticle* tau);
+      int  findMother(const HepMC::GenParticle* tau);
 
       HepMC::GenEvent*    make_simple_tau_event(const TLorentzVector &l,int pdgid,int status);
       void                update_particles(HepMC::GenParticle* partHep,HepMC::GenEvent* theEvent,HepMC::GenParticle* p,TVector3 &boost);

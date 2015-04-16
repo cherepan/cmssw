@@ -54,6 +54,7 @@ extern "C" {
   
 }
 
+
 TauolappInterface::TauolappInterface( const edm::ParameterSet& pset):
   fPolarization(false),
   fPSet(0),
@@ -70,11 +71,21 @@ TauolappInterface::TauolappInterface( const edm::ParameterSet& pset):
 {
   if ( fPSet != 0 ) throw cms::Exception("TauolappInterfaceError") << "Attempt to override Tauola an existing ParameterSet\n" << std::endl;
   fPSet = new ParameterSet(pset);
+
+  Service<RandomNumberGenerator> rng;
+  if(!rng.isAvailable()) {
+    throw cms::Exception("Configuration")
+      << "The RandomNumberProducer module requires the RandomNumberGeneratorService\n"
+"which appears to be absent. Please add that service to your configuration\n"
+      "or remove the modules that require it." << std::endl;
+  }
+  fRandomEngine = &rng->getEngine();
+
 }
 
 TauolappInterface::~TauolappInterface(){
   if(fPSet != 0) delete fPSet;
-  if(doFilter) edm::LogWarning("TauolappInterface::~TauolappInterface()") <<  " Efficiency: " << npassed/(npassed+nfailed) << " Npassed: " << nfailed << "Ntotal: " << npassed+npassed << std::endl;
+  if(doFilter) edm::LogWarning("TauolappInterface::~TauolappInterface()") <<  " Efficiency: " << npassed/(npassed+nfailed) << " Npassed: " << npassed << " Ntotal: " << npassed+nfailed << std::endl;
 }
 
 void TauolappInterface::init( const edm::EventSetup& es ){
@@ -134,8 +145,7 @@ void TauolappInterface::init( const edm::EventSetup& es ){
 
    fPDGs.push_back( Tauolapp::Tauola::getDecayingParticle() );
 
-   // Tauolapp::Tauola::setRandomGenerator(gen::TauolappInterface::flat);         
-   Tauolapp::Tauola::setRandomGenerator(gen::TauolappInterface_RandGetter);
+   Tauolapp::Tauola::setRandomGenerator(gen::TauolappInterface::flat);         
 
    if (fPSet->exists("parameterSets")){
      std::vector<std::string> par = fPSet->getParameter< std::vector<std::string> >("parameterSets");
@@ -332,27 +342,41 @@ HepMC::GenEvent* TauolappInterface::decay( HepMC::GenEvent* evt ){
      }
    }
    else if(doFilter){
+     unsigned int ntau(0);
+     for(HepMC::GenEvent::particle_const_iterator iter = evt->particles_begin(); iter != evt->particles_end(); iter++) {
+       if(abs((*iter)->pdg_id())==15){
+	 ntau++;
+       }
+     }
      //construct tmp TAUOLA event
-     auto * t_event = new Tauolapp::TauolaHepMCEvent(evt);
      // loop until the efficiency is satisfied
+     bool hastaus(false);
      for(int i=0;i<NFilterTests;i++){
-       t_event->decayTaus();
-       if(Filter(evt)) npassed++;
-       else nfailed++;
-       t_event->undecayTaus();
-     }
-     t_event->decayTaus();
-     while(Filter(evt)){
+       auto * t_event = new Tauolapp::TauolaHepMCEvent(evt);
        t_event->undecayTaus();
        t_event->decayTaus();
+       bool fstatus=Filter(evt,hastaus);
+       delete t_event;
+       if(hastaus){
+	 if(fstatus) npassed++;
+	 else nfailed++;
+       }
      }
-     delete t_event;
-
+     int nxx=0;
+     bool fstatus=false;
+     while(!fstatus){
+       auto * t_event = new Tauolapp::TauolaHepMCEvent(evt);
+       t_event->undecayTaus();
+       t_event->decayTaus();
+       fstatus=Filter(evt,hastaus);
+       delete t_event;
+       nxx++;
+       if(nxx%NFilterTests==0){ break;}
+     }
    }
    else{
      //construct tmp TAUOLA event
      auto * t_event = new Tauolapp::TauolaHepMCEvent(evt);
-     //t_event->undecayTaus();
      t_event->decayTaus();
      delete t_event; 
    }
@@ -840,55 +864,68 @@ void TauolappInterface::BoostProdToLabLifeTimeInDecays(HepMC::GenParticle* p,TLo
   } 
 }  
 
-bool TauolappInterface::Filter(HepMC::GenEvent* evt){
+bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus){
   if(!doFilter) return true;
   unsigned int jakid_plus(0), jakid_minus(0);
   std::vector<HepMC::GenParticle*> prod_plus, prod_minus;
+  unsigned int ntau(0);
   for(HepMC::GenEvent::particle_const_iterator iter = evt->particles_begin(); iter != evt->particles_end(); iter++) {
     if(abs((*iter)->pdg_id())==15){
-      if(isLastTauinChain(*iter)){
-        TauDecay_CMSSW TD;
-	unsigned int jak_id, TauBitMask;
-        if(TD.AnalyzeTau((*iter),jak_id,TauBitMask,false,false)){
-	  int tcharge=-(*iter)->pdg_id()/abs((*iter)->pdg_id());
-	  if(tcharge==1){ // plus
-	    jakid_plus=jak_id;
-	    prod_plus=TD.Get_TauDecayProducts();
-	  }
-	  else if(tcharge==-1){
-	    jakid_minus=jak_id;
-            prod_minus=TD.Get_TauDecayProducts();
+      if(findMother(*iter)==23){
+	if(isLastTauinChain(*iter)){
+	  ntau++;
+	  TauDecay_CMSSW TD;
+	  unsigned int jak_id, TauBitMask;
+	  if(TD.AnalyzeTau((*iter),jak_id,TauBitMask,false,false)){
+	    int tcharge=-(*iter)->pdg_id()/abs((*iter)->pdg_id());
+	    if(tcharge==1){ // plus
+	      jakid_plus=jak_id;
+	      prod_plus=TD.Get_TauDecayProducts();
+	    }
+	    else if(tcharge==-1){
+	      jakid_minus=jak_id;
+	      prod_minus=TD.Get_TauDecayProducts();
+	    }
 	  }
 	}
       }
     }
   }
+  hastaus=false;
+  if(ntau==0) return true;
+  hastaus=true;
   unsigned int nlep(0), nhad(0);
+  if(jakid_minus!=0 && jakid_minus!=1 && jakid_minus!=2) nhad++;
+  if(jakid_plus!=0 && jakid_plus!=1 && jakid_plus!=2) nhad++;
+  if(jakid_minus==1 || jakid_minus==2) nlep++;
+  if(jakid_plus==1  || jakid_plus==2 ) nlep++;
+  if(nhad==0 || nlep==0) return false;
+  
+  double tauplus_h=Tauolapp::Tauola::getHelPlus();
+  double tauminus_h=-1.0*((double)Tauolapp::Tauola::getHelMinus());
+
   // hadronic side helicty cut
   if(doHelicityHadFilter){
     if(jakid_minus!=0 && jakid_minus!=1 && jakid_minus!=2){
-      if(Tauolapp::Tauola::getHelMinus()*hadHelicity<0) return false;
-      nhad++;
+      if(tauminus_h*hadHelicity<0) return false;
     }
-    else if(jakid_plus!=0 && jakid_plus!=1 && jakid_plus!=2){
-      if(Tauolapp::Tauola::getHelPlus()*hadHelicity<0)  return false;
-      nhad++;
+    if(jakid_plus!=0 && jakid_plus!=1 && jakid_plus!=2){
+      if(tauplus_h*hadHelicity<0) return false;
     }
   }
   // leptonic side helicty cut
+ 
   if(doHelicityLepFilter){
-    if(jakid_minus==1 && jakid_minus==2){
-      if(Tauolapp::Tauola::getHelMinus()*hadHelicity<0) return false;
+    if(jakid_minus==1 || jakid_minus==2){
+      if(tauminus_h*lepHelicity<0) return false;
       nlep++;
     }
-    else if(jakid_plus==1 && jakid_plus==2){
-      if(Tauolapp::Tauola::getHelPlus()*hadHelicity<0)  return false;
+    else if(jakid_plus==1 || jakid_plus==2){
+      if(tauplus_h*lepHelicity<0) return false;
       nlep++;
     }
   }
-
-  if(nhad==0 || nlep==0) return false;
-
+  
   // hadronic side Pt cut
   if(doHadPtFilter){
     if(jakid_minus!=0 && jakid_minus!=1 && jakid_minus!=2){
@@ -906,25 +943,17 @@ bool TauolappInterface::Filter(HepMC::GenEvent* evt){
       if(sqrt(px*px+py*py)<hadPt) return false;
     }
   }
-  // leptonic side helicty cut
-  if(doHelicityLepFilter){
-    if(jakid_minus==1 && jakid_minus==2){
-      if(Tauolapp::Tauola::getHelMinus()*hadHelicity<0) return false;
-    }
-    else if(jakid_plus==1 && jakid_plus==2){
-      if(Tauolapp::Tauola::getHelPlus()*hadHelicity<0)  return false;
-    }
-  }
+
   // leptonic side Pt cut
   if(doLepPtFilter){
-    if(jakid_minus==1 && jakid_minus==2){
+    if(jakid_minus==1 || jakid_minus==2){
       double px(0), py(0);
       for(unsigned int i=0;i<prod_minus.size();i++){
         if(abs(prod_minus.at(i)->pdg_id())==11 || abs(prod_minus.at(i)->pdg_id())==13){px+=prod_minus.at(i)->momentum().px(); py+=prod_minus.at(i)->momentum().py();}
       }
       if(sqrt(px*px+py*py)<lepPt) return false;
     }
-    else if(jakid_plus==1 && jakid_plus==2){
+    else if(jakid_plus==1 || jakid_plus==2){
       double px(0), py(0);
       for(unsigned int i=0;i<prod_plus.size();i++){
         if(abs(prod_plus.at(i)->pdg_id())==11 || abs(prod_plus.at(i)->pdg_id())==13){px+=prod_plus.at(i)->momentum().px(); py+=prod_plus.at(i)->momentum().py();}
@@ -945,3 +974,17 @@ bool TauolappInterface::isLastTauinChain(const HepMC::GenParticle* tau){
   }
   return true;
 }
+
+int TauolappInterface::findMother(const HepMC::GenParticle* tau){
+  int mother_pid = 0;
+  if ( tau->production_vertex() ) {
+    HepMC::GenVertex::particle_iterator mother;
+    for (mother = tau->production_vertex()->particles_begin(HepMC::parents); mother!= tau->production_vertex()->particles_end(HepMC::parents); mother++ ) {
+      mother_pid = (*mother)->pdg_id();
+      if(mother_pid == tau->pdg_id()) return findMother(*mother); //mother_pid = -1; Make recursive to look for last tau in chain                                                                                                            
+    }
+  }
+  return mother_pid;
+}
+
+
