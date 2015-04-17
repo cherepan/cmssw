@@ -104,7 +104,11 @@ namespace gen {
       double hadPt;
       double lepPt;
       int NFilterTests;
-      double nfailed,npassed;
+      bool doEtaFilter;
+      double MaxEta;
+      double MinEta;
+
+      double nfailed,npassed,ntaupairs,ngoodtaupairs,ngoodtaupairsEta,ngoodtaupairsPt;
    };
 
 }
