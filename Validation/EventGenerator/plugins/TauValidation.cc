@@ -44,7 +44,7 @@ void TauValidation::beginJob()
 
     //Kinematics
     TauPt            = dbe->book1D("TauPt","Tau pT", 100 ,0,100);
-    TauEta           = dbe->book1D("TauEta","Tau eta", 100 ,-2.5,2.5);
+    TauEta           = dbe->book1D("TauEta","Tau eta", 100 ,-5.0,5.0);
     TauPhi           = dbe->book1D("TauPhi","Tau phi", 100 ,-3.14,3.14);
     TauProngs        = dbe->book1D("TauProngs","Tau n prongs", 7 ,0,7);
     TauDecayChannels = dbe->book1D("TauDecayChannels","Tau decay channels", 13 ,0,13);

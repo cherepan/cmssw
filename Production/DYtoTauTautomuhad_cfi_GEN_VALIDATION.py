@@ -25,14 +25,14 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(2000)
+    input = cms.untracked.int32(-1)
 )
 
 # Input source
 process.source = cms.Source("LHESource",
-			    fileNames=cms.untracked.vstring(['/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12497.lhe',
-							     '/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12498.lhe',
-							     '/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12499.lhe',
+			    fileNames=cms.untracked.vstring([#'/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12497.lhe',
+							     #'/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12498.lhe',
+							     #'/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12499.lhe',
 							     '/store/user/inugent/lhe5591/DYJetsToLL_M-50_8TeV-madgraph-tarball_12500.lhe']))
 
 
@@ -109,7 +109,7 @@ process.generator = cms.EDFilter("Pythia8HadronizerFilter",
 			doEtaFilter = cms.untracked.bool(True),
 			MaxEta = cms.untracked.double(2.5),
 			MinEta = cms.untracked.double(-2.5),
-			NFilterTests  = cms.untracked.int32(10000),
+			NFilterTests  = cms.untracked.int32(10),
 			InputCards = cms.PSet(
 				mdtau = cms.int32(0),
 				pjak2 = cms.int32(0),
