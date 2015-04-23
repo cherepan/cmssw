@@ -17,10 +17,16 @@ if($ARGV[0] eq "--help" || $ARGV[0] eq ""){
     printf("\nThis code requires one input option. The systax is:./todo_Grid.pl [OPTION]");
     printf("\nPlease choose from the following options:\n");
     printf("\n./GenerateProductionScripts.pl --help                                   Prints this message\n");
-    printf("\n./GenerateProductionScripts.pl --LHE <listofLHEFiles>                      Setups up TauNtuple and gives instructions for submission");
+    printf("\n./GenerateProductionScripts.pl --GENSIMfromLHE <listofLHEFiles>         Setups up scripts for running GEN-SIM on LHE files");
     printf("\n                                                                        --OutputDir <OutputDir> Default value: $OutputDir");
     printf("\n                                                                        --crabTemplate    <crabTemplate>    Default value: $crabTemplate");
     printf("\n                                                                        --genfragTemplate <genfragTemplate> Default value: $genfragTemplate");
+    printf("\n./GenerateProductionScripts.pl --DQM <gendataset> <jobname>             Setups up scripts for harvesting the DQM Plots");
+    printf("\n                                                                        --OutputDir <OutputDir> Default value: $OutputDir");
+    printf("\n./GenerateProductionScripts.pl --DigiReco <gendataset> <jobname>        Setups up scripts for running Digi-Sim on the output from GEN-SIM");
+    printf("\n                                                                        --OutputDir <OutputDir> Default value: $OutputDir");
+    printf("\n./GenerateProductionScripts.pl --AODSIM <gendataset> <jobname>          Setups up scripts for running Digi-Sim on the output from Digi-Reco");
+    printf("\n                                                                        --OutputDir <OutputDir> Default value: $OutputDir");
     printf("\n");
     exit(0);  
 } 
@@ -32,7 +38,7 @@ for($l=0;$l<$numArgs; $l++){
 	$l++;
 	$OutputDir=$ARGV[$l];
     }
-    if($ARGV[$l] eq "--LHE"){
+    if($ARGV[$l] eq "--GENSIMfromLHE"){
 	$l++;
 	$listofLHEFiles=$ARGV[$l];
     }
@@ -44,6 +50,14 @@ for($l=0;$l<$numArgs; $l++){
         $l++;
         $genfragTemplate=$ARGV[$l];
     }
+    if($ARGV[$l] eq "--GENDQM" || $ARGV[$l] eq "--DigiReco" || $ARGV[$l] eq "--AODSIM"){
+        $l++;
+        $gendataset=$ARGV[$l];
+	$l++;
+	$jobname=$ARGV[$l];
+    }
+
+
 }
 
 my $dir = getcwd;
@@ -52,7 +66,7 @@ $time= strftime("%h_%d_%Y",localtime);
 $temp= $set . $time;
 $set=$temp;
 
-if( $ARGV[0] eq "--LHE"){
+if( $ARGV[0] eq "--GENSIMfromLHE"){
     $currentdir=getcwd;
 
     # Print out input parameters
@@ -99,4 +113,20 @@ if( $ARGV[0] eq "--LHE"){
 	    $filelist="";
 	}
     }
+}
+
+
+if($ARGV[0] eq "--DQM" || $ARGV[0] eq "--DigiReco" || $ARGV[0] eq "--AODSIM"){
+    $MODE="HARVEST"; #Mode for DQM is default
+    if($ARGV[0] eq "--DigiReco"){
+	$MODE="DigiReco";
+    }
+    if($ARGV[0] eq "--AODSIM"){
+	$MODE="AODSIM";
+    }
+    
+    system(sprintf("if [ -d ../$OutputDir ]; then \ rm -r ../$OutputDir ; fi;  mkdir ../$OutputDir"));
+    system(sprintf("sed 's/JOBNAME/$jobname/'  %s.py  > ../$OutputDir/%s.py ",$MODE,$MODE));
+    system(sprintf("sed 's/GENDATASET/$gendataset/'  crabConfig_MC_%s_template.py  > ../$OutputDir/crabConfig_MC_%s.py  ",$MODE,$MODE));
+    system(sprintf("sed -i.bak s/JOBNAME/$jobname/g ../$OutputDir/crabConfig_MC_%s.py; rm ../$OutputDir/*.bak",$MODE));
 }
