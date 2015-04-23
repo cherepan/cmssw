@@ -17,7 +17,7 @@ if($ARGV[0] eq "--help" || $ARGV[0] eq ""){
     printf("\nThis code requires one input option. The systax is:./todo_Grid.pl [OPTION]");
     printf("\nPlease choose from the following options:\n");
     printf("\n./GenerateProductionScripts.pl --help                                   Prints this message\n");
-    printf("\n./GenerateProductionScripts --LHE <listofLHEFiles>                      Setups up TauNtuple and gives instructions for submission");
+    printf("\n./GenerateProductionScripts.pl --LHE <listofLHEFiles>                      Setups up TauNtuple and gives instructions for submission");
     printf("\n                                                                        --OutputDir <OutputDir> Default value: $OutputDir");
     printf("\n                                                                        --crabTemplate    <crabTemplate>    Default value: $crabTemplate");
     printf("\n                                                                        --genfragTemplate <genfragTemplate> Default value: $genfragTemplate");
@@ -27,7 +27,7 @@ if($ARGV[0] eq "--help" || $ARGV[0] eq ""){
 
 ######################################
 
-for($l=10;$l<$numArgs; $l++){
+for($l=0;$l<$numArgs; $l++){
     if($ARGV[$l] eq "--OutputDir"){
 	$l++;
 	$OutputDir=$ARGV[$l];
@@ -61,7 +61,7 @@ if( $ARGV[0] eq "--LHE"){
     printf("Template file for crab:           $crabTemplate \n");
     printf("Template file for gen-Fragment:   $genfragTemplate \n");
 
-    system(sprintf("mkdir ../$OutputDir"));
+    system(sprintf("if [ -d ../$OutputDir ]; then \ rm -r ../$OutputDir ; fi;  mkdir ../$OutputDir"));
 
     # Open ListofFile.txt
     @LHEFiles;
@@ -92,14 +92,11 @@ if( $ARGV[0] eq "--LHE"){
 	if($NLHEFiles>=10 || $idx==$arrSize ){
 	    $OutFile++;
 	    $NLHEFiles=0;
-	    system(sprintf("sed 's/GENFRAGMENT/%s\\\/GenFagment_GENSIM_Production%d.py/'  $crabTemplate > ../$OutputDir/crab_GENSIM_Production$OutFile.py ",$OutputDir,$OutFile));
-	    system(sprintf("sed -i.bak s/NUMBER/$OutFile/g ../$OutputDir/crab_GENSIM_Production$OutFile.py"));
+	    system(sprintf("sed 's/GENFRAGMENT/%s\\\/GenFagment_GENSIM_Production%d.py/'  $crabTemplate > ../$OutputDir/crab_GENSIM_Production$OutFile.py  ",$OutputDir,$OutFile));
+	    system(sprintf("sed -i.bak s/NUMBER/$OutFile/g ../$OutputDir/crab_GENSIM_Production$OutFile.py; rm ../$OutputDir/*.bak"));
 	    $filelist =~ s{\/}{\\\/}g;
 	    system(sprintf("sed 's/LISTOFFILES/$filelist/'  $genfragTemplate > ../$OutputDir/GenFagment_GENSIM_Production$OutFile.py "));
 	    $filelist="";
-	    if($OutFile==10){ 
-		exit(0);
-	    }
 	}
     }
 }

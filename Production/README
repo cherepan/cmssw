@@ -1,0 +1,30 @@
+#
+# This file contains cmd line examples and pointers:
+#
+# Setting up crab:
+#
+
+source /cvmfs/cms.cern.ch/crab3/crab.sh
+which crab
+voms-proxy-init --voms cms:/cms/dcms --valid 168:00
+grid-proxy-init
+voms-proxy-info --all
+
+# now check that you can write to the output disk
+crab checkwrite --site=T2_DE_RWTH --lfn=/store/user/inugent/
+
+# submit a crab job
+crab submit -c Production/crabConfig_tutorial_MC_generation.py
+
+# chekc the status of a crab job
+crab status
+crab status crab_projects/crab_tutorial_MC_generation_test2/
+
+#when jobs are finished
+crab report crab_projects/crab_tutorial_MC_generation_test2/
+crab getlog crab_projects/crab_tutorial_MC_generation_test2/
+
+#add random number utility to all MC gen-fragments for generation to ensure random seeds
+from IOMC.RandomEngine.RandomServiceHelper import  RandomNumberServiceHelper
+randHelper =  RandomNumberServiceHelper(process.RandomNumberGeneratorService)
+randHelper.populate()
