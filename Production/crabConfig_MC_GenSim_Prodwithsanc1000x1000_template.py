@@ -16,10 +16,10 @@ config.Data.splitting =  'EventBased'
 config.Data.unitsPerJob = 1000
 NJOBS = 1000
 config.Data.totalUnits = config.Data.unitsPerJob * NJOBS
-config.Data.outLFN = '/store/user/inugent/'
+config.Data.outLFNDirBase = '/store/user/inugent/'
 config.Data.userInputFiles = open('Production/Tauolapp_sanc.txt').readlines()
 config.Data.publication = True
-config.Data.publishDataName = 'DYtoTauTautomuhad_ProdwithSANCTest1000x1000'
+config.Data.publishDataName = 'DYtoTauTautomuhad_ProdwithSANCTest_1000x1000_v2'
 
 #config.Data.ignoreLocality = True
 #config.JobType.outputFiles
