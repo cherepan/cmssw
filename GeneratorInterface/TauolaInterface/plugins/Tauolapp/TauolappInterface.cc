@@ -374,48 +374,21 @@ HepMC::GenEvent* TauolappInterface::decay( HepMC::GenEvent* evt ){
      if(ntaupt>=2)  ngoodtaupairsPt++;
      if(ntaueta>=2 && ntaupt>=2) ngoodtaupairs++;
      else{
-       // there are no good tau so set event weight to 0
-       evt->weights().push_back(333);
-       evt->weights().push_back(0.0);
        return evt;
      }
      //construct tmp TAUOLA event
      // loop until the efficiency is satisfied
      bool hastaus(false);
-     int npfilter(0);
-     for(int i=0;i<NFilterTests;i++){
+     auto * t_event = new Tauolapp::TauolaHepMCEvent(evt);
+     t_event->undecayTaus();
+     t_event->decayTaus();
+     bool fstatus=Filter(evt,hastaus);
+     delete t_event;
+     if(!fstatus || !hastaus){
        auto * t_event = new Tauolapp::TauolaHepMCEvent(evt);
        t_event->undecayTaus();
-       t_event->decayTaus();
-       bool fstatus=Filter(evt,hastaus);
        delete t_event;
-       if(hastaus){
-	 if(fstatus){ npassed++; npfilter++;}
-	 else{ nfailed++;}
-       }
-     }
-     int nxx=0;
-     bool fstatus=false;
-     bool hasgoodevent(true);
-     while(!fstatus){
-       auto * t_event = new Tauolapp::TauolaHepMCEvent(evt);
-       t_event->undecayTaus();
-       t_event->decayTaus();
-       fstatus=Filter(evt,hastaus);
-       delete t_event;
-       nxx++;
-       if(nxx==NFilterTests){hasgoodevent=false; edm::LogWarning("TauolappInterface::~TauolappInterface()") << "failed generation...." << std::endl; break;}
-     }
-     if(!hasgoodevent){
-       // remove counting for this event and set weight to 0.0
-       npassed-=npfilter;
-       nfailed-=(NFilterTests-npfilter);
-       evt->weights().push_back(333);
-       evt->weights().push_back(0.0);
-     }
-     if(NFilterTests>0){
-       evt->weights().push_back(333);
-       evt->weights().push_back((double)npfilter/(double)NFilterTests);
+       return evt;
      }
    }
    else{
