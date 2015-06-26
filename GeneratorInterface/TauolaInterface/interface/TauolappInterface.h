@@ -60,7 +60,7 @@ namespace gen {
       void selectDecayByMDTAU();
       int selectLeptonic();
       int selectHadronic();
-      bool Filter(HepMC::GenEvent* evt,bool &hastaus);
+      bool Filter(HepMC::GenEvent* evt,bool &hastaus,bool &h_helicity, bool &l_helicity);
       bool isLastTauinChain(const HepMC::GenParticle* tau);
       int  findMother(const HepMC::GenParticle* tau);
 

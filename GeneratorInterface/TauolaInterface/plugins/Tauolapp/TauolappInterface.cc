@@ -369,27 +369,36 @@ HepMC::GenEvent* TauolappInterface::decay( HepMC::GenEvent* evt ){
        }
      }
      if(ntau>=2) ntaupairs++;
-     else return evt;
+     else return NULL;
      if(ntaueta>=2) ngoodtaupairsEta++;
      if(ntaupt>=2)  ngoodtaupairsPt++;
      if(ntaueta>=2 && ntaupt>=2) ngoodtaupairs++;
      else{
-       return evt;
+       return NULL;
      }
+     //std::cout << "found tau pair" << std::endl;
      //construct tmp TAUOLA event
      // loop until the efficiency is satisfied
-     bool hastaus(false);
-     auto * t_event = new Tauolapp::TauolaHepMCEvent(evt);
-     t_event->undecayTaus();
-     t_event->decayTaus();
-     bool fstatus=Filter(evt,hastaus);
-     delete t_event;
-     if(!fstatus || !hastaus){
+     /////////////////////////////////////////////
+     // Decay tau and run filter
+     bool hastaus(false),fstatus(false);
+     bool h_helicity, l_helicity;
+     for(unsigned int i=0;i<10000;i++){
        auto * t_event = new Tauolapp::TauolaHepMCEvent(evt);
        t_event->undecayTaus();
+       t_event->decayTaus();
+       fstatus=Filter(evt,hastaus,h_helicity,l_helicity);
        delete t_event;
-       return evt;
+       if(h_helicity && l_helicity) break;
      }
+     /////////////////////////////////////////////
+     if(!fstatus || !hastaus){
+       //std::cout << "failed " << std::endl;
+       nfailed++;
+       return NULL;
+     }
+     //std::cout << "passed" << std::endl;
+     npassed++;
    }
    else{
      //construct tmp TAUOLA event
@@ -679,11 +688,22 @@ void TauolappInterface::selectDecayByMDTAU()
 
    if ( fMDTAU == 116 || fMDTAU == 216 )
    {
-      Tauolapp::jaki_.jak1 = 2;
-      Tauolapp::jaki_.jak2 = modeH;
-      Tauolapp::Tauola::setSameParticleDecayMode( 2 );
-      Tauolapp::Tauola::setOppositeParticleDecayMode( modeH );
-      return;      
+     double u=flat();
+     //std::cout << u << std::endl;
+     if(u<=0.5){
+       Tauolapp::jaki_.jak1 = 2;
+       Tauolapp::jaki_.jak2 = modeH;
+       Tauolapp::Tauola::setSameParticleDecayMode( 2 );
+       Tauolapp::Tauola::setOppositeParticleDecayMode( modeH );
+       return;      
+     }
+     else if(u<=1.0){
+       Tauolapp::jaki_.jak1 = modeH;
+       Tauolapp::jaki_.jak2 = 2;
+       Tauolapp::Tauola::setSameParticleDecayMode( modeH );
+       Tauolapp::Tauola::setOppositeParticleDecayMode( 2 );
+
+     }
    }
 
    if ( fMDTAU == 126 || fMDTAU == 226 )
@@ -881,7 +901,7 @@ void TauolappInterface::BoostProdToLabLifeTimeInDecays(HepMC::GenParticle* p,TLo
   } 
 }  
 
-bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus){
+bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus,bool &h_helicity, bool &l_helicity){
   if(!doFilter) return true;
   unsigned int jakid_plus(0), jakid_minus(0);
   std::vector<HepMC::GenParticle*> prod_plus, prod_minus;
@@ -911,6 +931,7 @@ bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus){
   hastaus=false;
   if(ntau==0) return true;
   hastaus=true;
+  //std::cout << "has taus " << jakid_minus << " " << jakid_plus << std::endl;
   unsigned int nlep(0), nhad(0);
   if(jakid_minus!=0 && jakid_minus!=1 && jakid_minus!=2) nhad++;
   if(jakid_plus!=0 && jakid_plus!=1 && jakid_plus!=2) nhad++;
@@ -921,6 +942,9 @@ bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus){
   double tauplus_h=Tauolapp::Tauola::getHelPlus();
   double tauminus_h=Tauolapp::Tauola::getHelMinus();
 
+
+  h_helicity=false;
+  l_helicity=false;
   // hadronic side helicty cut
   if(doHelicityHadFilter){
     if(jakid_minus!=0 && jakid_minus!=1 && jakid_minus!=2){
@@ -930,8 +954,10 @@ bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus){
       if(tauplus_h*hadHelicity>0) return false;
     }
   }
+  h_helicity=true;
+  //std::cout << "had helicity" << std::endl;
+
   // leptonic side helicty cut
- 
   if(doHelicityLepFilter){
     if(jakid_minus==1 || jakid_minus==2){
       if(tauminus_h*lepHelicity<0) return false;
@@ -942,7 +968,9 @@ bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus){
       nlep++;
     }
   }
-  
+  l_helicity=true;
+  //std::cout << "l helicity" << std::endl;
+
   // hadronic side Pt cut
   if(doHadPtFilter){
     if(jakid_minus!=0 && jakid_minus!=1 && jakid_minus!=2){
@@ -960,6 +988,7 @@ bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus){
       if(sqrt(px*px+py*py)<hadPt-0.5) return false;
     }
   }
+  //std::cout << "had pt" << std::endl;
 
   // leptonic side Pt cut
   if(doLepPtFilter){
@@ -968,7 +997,7 @@ bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus){
       for(unsigned int i=0;i<prod_minus.size();i++){
         if((abs(prod_minus.at(i)->pdg_id())==11 && jakid_minus==1) || (abs(prod_minus.at(i)->pdg_id())==13 && jakid_minus==2)){px+=prod_minus.at(i)->momentum().px(); py+=prod_minus.at(i)->momentum().py();break;}
       }
-      //std::cout << "jakid_minus " << jakid_minus << " " << sqrt(px*px+py*py) << std::endl;
+      ////std::cout << "jakid_minus " << jakid_minus << " " << sqrt(px*px+py*py) << std::endl;
       if(sqrt(px*px+py*py)<lepPt-0.1) return false;
     }
     else if(jakid_plus==1 || jakid_plus==2){
@@ -976,7 +1005,7 @@ bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus){
       for(unsigned int i=0;i<prod_plus.size();i++){
         if(abs((prod_plus.at(i)->pdg_id())==11 && jakid_plus==1) || (abs(prod_plus.at(i)->pdg_id())==13 && jakid_plus==2)){px+=prod_plus.at(i)->momentum().px(); py+=prod_plus.at(i)->momentum().py();break;}
       }
-      //std::cout<< "jakid_plus " << jakid_plus << " "<< sqrt(px*px+py*py) << " " << px << " " << py  <<std::endl;
+      ////std::cout<< "jakid_plus " << jakid_plus << " "<< sqrt(px*px+py*py) << " " << px << " " << py  <<std::endl;
       if(sqrt(px*px+py*py)<lepPt-0.1) return false;
     }
   }
@@ -994,7 +1023,7 @@ bool TauolappInterface::Filter(HepMC::GenEvent* evt,bool &hastaus){
       }
     }
   }
-  
+  //std::cout << "had eta" << std::endl;
   return true;
 }
 
